@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">Text to speech daemon</string>
+    <string name="start_daemon_text">Start daemon</string>
+    <string name="stop_daemon_text">Stop daemon</string>
+    <string name="app_description_text">This app just runs in the background.\nYou can start/stop the daemon by pressing the button below or by using the notification.\n\nYou can choose the file to watch for text lines to read by pressing the \'Choose File\' button.\nYou can set the absolute file path as well if choosing a file didn\'t set one up in the text field.</string>
+    <string name="error_message_text">Unable to start the daemon because there is no text to speech engine installed. Downloading one now.</string>
+    <string name="test_speech_text">Test Speech</string>
+    <string name="choose_file_button_text">Choose File</string>
+    <string name="no_file_chosen">*No file chosen*</string>
+    <string name="file_to_monitor_label_text">File to monitor</string>
+    <string name="absolute_file_path_label">Absolute file path</string>
+</resources>
