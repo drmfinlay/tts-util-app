@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.danefinlay.texttospeechdaemon">
+    package="com.danefinlay.ttsutil">
 
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
@@ -14,16 +14,16 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <service
-            android:name=".MyService"
+            android:name="com.danefinlay.ttsutil.MyService"
             android:enabled="true"
             android:exported="false"/>
 
         <service
-            android:name=".MyControlService"
+            android:name="com.danefinlay.ttsutil.MyControlService"
             android:exported="false"
             android:enabled="true"/>
 
-        <activity android:name=".MainActivity">
+        <activity android:name="com.danefinlay.ttsutil.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -32,7 +32,7 @@
         </activity>
 
         <receiver
-            android:name=".BootBroadcastReceiver"
+            android:name="com.danefinlay.ttsutil.BootBroadcastReceiver"
             android:label="BootBroadcastReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />

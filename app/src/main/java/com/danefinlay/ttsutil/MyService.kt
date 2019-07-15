@@ -1,4 +1,4 @@
-package com.danefinlay.texttospeechdaemon
+package com.danefinlay.ttsutil
 
 import android.app.Notification
 import android.app.PendingIntent

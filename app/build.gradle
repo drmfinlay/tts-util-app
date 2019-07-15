@@ -5,7 +5,7 @@ android {
     compileSdkVersion 28
 
     defaultConfig {
-        applicationId "com.danefinlay.texttospeechdaemon"
+        applicationId "com.danefinlay.ttsutil"
         minSdkVersion 20
         targetSdkVersion 28
         versionCode 1

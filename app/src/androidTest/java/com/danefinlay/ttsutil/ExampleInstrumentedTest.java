@@ -1,4 +1,4 @@
-package com.danefinlay.texttospeechdaemon;
+package com.danefinlay.ttsutil;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;
@@ -21,6 +21,6 @@ public class ExampleInstrumentedTest {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getTargetContext();
 
-        assertEquals("com.danefinlay.texttospeechdaemon", appContext.getPackageName());
+        assertEquals("com.danefinlay.ttsutil", appContext.getPackageName());
     }
 }

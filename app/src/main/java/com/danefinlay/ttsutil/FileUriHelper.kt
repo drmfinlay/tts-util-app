@@ -1,12 +1,12 @@
-package com.danefinlay.texttospeechdaemon
+package com.danefinlay.ttsutil
 
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 
-private const val CHOSEN_FILE_PREF_KEY = "com.danefinlay.texttospeechdaemon.CHOSEN_FILE_PREF_KEY"
+private const val CHOSEN_FILE_PREF_KEY = "$APP_NAME.CHOSEN_FILE_PREF_KEY"
 const val CHOSEN_FILE_LAST_MODIFIED_PREF_KEY =
-        "com.danefinlay.texttospeechdaemon.CHOSEN_FILE_LAST_MODIFIED_PREF_KEY"
+        "$APP_NAME.CHOSEN_FILE_LAST_MODIFIED_PREF_KEY"
 
 var Context.chosenFileUri: Uri?
     get() {

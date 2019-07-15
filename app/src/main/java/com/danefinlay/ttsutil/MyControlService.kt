@@ -1,11 +1,7 @@
-package com.danefinlay.texttospeechdaemon
+package com.danefinlay.ttsutil
 
 import android.app.IntentService
-import android.app.PendingIntent
 import android.content.Intent
-import android.content.Context
-import android.net.Uri
-import android.support.v4.app.NotificationCompat
 
 /**
  * An [IntentService] subclass for handling asynchronous task requests in
@@ -28,6 +24,6 @@ class MyControlService : IntentService("MyControlService") {
     }
 
     companion object {
-        const val STOP_APP = "com.danefinlay.texttospeechdaemon.STOP_APP"
+        const val STOP_APP = "$APP_NAME.STOP_APP"
     }
 }

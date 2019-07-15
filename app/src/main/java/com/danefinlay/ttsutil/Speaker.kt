@@ -1,4 +1,4 @@
-package com.danefinlay.texttospeechdaemon
+package com.danefinlay.ttsutil
 
 import android.content.Context
 import android.media.AudioManager
