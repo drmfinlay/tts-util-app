@@ -33,8 +33,6 @@ class Speaker(val context: Context,
     override fun onInit(status: Int) {
         when ( status ) {
             TextToSpeech.SUCCESS -> {
-                // Set the locale to match the language
-                tts.language = Locale.UK
                 ready = true
                 onReady()
             }
