@@ -1,6 +1,8 @@
 package com.danefinlay.ttsutil
 
 import android.content.Context
+import android.media.AudioAttributes
+import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.os.Build
 import android.os.Bundle
@@ -23,6 +25,23 @@ class Speaker(val context: Context,
     var ready = false
         private set
 
+    private val audioFocusGain = AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
+    private val audioFocusRequest: AudioFocusRequest by lazy {
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O) {
+            val audioAttributes = AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .setFlags(AudioAttributes.FLAG_AUDIBILITY_ENFORCED)
+                    .build()
+            AudioFocusRequest.Builder(audioFocusGain)
+                    .setAudioAttributes(audioAttributes)
+                    .setAcceptsDelayedFocusGain(true)
+                    .setOnAudioFocusChangeListener(onAudioFocusChangeListener)
+                    .build()
+        } else
+            throw RuntimeException("should not use AudioFocusRequest below SDK v26")
+    }
+
     private var utteranceId: Long = 1
         get() {
             val current = field
@@ -39,13 +58,13 @@ class Speaker(val context: Context,
         }
     }
 
-    private val onAudioFocusChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
+    private val onAudioFocusChangeListener = AudioManager.OnAudioFocusChangeListener {
+        focusChange ->
         when ( focusChange ) {
             AudioManager.AUDIOFOCUS_LOSS -> {
                 // Permanent loss of audio focus
                 // Pause playback immediately
                 stopSpeech()
-
             }
 
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
@@ -66,20 +85,31 @@ class Speaker(val context: Context,
         }
     }
 
-    private fun requestAudioFocus() {
-        requestAudioFocusResult()
-    }
+    private fun requestAudioFocus(): Boolean {
+        val audioManager = context.audioManager
+        val success = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            @Suppress("deprecation")
+            audioManager.requestAudioFocus(
+                    onAudioFocusChangeListener, AudioManager.STREAM_ALARM,
+                    audioFocusGain)
+        } else {
+            audioManager.requestAudioFocus(audioFocusRequest)
+        }
 
-    private fun requestAudioFocusResult(): Boolean {
-        return context.applicationContext.audioManager.requestAudioFocus(
-                onAudioFocusChangeListener, AudioManager.STREAM_ALARM,
-                AudioManager.AUDIOFOCUS_GAIN_TRANSIENT) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+        // Check the success value.
+        return success == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
     }
 
     private fun releaseAudioFocus() {
         // abandon the audio focus using the same context and AudioFocusChangeListener used
         // in requestAudioFocusResult to request it
-        context.applicationContext.audioManager.abandonAudioFocus(onAudioFocusChangeListener)
+        val audioManager = context.audioManager
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            @Suppress("deprecation")
+            audioManager.abandonAudioFocus(onAudioFocusChangeListener)
+        } else {
+            audioManager.abandonAudioFocusRequest(audioFocusRequest)
+        }
     }
 
     sealed class UtteranceProgress(val utteranceId: String) {
@@ -113,14 +143,14 @@ class Speaker(val context: Context,
         speakInternal(*textLines) {
             when ( it ) {
                 is UtteranceProgress.Start -> {
-                    if ( utterancesMade == 0 ) requestAudioFocus()
+                    if (utterancesMade == 0) requestAudioFocus()
                     else pause(100)
                 }
 
                 is UtteranceProgress.Done -> utterancesMade++
             }
 
-            if ( utterancesMade == textLines.size ) releaseAudioFocus()
+            if (utterancesMade == lines.size) releaseAudioFocus()
 
             // Run the external progressListener as well
             progressListener(it)
