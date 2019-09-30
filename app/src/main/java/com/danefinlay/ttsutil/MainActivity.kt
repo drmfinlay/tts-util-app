@@ -86,10 +86,10 @@ class MainActivity : MyAppCompatActivity() {
         super.onStart()
 
         fileActivityButton.onClick {
-            // TODO Start the file activity when the button is pressed.
-            // val activity = FileActivity::class.java
-            // val fileActivityIntent = Intent(this, activity)
-            // startActivity(fileActivityIntent)
+            // Start the file activity when the button is pressed.
+            val activity = FileActivity::class.java
+            val fileActivityIntent = Intent(this, activity)
+            startActivity(fileActivityIntent)
         }
 
         speakButton.onClick {
