@@ -13,7 +13,7 @@ import java.io.File
 
 typealias ProgressListener = (Speaker.UtteranceProgress) -> Unit
 
-class Speaker(val context: Context,
+class Speaker(private val context: Context,
               var speechAllowed: Boolean,
               onReady: Speaker.() -> Unit = {}) : TextToSpeech.OnInitListener {
 
@@ -220,10 +220,8 @@ class Speaker(val context: Context,
     }
 
     fun free() {
-        // Stop speech as well
+        // Stop speech and free resources.
         stopSpeech()
-
-        // Free up resources
         tts.shutdown()
     }
 }
