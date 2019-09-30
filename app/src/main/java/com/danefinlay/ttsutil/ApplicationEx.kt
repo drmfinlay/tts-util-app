@@ -8,7 +8,9 @@ class ApplicationEx : Application() {
         private set
 
     fun startSpeaker() {
-        speaker = Speaker(this, true)
+        if (speaker == null) {
+            speaker = Speaker(this, true)
+        }
     }
 
     fun freeSpeaker() {
