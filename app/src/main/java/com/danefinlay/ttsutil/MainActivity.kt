@@ -1,65 +1,35 @@
 package com.danefinlay.ttsutil
 
-import android.content.ComponentName
 import android.content.Intent
-import android.content.ServiceConnection
-import android.net.Uri
 import android.os.Bundle
-import android.os.IBinder
 import android.speech.tts.TextToSpeech
+import android.speech.tts.TextToSpeech.Engine.ACTION_GET_SAMPLE_TEXT
+import android.speech.tts.TextToSpeech.Engine.EXTRA_SAMPLE_TEXT
 import android.support.design.widget.TextInputLayout
-import android.support.v7.app.AppCompatActivity
-import android.view.View
+import android.view.Menu
+import android.view.MenuItem
 import android.widget.Button
-import android.widget.TextView
-import com.danefinlay.androidutil.FileChooser
-import org.jetbrains.anko.doAsync
-import org.jetbrains.anko.enabled
+import org.jetbrains.anko.AlertDialogBuilder
 import org.jetbrains.anko.find
 import org.jetbrains.anko.onClick
+import org.jetbrains.anko.toast
 
-class MainActivity : AppCompatActivity(), FileChooser {
-    private var serviceRunning: Boolean = false
+class MainActivity : MyAppCompatActivity() {
 
-    private val daemonButton: Button
-        get() = find(R.id.daemon_button)
+    private val fileActivityButton: Button
+        get() = find(R.id.file_activity_button)
 
-    private val testButton: Button
-        get() = find(R.id.test_button)
+    private val speakButton: Button
+        get() = find(R.id.speak_button)
 
-    private val chooseButton: Button
-        get() = find(R.id.choose_file_button)
+    private val stopSpeakingButton: Button
+        get() = find(R.id.stop_speaking_button)
 
-    private val errorMessage: TextView
-        get() = find(R.id.error_message)
+    private val clearBoxButton: Button
+        get() = find(R.id.clear_box_button)
 
-    private val chosenFileText: TextView
-        get() = find(R.id.file_to_monitor_text)
-
-    private val chosenAbsFileEditTextLayout: TextInputLayout
-        get() = find(R.id.abs_file_path_layout)
-
-    private var myService: MyService? = null
-
-    override val chooseFileAction: String = Intent.ACTION_OPEN_DOCUMENT
-    override val chooseFileCategory: String = Intent.CATEGORY_OPENABLE
-    override val chooseFileMimeType: String = "*/*"
-
-    private val serviceConnection = object : ServiceConnection {
-        override fun onServiceConnected(component: ComponentName?, binder: IBinder?) {
-            serviceRunning = true
-            setButtonsUp()
-            myService = (binder as? MyService.LocalBinder)?.service
-        }
-
-        override fun onServiceDisconnected(component: ComponentName?) {
-            serviceRunning = false
-            setButtonsUp()
-            myService = null
-        }
-    }
-
-    override fun getActivity() = this
+    private val ttsInputLayout: TextInputLayout
+        get() = find(R.id.tts_input_layout)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -67,165 +37,176 @@ class MainActivity : AppCompatActivity(), FileChooser {
 
         if ( savedInstanceState == null ) {
             // Check if there is a TTS engine is installed on the device.
-            checkTTS()
+            checkTTS(CHECK_TTS)
         }
     }
 
     override fun onSaveInstanceState(outState: Bundle?) {
-        outState?.putBoolean("serviceRunning", serviceRunning)
+        val content = ttsInputLayout.editText?.text?.toString()
+        outState?.putString("inputBoxContent", content)
         super.onSaveInstanceState(outState)
     }
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle?) {
-        if ( savedInstanceState != null ) {
-
-            if ( savedInstanceState.containsKey("serviceRunning") ) {
-                serviceRunning = savedInstanceState.getBoolean("serviceRunning")
-                bindMyServiceIfRunning()
+        val content = savedInstanceState?.getString("inputBoxContent")
+        if (content != null) {
+            ttsInputLayout.editText?.text?.apply {
+                clear()
+                append(content)
             }
         }
         super.onRestoreInstanceState(savedInstanceState)
     }
 
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        val inflater = menuInflater
+        inflater.inflate(R.menu.app_menu, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean =
+            when (item.itemId) {
+
+                R.id.menu_about -> {
+                    val activity = AboutActivity::class.java
+                    startActivity(Intent(this, activity))
+                    true
+                }
+
+                else -> {
+                    // Display a not implemented yet toast message
+                    toast(R.string.not_yet_implemented)
+
+                    // return the super class method's value for other menu cases
+                    super.onOptionsItemSelected(item)
+                }
+            }
+
     override fun onStart() {
         super.onStart()
 
-        daemonButton.onClick {
-            if ( serviceRunning ) stopMyService()
-            else startMyService()
+        fileActivityButton.onClick {
+            // TODO Start the file activity when the button is pressed.
+            // val activity = FileActivity::class.java
+            // val fileActivityIntent = Intent(this, activity)
+            // startActivity(fileActivityIntent)
         }
 
-        testButton.onClick {
-            myService?.speakFromFile()
-        }
-
-        chooseButton.onClick {
-            showFileChooser()
-        }
-
-        setFileDisplayName()
-
-        setButtonsUp()
-    }
-
-    override fun onResume() {
-        super.onResume()
-
-        setButtonsUp()
-    }
-
-    override fun onDestroy() {
-        try {
-            unbindService(serviceConnection)
-        } catch(e: IllegalArgumentException) { } // le sigh...
-        super.onDestroy()
-    }
-
-    private fun checkTTS() {
-        val check = Intent()
-        check.action = TextToSpeech.Engine.ACTION_CHECK_TTS_DATA
-        startActivityForResult(check, CHECK_TTS_CODE)
-    }
-
-    private fun setButtonsUp() {
-        doAsync {
-            // Do this asynchronously because it is long running!
-            val chosenPathIsValid = chosenPathIsValid
-            runOnUiThread {
-                daemonButton.enabled = chosenPathIsValid
-
-                if ( !serviceRunning || !chosenPathIsValid ) {
-                    daemonButton.text = getString(R.string.start_daemon_text)
-                    testButton.enabled = false
-                } else {
-                    daemonButton.text = getString(R.string.stop_daemon_text)
-                    testButton.enabled = true
-                }
-
-                setFileDisplayName()
+        speakButton.onClick {
+            if (speaker == null) {
+                // Check (and eventually setup) text-to-speech.
+                checkTTS(CHECK_TTS_SPEAK_AFTERWARDS)
+            } else {
+                speakFromInputLayout()
             }
         }
 
-    }
+        stopSpeakingButton.onClick {
+            speaker?.stopSpeech()
+        }
 
-    override fun onFileChosen(uri: Uri) {
-        chosenFileUri = uri
+        clearBoxButton.onClick {
+            ttsInputLayout.editText?.text?.clear()
+        }
 
-        // Also update CHOSEN_FILE_LAST_MODIFIED_PREF_KEY
-        fileUriLastModifiedPrefValue = fileUriLastModified
-
-        setFileDisplayName()
-        setAbsFilePath()
-
-        // If the service is running, then restart the service's file watching thread.
-        if ( serviceRunning ) {
-            myService?.restartFileWatcher()
+        // TODO Probably should be another activity
+        if (intent?.action == Intent.ACTION_SEND) {
+            val text = intent?.getStringExtra(Intent.EXTRA_TEXT)
+            if (text != null) {
+                ttsInputLayout.editText?.text?.apply {
+                    clear()
+                    append(text)
+                }
+            }
         }
     }
 
-    private fun setFileDisplayName() {
-        val properties = fileUriProperties
-        val displayNameKey = "_display_name"
-        val displayText = if ( properties != null && properties.containsKey(displayNameKey) ) {
-            properties[displayNameKey]
-        } else getString(R.string.no_file_chosen)
-        chosenFileText.text = displayText
-    }
+    override fun onDestroy() {
+        super.onDestroy()
 
-    private fun setAbsFilePath() {
-        TODO()
-    }
-
-    private fun startMyService() {
-        val serviceIntent = Intent(this, MyService::class.java)
-                .putExtra(FILE_URI, chosenFileUri)
-        startService(serviceIntent)
-        bindService(serviceIntent, serviceConnection, 0)
-    }
-
-    private fun bindMyServiceIfRunning() {
-        if ( serviceRunning ) {
-            val serviceIntent = Intent(this, MyService::class.java)
-            bindService(serviceIntent, serviceConnection, 0)
+        // Free the speaker only if the activity (and probably the application)
+        // is finishing.
+        if (isFinishing) {
+            myApplication.freeSpeaker()
         }
     }
 
-    private fun stopMyService() {
-        val serviceIntent = Intent(this, MyService::class.java)
-        try {
-            unbindService(serviceConnection)
-        } catch(e: IllegalArgumentException) { } // le sigh...
-        serviceConnection.onServiceDisconnected(null)
-        stopService(serviceIntent)
+    private fun checkTTS(code: Int) {
+        val check = Intent()
+        check.action = TextToSpeech.Engine.ACTION_CHECK_TTS_DATA
+        startActivityForResult(check, code)
+    }
+
+    private fun speakFromInputLayout() {
+        val content = ttsInputLayout.editText?.text?.toString()
+        if (!content.isNullOrBlank()) {
+            speaker?.speak(listOf(content))
+        } else {
+            // Get sample text from the TTS engine.
+            val intent = Intent()
+            intent.action = ACTION_GET_SAMPLE_TEXT
+            startActivityForResult(intent, SPEAK_SAMPLE_TEXT)
+        }
+    }
+
+    private fun showNoTTSDataDialog() {
+        AlertDialogBuilder(this).apply {
+            title(getString(R.string.no_tts_data_alert_title))
+            message(getString(R.string.no_tts_data_alert_message))
+            positiveButton("Okay") {
+                val install = Intent()
+                install.action = TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA
+                startActivityForResult(install, INSTALL_TTS_DATA)
+            }
+            negativeButton("No thanks")
+            show()
+        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         when (requestCode) {
-            CHECK_TTS_CODE -> {
-                if ( resultCode == TextToSpeech.Engine.CHECK_VOICE_DATA_PASS ) {
-                    // Start the daemon if we have an engine and if the service isn't running.
-                    if ( !serviceRunning ) startMyService()
-
-                    // Activate the daemonButton and hide the error message
-                    setButtonsUp()
-                    errorMessage.visibility = View.GONE
+            CHECK_TTS, CHECK_TTS_SPEAK_AFTERWARDS -> {
+                if (resultCode == TextToSpeech.Engine.CHECK_VOICE_DATA_PASS) {
+                    // Start the speaker.
+                    myApplication.startSpeaker()
+                    if (requestCode == CHECK_TTS_SPEAK_AFTERWARDS) {
+                        speakFromInputLayout()
+                    }
                 } else {
-                    // Show the error message
-                    errorMessage.visibility = View.VISIBLE
+                    // Show a dialogue *and then* start an activity to install a
+                    // text to speech engine if the user agrees.
+                    showNoTTSDataDialog()
+                }
+            }
 
-                    // Start an activity that installs a text to speech engine
-                    val install = Intent()
-                    install.action = TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA
-                    startActivity(install)
+            INSTALL_TTS_DATA -> {
+                if (resultCode == TextToSpeech.ERROR) {
+                    // Show a dialog if installing TTS data failed.
+                    AlertDialogBuilder(this).apply {
+                        title(getString(R.string.failed_to_get_tts_data_title))
+                        message(getString(R.string.failed_to_get_tts_data_msg))
+                        positiveButton("Okay") {}
+                        show()
+                    }
+                }
+            }
+
+            SPEAK_SAMPLE_TEXT -> {
+                // Speak sample text
+                val sampleText = data?.getStringExtra(EXTRA_SAMPLE_TEXT) ?:
+                        ttsInputLayout.editText?.hint?.toString()
+                if (sampleText != null) {
+                    myApplication.speaker?.speak(sampleText)
                 }
             }
         }
-        super<FileChooser>.onActivityResult(requestCode, resultCode, data)
-        super<AppCompatActivity>.onActivityResult(requestCode, resultCode, data)
+        super.onActivityResult(requestCode, resultCode, data)
     }
 
     companion object {
-        private const val CHECK_TTS_CODE = 1
-
+        private const val CHECK_TTS = 1
+        private const val CHECK_TTS_SPEAK_AFTERWARDS = 2
+        private const val INSTALL_TTS_DATA = 3
+        private const val SPEAK_SAMPLE_TEXT = 4
     }
 }
