@@ -15,7 +15,7 @@
     <string name="absolute_file_path_label">Absolute file path</string>
 
     <!--Labels and names.-->
-    <string name="app_name">Text to speech Util</string>
+    <string name="app_name">TTS Util</string>
     <string name="main_activity_description">This app integrates with Android\'s text-to-speech framework to allow speaking the text entered below, from a file or shared from another app.</string>
     <string name="tts_input_label">Enter text to speak…</string>
     <string name="about_activity_label">About TTS Util</string>
