@@ -27,10 +27,16 @@
                 <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
-        <activity android:name=".AboutActivity"
-            android:label="@string/about_activity_label"/>
-        <activity android:name=".FileActivity"
-            android:label="@string/file_activity_label"/>
+
+        <activity
+            android:name=".AboutActivity"
+            android:label="@string/about_activity_label" />
+        <activity
+            android:name=".FileActivity"
+            android:label="@string/file_activity_label" />
+        <service
+            android:name=".SpeakerIntentService"
+            android:exported="false"/>
     </application>
 
 </manifest>
