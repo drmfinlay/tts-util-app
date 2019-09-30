@@ -147,9 +147,14 @@ class Speaker(val context: Context,
     }
 
     fun speak(lines: List<String?>, progressListener: ProgressListener = {}) {
+        if (!(ready && speechAllowed)) {
+            return
+        }
+
+        // Set up an utterance listener.
         var utterancesMade = 0
-        speakInternal(*textLines) {
-            when ( it ) {
+        setOnUtteranceListener {
+            when (it) {
                 is UtteranceProgress.Start -> {
                     if (utterancesMade == 0) requestAudioFocus()
                     else pause(100)
@@ -160,31 +165,26 @@ class Speaker(val context: Context,
 
             if (utterancesMade == lines.size) releaseAudioFocus()
 
-            // Run the external progressListener as well
+            // Run the external progressListener too.
             progressListener(it)
         }
-    }
 
-    private fun speakInternal(vararg textLines: String,
-                              progressListener: (UtteranceProgress) -> Unit = {}) {
-        if ( ready && speechAllowed ) {
-            val streamKey = TextToSpeech.Engine.KEY_PARAM_STREAM
-            val streamValue = AudioManager.STREAM_NOTIFICATION.toString()
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-
-                val bundle = Bundle()
-                bundle.putString(streamKey, streamValue)
-                setOnUtteranceListener(progressListener)
-                textLines.forEach {
-                    val utteranceId = utteranceId.toString()
-                    tts.speak(it, TextToSpeech.QUEUE_ADD, bundle, utteranceId)
-                }
-            } else {
-                val map = hashMapOf(streamKey to streamValue)
-                textLines.forEach {
-                    @Suppress("deprecation")
-                    tts.speak(it, TextToSpeech.QUEUE_ADD, map)
-                }
+        // Get Android's TTS framework to speak each non-null line.
+        // This is, quite typically, different in some versions of Android.
+        val streamKey = TextToSpeech.Engine.KEY_PARAM_STREAM
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            val bundle = Bundle()
+            bundle.putInt(streamKey, AudioManager.STREAM_MUSIC)
+            lines.mapNotNull {
+                val utteranceId = "$utteranceId"
+                tts.speak(it, TextToSpeech.QUEUE_ADD, bundle, utteranceId)
+            }
+        } else {
+            val streamValue = AudioManager.STREAM_MUSIC.toString()
+            val map = hashMapOf(streamKey to streamValue)
+            lines.mapNotNull {
+                @Suppress("deprecation")  // handled above.
+                tts.speak(it, TextToSpeech.QUEUE_ADD, map)
             }
         }
     }
