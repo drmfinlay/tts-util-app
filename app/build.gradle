@@ -1,5 +1,6 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
 
 android {
     compileSdkVersion 28
@@ -17,7 +18,7 @@ android {
         // This is for gradle's lint tasks (e.g. lintDebug).
         abortOnError true
     }
- 
+
     buildTypes {
         release {
             minifyEnabled false
