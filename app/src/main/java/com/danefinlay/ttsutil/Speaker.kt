@@ -9,7 +9,7 @@ import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import org.jetbrains.anko.audioManager
-import java.util.*
+import java.io.File
 
 class Speaker(val context: Context,
               var speechAllowed: Boolean,
@@ -187,6 +187,20 @@ class Speaker(val context: Context,
         } else {
             @Suppress("deprecation")
             tts.playSilence(duration, TextToSpeech.QUEUE_ADD, null)
+        }
+    }
+
+    fun synthesizeToFile(text: String, outFile: File,
+                         progressListener: (UtteranceProgress) -> Unit = {}) {
+        // TODO Allow sharing file paths to the app.
+        setOnUtteranceListener(progressListener)
+        if (Build.VERSION.SDK_INT >= 21) {
+            tts.synthesizeToFile(text, null, outFile,
+                    "$utteranceId")
+        } else {
+            @Suppress("deprecation")
+            tts.synthesizeToFile(text, hashMapOf<String, String>(),
+                    outFile.absolutePath)
         }
     }
 
