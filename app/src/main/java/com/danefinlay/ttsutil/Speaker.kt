@@ -11,6 +11,8 @@ import android.speech.tts.UtteranceProgressListener
 import org.jetbrains.anko.audioManager
 import java.io.File
 
+typealias ProgressListener = (Speaker.UtteranceProgress) -> Unit
+
 class Speaker(val context: Context,
               var speechAllowed: Boolean,
               onReady: Speaker.() -> Unit = {}) : TextToSpeech.OnInitListener {
@@ -119,7 +121,7 @@ class Speaker(val context: Context,
         class Done(utteranceId: String?) : UtteranceProgress(utteranceId)
     }
 
-    private fun setOnUtteranceListener(progressListener: (UtteranceProgress) -> Unit = {}) {
+    private fun setOnUtteranceListener(progressListener: ProgressListener = {}) {
         tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
             override fun onStart(utteranceId: String?) {
                 progressListener(UtteranceProgress.Start(utteranceId))
@@ -140,11 +142,11 @@ class Speaker(val context: Context,
         })
     }
 
-    fun speak(textLines: List<String>, progressListener: (UtteranceProgress) -> Unit = {}) {
-        speak(*textLines.toTypedArray(), progressListener = progressListener)
+    fun speak(string: String?, progressListener: ProgressListener = {}) {
+        speak(listOf(string), progressListener)
     }
 
-    fun speak(vararg textLines: String, progressListener: (UtteranceProgress) -> Unit = {}) {
+    fun speak(lines: List<String?>, progressListener: ProgressListener = {}) {
         var utterancesMade = 0
         speakInternal(*textLines) {
             when ( it ) {
@@ -197,7 +199,7 @@ class Speaker(val context: Context,
     }
 
     fun synthesizeToFile(text: String, outFile: File,
-                         progressListener: (UtteranceProgress) -> Unit = {}) {
+                         progressListener: ProgressListener = {}) {
         // TODO Allow sharing file paths to the app.
         setOnUtteranceListener(progressListener)
         if (Build.VERSION.SDK_INT >= 21) {
