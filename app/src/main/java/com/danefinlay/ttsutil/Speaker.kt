@@ -181,7 +181,7 @@ class Speaker(val context: Context,
         }
     }
 
-    private fun pause(duration: Long) {
+    fun pause(duration: Long) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             tts.playSilentUtterance(duration, TextToSpeech.QUEUE_ADD, utteranceId.toString())
         } else {
