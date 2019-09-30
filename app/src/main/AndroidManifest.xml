@@ -13,16 +13,6 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <service
-            android:name="com.danefinlay.ttsutil.MyService"
-            android:enabled="true"
-            android:exported="false"/>
-
-        <service
-            android:name="com.danefinlay.ttsutil.MyControlService"
-            android:exported="false"
-            android:enabled="true"/>
-
         <activity android:name="com.danefinlay.ttsutil.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
