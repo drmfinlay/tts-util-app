@@ -124,8 +124,13 @@ class Speaker(val context: Context,
                 progressListener(UtteranceProgress.Start(utteranceId))
             }
 
-            override fun onError(utteranceId: String) {
-                progressListener(UtteranceProgress.Error(utteranceId))
+            override fun onError(utteranceId: String) { // deprecated
+                onError(utteranceId, -1)
+            }
+
+            override fun onError(utteranceId: String, errorCode: Int) {
+                super.onError(utteranceId, errorCode)
+                progressListener(UtteranceProgress.Error(utteranceId, errorCode))
             }
 
             override fun onDone(utteranceId: String) {
