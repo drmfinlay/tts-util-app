@@ -11,7 +11,6 @@ import android.os.Environment
 import android.view.MenuItem
 import android.widget.Button
 import android.widget.TextView
-import com.danefinlay.androidutil.FileChooser
 import org.jetbrains.anko.*
 import java.io.File
 
