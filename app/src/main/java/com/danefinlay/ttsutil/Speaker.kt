@@ -112,28 +112,29 @@ class Speaker(val context: Context,
         }
     }
 
-    sealed class UtteranceProgress(val utteranceId: String) {
-        class Start(utteranceId: String) : UtteranceProgress(utteranceId)
-        class Error(utteranceId: String) : UtteranceProgress(utteranceId)
-        class Done(utteranceId: String) : UtteranceProgress(utteranceId)
+    sealed class UtteranceProgress(val utteranceId: String?) {
+        class Start(utteranceId: String?) : UtteranceProgress(utteranceId)
+        class Error(utteranceId: String?, errorCode: Int) :
+                UtteranceProgress(utteranceId)
+        class Done(utteranceId: String?) : UtteranceProgress(utteranceId)
     }
 
     private fun setOnUtteranceListener(progressListener: (UtteranceProgress) -> Unit = {}) {
         tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-            override fun onStart(utteranceId: String) {
+            override fun onStart(utteranceId: String?) {
                 progressListener(UtteranceProgress.Start(utteranceId))
             }
 
-            override fun onError(utteranceId: String) { // deprecated
+            override fun onError(utteranceId: String?) { // deprecated
                 onError(utteranceId, -1)
             }
 
-            override fun onError(utteranceId: String, errorCode: Int) {
+            override fun onError(utteranceId: String?, errorCode: Int) {
                 super.onError(utteranceId, errorCode)
                 progressListener(UtteranceProgress.Error(utteranceId, errorCode))
             }
 
-            override fun onDone(utteranceId: String) {
+            override fun onDone(utteranceId: String?) {
                 progressListener(UtteranceProgress.Done(utteranceId))
             }
         })
