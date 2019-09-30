@@ -14,7 +14,7 @@ import org.jetbrains.anko.find
 import org.jetbrains.anko.onClick
 import org.jetbrains.anko.toast
 
-class MainActivity : MyAppCompatActivity() {
+class MainActivity : SpeakerActivity() {
 
     private val fileActivityButton: Button
         get() = find(R.id.file_activity_button)

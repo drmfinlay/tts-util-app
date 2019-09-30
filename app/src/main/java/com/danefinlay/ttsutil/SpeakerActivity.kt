@@ -8,7 +8,7 @@ import android.support.v7.app.AppCompatActivity
  * be redefined for each activity.
  */
 @SuppressLint("Registered")
-open class MyAppCompatActivity: AppCompatActivity() {
+open class SpeakerActivity: AppCompatActivity() {
     val myApplication: ApplicationEx
         get() = application as ApplicationEx
 

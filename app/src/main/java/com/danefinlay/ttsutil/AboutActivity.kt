@@ -3,7 +3,7 @@ package com.danefinlay.ttsutil
 import android.os.Bundle
 import android.view.MenuItem
 
-class AboutActivity : MyAppCompatActivity() {
+class AboutActivity : SpeakerActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

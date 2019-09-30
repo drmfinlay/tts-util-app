@@ -18,7 +18,7 @@ import java.io.File
 private const val CHOSEN_FILE_URI_KEY = "$APP_NAME.CHOSEN_FILE_URI_KEY"
 private const val CHOSEN_FILE_NAME_KEY = "$APP_NAME.CHOSEN_FILE_NAME_KEY"
 
-class FileActivity : MyAppCompatActivity(), FileChooser {
+class FileActivity : SpeakerActivity(), FileChooser {
 
     override var chooseFileAction = Intent.ACTION_OPEN_DOCUMENT
     override var chooseFileCategory = Intent.CATEGORY_OPENABLE
@@ -211,7 +211,7 @@ class FileActivity : MyAppCompatActivity(), FileChooser {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super<FileChooser>.onActivityResult(requestCode, resultCode, data)
-        super<MyAppCompatActivity>.onActivityResult(requestCode, resultCode, data)
+        super<SpeakerActivity>.onActivityResult(requestCode, resultCode, data)
     }
 
     companion object {
