@@ -30,6 +30,9 @@
     <string name="write_to_file_alert_message_success">The chosen file was successfully synthesised.</string>
     <string name="write_to_file_alert_message_failure">The app doesn\'t have permission to write to external storage.</string>
     <string name="open_file_message">Open file</string>
+    <string name="no_storage_permission_title">No write storage permission</string>
+    <string name="no_storage_permission_message">Permission to write to storage was not granted.\n\nWould you like to grant permission?</string>
+    <string name="give_permission_message">Give permission</string>
 
     <!--File-related strings.-->
     <string name="chosen_file_label">File to read text from:</string>

@@ -17,6 +17,7 @@ import java.io.File
 
 private const val CHOSEN_FILE_URI_KEY = "$APP_NAME.CHOSEN_FILE_URI_KEY"
 private const val CHOSEN_FILE_NAME_KEY = "$APP_NAME.CHOSEN_FILE_NAME_KEY"
+typealias PermissionBlock = (granted: Boolean) -> Unit
 
 class FileActivity : SpeakerActivity(), FileChooser {
 
@@ -26,6 +27,7 @@ class FileActivity : SpeakerActivity(), FileChooser {
     override fun getActivity() = this
 
     private var fileToRead: Uri? = null
+    private var tempStoragePermissionBlock: PermissionBlock = {}
 
     private val chooseFileButton: Button
         get() = find(R.id.choose_file_button)
@@ -90,6 +92,18 @@ class FileActivity : SpeakerActivity(), FileChooser {
         }
     }
 
+    private fun buildNoPermissionAlertDialog(): AlertDialogBuilder {
+        return AlertDialogBuilder(ctx).apply {
+            title(R.string.no_storage_permission_title)
+            message(R.string.no_storage_permission_message)
+            positiveButton(R.string.give_permission_message) {
+                // Try asking for storage permission again.
+                withStoragePermission {}
+            }
+            negativeButton(R.string.alert_negative_message1)
+        }
+    }
+
     private fun onClickReadFile() {
         val validFile: Boolean? = fileToRead?.validFilePath(ctx)
         if (validFile == true) {
@@ -97,6 +111,47 @@ class FileActivity : SpeakerActivity(), FileChooser {
                 speaker?.speak(it)
             }
         } else if (validFile == false) buildInvalidFileAlertDialog().show()
+    }
+
+    private fun writeSpeechToFile(uri: Uri?, havePermission: Boolean) {
+        if (!havePermission) {
+            // Show a dialog if we don't have read/write storage permission
+            runOnUiThread { buildNoPermissionAlertDialog().show() }
+            return
+        }
+
+        // Validate before continuing.
+        if (uri == null || !uri.validFilePath(ctx)) {
+            runOnUiThread {buildInvalidFileAlertDialog().show()}
+            return
+        }
+
+        val content = uri.getContent(ctx)?.reader()?.readText()
+        if (content.isNullOrBlank()) {
+            // Nothing to read.
+            return
+        }
+
+        val dir = Environment.getExternalStorageDirectory()
+        val file = File(dir, "speech.mp4")
+        speaker?.synthesizeToFile(content, file) {
+            if (it is Speaker.UtteranceProgress.Done) runOnUiThread {
+                AlertDialogBuilder(ctx).apply {
+                    title(R.string.file_activity_description2)
+                    message(R.string.write_to_file_alert_message_success)
+                    positiveButton(R.string.alert_positive_message) {}
+                    neutralButton(R.string.open_file_message) {
+                        // TODO How to do this?
+                        // Open the wave file.
+                        // val intent = Intent()
+                        // intent.action = ACTION_OPEN_DOCUMENT
+                        // intent.putExtra()
+                        // startActivity()
+                    }
+                    show()
+                }
+            }
+        }
     }
 
     private fun onClickWriteFile() {
@@ -111,41 +166,12 @@ class FileActivity : SpeakerActivity(), FileChooser {
         }
 
         AlertDialogBuilder(this).apply {
-            title(getString(R.string.file_activity_description2))
+            title(R.string.file_activity_description2)
             message("$msg \"${uri?.getDisplayName(ctx)}\"")
-            positiveButton(getString(R.string.alert_positive_message)) {
+            positiveButton(R.string.alert_positive_message) {
                 // Ask the user for write permission if necessary.
-                verifyStoragePermissions()
-
-                // Check again before continuing.
-                if (uri == null || !uri.validFilePath(ctx)) {
-                    runOnUiThread {buildInvalidFileAlertDialog().show()}
-                    return@positiveButton
-                }
-
-                val content = uri.getContent(ctx)?.reader()?.readText()
-                if (content.isNullOrBlank()) {
-                    // Nothing to read.
-                    return@positiveButton
-                }
-
-                val dir = Environment.getExternalStorageDirectory()
-                val file = File(dir, "speech.mp4")
-                val successDialogBuilder = AlertDialogBuilder(ctx).apply {
-                    title(R.string.file_activity_description2)
-                    message(R.string.write_to_file_alert_message_success)
-                    positiveButton(R.string.alert_positive_message) {}
-                    neutralButton(R.string.open_file_message) {
-                        // Open the wave file.
-                        // val intent = Intent()
-                        // intent.action = ACTION_OPEN_DOCUMENT
-                        // intent.putExtra()
-                        // startActivity()
-                    }
-                }
-                speaker?.synthesizeToFile(content, file) {
-                    if (it is Speaker.UtteranceProgress.Done)
-                        runOnUiThread {successDialogBuilder.show()}
+                withStoragePermission { havePermission ->
+                    writeSpeechToFile(uri, havePermission)
                 }
             }
             negativeButton(R.string.alert_negative_message2)
@@ -194,7 +220,7 @@ class FileActivity : SpeakerActivity(), FileChooser {
         fileToRead = uri
     }
 
-    private fun verifyStoragePermissions() {
+    private fun withStoragePermission(block: PermissionBlock) {
         // Check if we have write permission.
         if (Build.VERSION.SDK_INT >= 23) {
             val permission = this.checkSelfPermission(WRITE_EXTERNAL_STORAGE)
@@ -204,9 +230,42 @@ class FileActivity : SpeakerActivity(), FileChooser {
                         PERMISSIONS_STORAGE,
                         REQUEST_EXTERNAL_STORAGE
                 )
-            }
-        }
 
+                // Store the function so we can execute it later if the user
+                // grants us storage permission.
+                tempStoragePermissionBlock = block
+            }
+            else {
+                // We have permission, so execute the function.
+                block(true)
+            }
+        } else {
+            // No need to check permission before Android 23, so execute the
+            // function.
+            block(true)
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+            requestCode: Int, permissions: Array<out String>,
+            grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        if (permissions.contentEquals(PERMISSIONS_STORAGE)) {
+            // Check that all permissions were granted.
+            var allGranted = true
+            for (result in grantResults) {
+                if (result != PackageManager.PERMISSION_GRANTED) {
+                    // Permission wasn't granted.
+                    allGranted = false
+                    break
+                }
+            }
+
+            // Execute the storage permission block and replace it.
+            tempStoragePermissionBlock(allGranted)
+            tempStoragePermissionBlock = {}
+        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -216,7 +275,7 @@ class FileActivity : SpeakerActivity(), FileChooser {
 
     companion object {
         // Storage Permissions
-        private const val REQUEST_EXTERNAL_STORAGE = 1
+        private const val REQUEST_EXTERNAL_STORAGE = 6
         private val PERMISSIONS_STORAGE = arrayOf(
                 READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE
         )
