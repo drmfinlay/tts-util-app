@@ -24,6 +24,7 @@
     <string name="no_tts_data_alert_message">"The app could not detected a working text-to-speech engine on this device. \nShould it try to install one?"</string>
     <string name="failed_to_get_tts_data_title">Failed to get TTS data</string>
     <string name="failed_to_get_tts_data_msg">Your device was unable to download the text-to-speech data. Perhaps your device has no network access? It is also possible that there is no data available for your selected language.\n\nTry looking in your device\'s settings for \"Text-to-speech output\". You should be able to change your selected language or use a different text-to-speech engine.</string>
+    <string name="speaker_not_ready_message">Text-to-speech isn\'t ready. Try again in a moment.</string>
     <string name="invalid_file_dialog_title">File not found</string>
     <string name="invalid_file_dialog_message">The chosen file could not be found. Maybe it has been deleted or renamed?\n\nChoose another?</string>
     <string name="write_to_file_alert_message">The contents of the chosen file will be written to \"speech.mp4\".\n\nThe current file is:</string>

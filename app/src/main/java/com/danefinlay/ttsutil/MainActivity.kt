@@ -93,11 +93,14 @@ class MainActivity : SpeakerActivity() {
         }
 
         speakButton.onClick {
-            if (speaker == null) {
+            if (speaker.isReady()) {
+                speakFromInputLayout()
+            } else {
+                // Speaker isn't set up.
+                toast(R.string.speaker_not_ready_message)
+
                 // Check (and eventually setup) text-to-speech.
                 checkTTS(CHECK_TTS_SPEAK_AFTERWARDS)
-            } else {
-                speakFromInputLayout()
             }
         }
 
