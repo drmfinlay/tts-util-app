@@ -22,6 +22,6 @@ class ApplicationEx : Application() {
         super.onLowMemory()
 
         // Stop and free the current text-to-speech engine.
-        speaker?.free()
+        freeSpeaker()
     }
 }
