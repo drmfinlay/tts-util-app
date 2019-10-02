@@ -5,5 +5,8 @@
         android:title="@string/menu_about"
         android:icon="@android:drawable/ic_menu_info_details"
         app:showAsAction="ifRoom" />
+    <item android:id="@+id/menu_tts_settings"
+        android:title="@string/menu_tts_settings"
+        app:showAsAction="ifRoom"/>
 
 </menu>

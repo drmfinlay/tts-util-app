@@ -73,6 +73,15 @@ class MainActivity : SpeakerActivity() {
                     true
                 }
 
+                R.id.menu_tts_settings -> {
+                    // Got this from: https://stackoverflow.com/a/8688354
+                    val intent = Intent()
+                    intent.action = "com.android.settings.TTS_SETTINGS"
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    startActivity(intent)
+                    true
+                }
+
                 else -> {
                     // Display a not implemented yet toast message
                     toast(R.string.not_yet_implemented)
