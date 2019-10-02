@@ -151,8 +151,8 @@ class MainActivity : SpeakerActivity() {
 
     private fun showNoTTSDataDialog() {
         AlertDialogBuilder(this).apply {
-            title(getString(R.string.no_tts_data_alert_title))
-            message(getString(R.string.no_tts_data_alert_message))
+            title(R.string.no_tts_data_alert_title)
+            message(R.string.no_tts_data_alert_message)
             positiveButton("Okay") {
                 val install = Intent()
                 install.action = TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA
@@ -183,9 +183,9 @@ class MainActivity : SpeakerActivity() {
                 if (resultCode == TextToSpeech.ERROR) {
                     // Show a dialog if installing TTS data failed.
                     AlertDialogBuilder(this).apply {
-                        title(getString(R.string.failed_to_get_tts_data_title))
-                        message(getString(R.string.failed_to_get_tts_data_msg))
-                        positiveButton("Okay") {}
+                        title(R.string.failed_to_get_tts_data_title)
+                        message(R.string.failed_to_get_tts_data_msg)
+                        positiveButton(R.string.alert_positive_message) {}
                         show()
                     }
                 }

@@ -81,9 +81,9 @@ class FileActivity : SpeakerActivity(), FileChooser {
 
     private fun buildInvalidFileAlertDialog(): AlertDialogBuilder {
         return AlertDialogBuilder(ctx).apply {
-            title(getString(R.string.invalid_file_dialog_title))
-            message(getString(R.string.invalid_file_dialog_message))
-            positiveButton(getString(R.string.alert_positive_message)) {
+            title(R.string.invalid_file_dialog_title)
+            message(R.string.invalid_file_dialog_message)
+            positiveButton(R.string.alert_positive_message) {
                 showFileChooser()
             }
             negativeButton(R.string.alert_negative_message1)
