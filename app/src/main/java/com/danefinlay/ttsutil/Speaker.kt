@@ -225,3 +225,10 @@ class Speaker(private val context: Context,
         tts.shutdown()
     }
 }
+
+/**
+ * Returns `true` if the Speaker is initialised and ready to speak.
+ */
+fun Speaker?.isReady(): Boolean {
+    return this != null && this.ready && this.speechAllowed
+}
