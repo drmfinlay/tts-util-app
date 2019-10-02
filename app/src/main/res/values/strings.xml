@@ -45,5 +45,7 @@
 
     <!--Miscellaneous.-->
     <string name="not_yet_implemented">Not implemented yet.</string>
+    <!--Only used if the TTS engine returns a null or empty sample string.-->
+    <string name="sample_tts_sentence">This is a sample English sentence.</string>
 
 </resources>
