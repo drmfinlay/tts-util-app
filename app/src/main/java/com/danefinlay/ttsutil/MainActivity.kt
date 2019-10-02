@@ -153,12 +153,12 @@ class MainActivity : SpeakerActivity() {
         AlertDialogBuilder(this).apply {
             title(R.string.no_tts_data_alert_title)
             message(R.string.no_tts_data_alert_message)
-            positiveButton("Okay") {
+            positiveButton(R.string.alert_positive_message) {
                 val install = Intent()
                 install.action = TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA
                 startActivityForResult(install, INSTALL_TTS_DATA)
             }
-            negativeButton("No thanks")
+            negativeButton(R.string.alert_negative_message1)
             show()
         }
     }
