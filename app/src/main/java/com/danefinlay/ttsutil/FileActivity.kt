@@ -132,22 +132,20 @@ class FileActivity : SpeakerActivity(), FileChooser {
             return
         }
 
+        // Save the file in the external storage directory using the filename
+        // + '.mp4'.
         val dir = Environment.getExternalStorageDirectory()
-        val file = File(dir, "speech.mp4")
+        val filename = "${uri.getDisplayName(ctx)}.mp4"
+        val file = File(dir, filename)
         speaker?.synthesizeToFile(content, file) {
             if (it is Speaker.UtteranceProgress.Done) runOnUiThread {
                 AlertDialogBuilder(ctx).apply {
                     title(R.string.file_activity_description2)
-                    message(R.string.write_to_file_alert_message_success)
+                    val msgPart1 = getString(
+                            R.string.write_to_file_alert_message_success)
+                    val fullMsg = "$msgPart1 '$filename'"
+                    message(fullMsg)
                     positiveButton(R.string.alert_positive_message) {}
-                    neutralButton(R.string.open_file_message) {
-                        // TODO How to do this?
-                        // Open the wave file.
-                        // val intent = Intent()
-                        // intent.action = ACTION_OPEN_DOCUMENT
-                        // intent.putExtra()
-                        // startActivity()
-                    }
                     show()
                 }
             }

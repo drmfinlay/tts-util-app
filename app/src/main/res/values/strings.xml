@@ -27,9 +27,8 @@
     <string name="invalid_file_dialog_title">File not found</string>
     <string name="invalid_file_dialog_message">The chosen file could not be found. Maybe it has been deleted or renamed?\n\nChoose another?</string>
     <string name="write_to_file_alert_message">The contents of the chosen file will be written to \"speech.mp4\".\n\nThe current file is:</string>
-    <string name="write_to_file_alert_message_success">The chosen file was successfully synthesised.</string>
+    <string name="write_to_file_alert_message_success">The file was successfully synthesised as: </string>
     <string name="write_to_file_alert_message_failure">The app doesn\'t have permission to write to external storage.</string>
-    <string name="open_file_message">Open file</string>
     <string name="no_storage_permission_title">No write storage permission</string>
     <string name="no_storage_permission_message">Permission to write to storage was not granted.\n\nWould you like to grant permission?</string>
     <string name="give_permission_message">Give permission</string>
