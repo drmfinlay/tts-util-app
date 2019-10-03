@@ -34,6 +34,10 @@
         <activity
             android:name=".FileActivity"
             android:label="@string/file_activity_label" />
+        <activity
+            android:name=".QuickShareActivity"
+            android:taskAffinity=""
+            android:theme="@style/Theme.AppCompat.Translucent" />
         <service
             android:name=".SpeakerIntentService"
             android:exported="false"/>
