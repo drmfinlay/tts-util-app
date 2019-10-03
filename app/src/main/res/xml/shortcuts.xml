@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:targetApi="n_mr1">
+
+    <shortcut
+        android:shortcutId="read_clipboard"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/read_clipboard_shortcut">
+        <intent
+            android:action="com.danefinlay.ttsutil.action.READ_CLIPBOARD"
+            android:targetPackage="com.danefinlay.ttsutil"
+            android:targetClass="com.danefinlay.ttsutil.QuickShareActivity"/>
+    </shortcut>
+
+</shortcuts>

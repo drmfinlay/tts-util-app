@@ -38,6 +38,9 @@
     <string name="chosen_file_label">File to read text from:</string>
     <string name="no_file_chosen">*No file chosen*</string>
 
+    <!--Shortcut-related strings.-->
+    <string name="read_clipboard_shortcut">Read clipboard</string>
+
     <!--Menu related strings.-->
     <string name="menu_about">About</string>
     <string name="menu_settings">Settings</string>
