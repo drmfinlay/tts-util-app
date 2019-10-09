@@ -9,6 +9,7 @@ import android.net.Uri
 private const val ACTION_READ_TEXT = "${APP_NAME}.action.READ_TEXT"
 private const val ACTION_EDIT_READ_TEXT = "${APP_NAME}.action.EDIT_READ_TEXT"
 private const val ACTION_READ_FILE = "${APP_NAME}.action.READ_FILE"
+const val ACTION_STOP_SPEAKING = "${APP_NAME}.action.STOP_SPEAKING"
 
 // Parameter constants (for Intent extras).
 private const val EXTRA_TEXT = "${APP_NAME}.extra.TEXT"
@@ -35,6 +36,7 @@ class SpeakerIntentService : IntentService("SpeakerIntentService") {
                 val uri = intent.getParcelableExtra<Uri>(EXTRA_FILE_URI)
                 handleActionReadFile(uri)
             }
+            ACTION_STOP_SPEAKING -> handleActionStopSpeaking()
         }
     }
 
@@ -60,6 +62,14 @@ class SpeakerIntentService : IntentService("SpeakerIntentService") {
      */
     private fun handleActionReadFile(text: Uri) {
         TODO("Handle action ReadFile")
+    }
+
+    /**
+     * Handle action StopSpeaking in the provided background thread with the provided
+     * parameters.
+     */
+    private fun handleActionStopSpeaking() {
+        speaker?.stopSpeech()
     }
 
     companion object {
@@ -104,6 +114,20 @@ class SpeakerIntentService : IntentService("SpeakerIntentService") {
             val intent = Intent(ctx, SpeakerIntentService::class.java).apply {
                 action = ACTION_READ_FILE
                 putExtra(EXTRA_FILE_URI, fileUri)
+            }
+            ctx.startService(intent)
+        }
+
+        /**
+         * Starts this service to perform action StopSpeaking. If the service is
+         * already performing a task this action will be queued.
+         *
+         * @see IntentService
+         */
+        @JvmStatic
+        fun startActionStopSpeaking(ctx: Context) {
+            val intent = Intent(ctx, SpeakerIntentService::class.java).apply {
+                action = ACTION_STOP_SPEAKING
             }
             ctx.startService(intent)
         }
