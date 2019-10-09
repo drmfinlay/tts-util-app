@@ -1,6 +1,7 @@
 package com.danefinlay.ttsutil
 
 import android.app.IntentService
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -10,6 +11,7 @@ private const val ACTION_READ_TEXT = "${APP_NAME}.action.READ_TEXT"
 private const val ACTION_EDIT_READ_TEXT = "${APP_NAME}.action.EDIT_READ_TEXT"
 private const val ACTION_READ_FILE = "${APP_NAME}.action.READ_FILE"
 const val ACTION_STOP_SPEAKING = "${APP_NAME}.action.STOP_SPEAKING"
+const val ACTION_READ_CLIPBOARD = "${APP_NAME}.action.READ_CLIPBOARD"
 
 // Parameter constants (for Intent extras).
 private const val EXTRA_TEXT = "${APP_NAME}.extra.TEXT"
@@ -36,6 +38,7 @@ class SpeakerIntentService : IntentService("SpeakerIntentService") {
                 val uri = intent.getParcelableExtra<Uri>(EXTRA_FILE_URI)
                 handleActionReadFile(uri)
             }
+            ACTION_READ_CLIPBOARD -> handleActionReadClipboard()
             ACTION_STOP_SPEAKING -> handleActionStopSpeaking()
         }
     }
@@ -54,6 +57,31 @@ class SpeakerIntentService : IntentService("SpeakerIntentService") {
      */
     private fun handleActionEditReadText(text: String) {
         TODO("Handle action EditReadText")
+    }
+
+    /**
+     * Handle action ReadClipboard in the provided background thread.
+     */
+    private fun handleActionReadClipboard() {
+        // Get the primary ClipData object from the manager.
+        // Return early if there is no clipboard data.
+        val clipboardManager = (getSystemService(Context.CLIPBOARD_SERVICE) as
+                ClipboardManager)
+        val clipData = clipboardManager.primaryClip ?: return
+
+        // Find the first clipboard Item that coerces successfully to text.
+        var text = ""
+        for (i in 0 until clipData.itemCount) {
+            val item = clipData.getItemAt(i)
+            val itemText = item?.text
+            if (!itemText.isNullOrBlank()) {
+                text = itemText.toString()
+                break
+            }
+        }
+
+        // Read text.
+        handleActionReadText(text)
     }
 
     /**
@@ -99,6 +127,20 @@ class SpeakerIntentService : IntentService("SpeakerIntentService") {
             val intent = Intent(ctx, SpeakerIntentService::class.java).apply {
                 action = ACTION_EDIT_READ_TEXT
                 putExtra(EXTRA_TEXT, text)
+            }
+            ctx.startService(intent)
+        }
+
+        /**
+         * Starts this service to perform action ReadClipboard. If the service is
+         * already performing a task this action will be queued.
+         *
+         * @see IntentService
+         */
+        @JvmStatic
+        fun startActionReadClipboard(ctx: Context) {
+            val intent = Intent(ctx, SpeakerIntentService::class.java).apply {
+                action = ACTION_READ_CLIPBOARD
             }
             ctx.startService(intent)
         }
