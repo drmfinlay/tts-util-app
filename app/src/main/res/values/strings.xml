@@ -27,7 +27,8 @@
     <string name="speaker_not_ready_message">Text-to-speech isn\'t ready. Try again in a moment.</string>
     <string name="invalid_file_dialog_title">File not found</string>
     <string name="invalid_file_dialog_message">The chosen file could not be found. Maybe it has been deleted or renamed?\n\nChoose another?</string>
-    <string name="write_to_file_alert_message">The contents of the chosen file will be written to \"speech.mp4\".\n\nThe current file is:</string>
+    <string name="write_to_file_alert_message_p1">The current file is:</string>
+    <string name="write_to_file_alert_message_p2">The content of that file will be synthesised and written to:</string>
     <string name="write_to_file_alert_message_success">The file was successfully synthesised as: </string>
     <string name="write_to_file_alert_message_failure">The app doesn\'t have permission to write to external storage.</string>
     <string name="no_storage_permission_title">No write storage permission</string>

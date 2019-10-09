@@ -157,15 +157,19 @@ class FileActivity : SpeakerActivity(), FileChooser {
 
         // Build and display an appropriate alert dialog.
         val uriIsValid = uri != null && uri.validFilePath(this)
-        val msg = getString(R.string.write_to_file_alert_message)
         if (!uriIsValid) {
             buildInvalidFileAlertDialog().show()
             return
         }
 
+        val msgPart1 = getString(R.string.write_to_file_alert_message_p1)
+        val msgPart2 = getString(R.string.write_to_file_alert_message_p2)
+        val filename = "${uri?.getDisplayName(ctx)}"
+        val fullMsg = "$msgPart1 \"$filename\"\n" +
+                "\n$msgPart2 \"$filename.mp4\""
         AlertDialogBuilder(this).apply {
             title(R.string.file_activity_description2)
-            message("$msg \"${uri?.getDisplayName(ctx)}\"")
+            message(fullMsg)
             positiveButton(R.string.alert_positive_message) {
                 // Ask the user for write permission if necessary.
                 withStoragePermission { havePermission ->
