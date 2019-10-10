@@ -137,19 +137,8 @@ class FileActivity : SpeakerActivity(), FileChooser {
         val dir = Environment.getExternalStorageDirectory()
         val filename = "${uri.getDisplayName(ctx)}.mp4"
         val file = File(dir, filename)
-        speaker?.synthesizeToFile(content, file) {
-            if (it is Speaker.UtteranceProgress.Done) runOnUiThread {
-                AlertDialogBuilder(ctx).apply {
-                    title(R.string.file_activity_description2)
-                    val msgPart1 = getString(
-                            R.string.write_to_file_alert_message_success)
-                    val fullMsg = "$msgPart1 '$filename'"
-                    message(fullMsg)
-                    positiveButton(R.string.alert_positive_message) {}
-                    show()
-                }
-            }
-        }
+        val listener = SynthesisEventListener(this, filename)
+        speaker?.synthesizeToFile(content, file, listener)
     }
 
     private fun onClickWriteFile() {

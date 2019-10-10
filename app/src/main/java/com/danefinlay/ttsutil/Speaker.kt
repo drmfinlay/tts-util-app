@@ -5,11 +5,8 @@ import android.media.AudioManager
 import android.os.Build
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
-import android.speech.tts.UtteranceProgressListener
 import android.speech.tts.TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID
 import java.io.File
-
-typealias ProgressListener = (Speaker.UtteranceProgress) -> Unit
 
 class Speaker(private val context: Context,
               var speechAllowed: Boolean,
@@ -29,12 +26,12 @@ class Speaker(private val context: Context,
     var ready = false
         private set
 
-    private var utteranceId: Long = 1
-        get() {
-            val current = field
-            field++
-            return current
-        }
+    private var currentUtteranceId: Long = 0
+    private fun getUtteranceId(): String {
+        val id = currentUtteranceId
+        currentUtteranceId += 1
+        return "$id"
+    }
 
     override fun onInit(status: Int) {
         when ( status ) {
@@ -45,101 +42,82 @@ class Speaker(private val context: Context,
         }
     }
 
-    sealed class UtteranceProgress(val utteranceId: String?) {
-        class Start(utteranceId: String?) : UtteranceProgress(utteranceId)
-        class Error(utteranceId: String?, errorCode: Int) :
-                UtteranceProgress(utteranceId)
-        class Done(utteranceId: String?) : UtteranceProgress(utteranceId)
+    fun speak(string: String?) {
+        speak(listOf(string))
     }
 
-    private fun setOnUtteranceListener(progressListener: ProgressListener = {}) {
-        tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-            override fun onStart(utteranceId: String?) {
-                progressListener(UtteranceProgress.Start(utteranceId))
-            }
-
-            override fun onError(utteranceId: String?) { // deprecated
-                onError(utteranceId, -1)
-            }
-
-            override fun onError(utteranceId: String?, errorCode: Int) {
-                super.onError(utteranceId, errorCode)
-                progressListener(UtteranceProgress.Error(utteranceId, errorCode))
-            }
-
-            override fun onDone(utteranceId: String?) {
-                progressListener(UtteranceProgress.Done(utteranceId))
-            }
-        })
-    }
-
-    fun speak(string: String?, progressListener: ProgressListener = {}) {
-        speak(listOf(string), progressListener)
-    }
-
-    fun speak(lines: List<String?>, progressListener: ProgressListener = {}) {
+    fun speak(lines: List<String?>) {
         if (!(ready && speechAllowed)) {
             return
         }
 
-        // Set up an utterance listener.
-        var utterancesMade = 0
-        setOnUtteranceListener {
-            when (it) {
-                is UtteranceProgress.Start -> {
-                    if (utterancesMade == 0) appCtx.requestAudioFocus()
-                    else pause(100)
-                }
-
-                is UtteranceProgress.Done -> utterancesMade++
-            }
-
-            if (utterancesMade == lines.size) appCtx.releaseAudioFocus()
-
-            // Run the external progressListener too.
-            progressListener(it)
-        }
+        // Set the listener.
+        val listener = SpeakingEventListener(appCtx)
+        tts.setOnUtteranceProgressListener(listener)
 
         // Get Android's TTS framework to speak each non-null line.
         // This is, quite typically, different in some versions of Android.
         val streamKey = TextToSpeech.Engine.KEY_PARAM_STREAM
+        var utteranceId: String? = null
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             val bundle = Bundle()
             bundle.putInt(streamKey, AudioManager.STREAM_MUSIC)
             lines.mapNotNull {
-                val utteranceId = "$utteranceId"
+                utteranceId = getUtteranceId()
                 tts.speak(it, TextToSpeech.QUEUE_ADD, bundle, utteranceId)
+                pause(100)
             }
         } else {
             val streamValue = AudioManager.STREAM_MUSIC.toString()
-            val map = hashMapOf(streamKey to streamValue,
-                    KEY_PARAM_UTTERANCE_ID to "$utteranceId")
             lines.mapNotNull {
+                utteranceId = getUtteranceId()
+                val map = hashMapOf(streamKey to streamValue,
+                        KEY_PARAM_UTTERANCE_ID to utteranceId)
+
                 @Suppress("deprecation")  // handled above.
                 tts.speak(it, TextToSpeech.QUEUE_ADD, map)
+                pause(100)
             }
         }
+
+        // Set the listener's final utterance ID.
+        listener.finalUtteranceId = utteranceId
     }
 
-    fun pause(duration: Long) {
+    fun pause(duration: Long, listener: SpeakerEventListener) {
+        // Set the listener.
+        tts.setOnUtteranceProgressListener(listener)
+        pause(duration)
+    }
+
+    @Suppress("SameParameterValue")
+    private fun pause(duration: Long) {
+        val utteranceId = getUtteranceId()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            tts.playSilentUtterance(duration, TextToSpeech.QUEUE_ADD, utteranceId.toString())
+            tts.playSilentUtterance(duration, TextToSpeech.QUEUE_ADD,
+                    utteranceId)
         } else {
             @Suppress("deprecation")
-            tts.playSilence(duration, TextToSpeech.QUEUE_ADD, null)
+            tts.playSilence(duration, TextToSpeech.QUEUE_ADD,
+                    hashMapOf(KEY_PARAM_UTTERANCE_ID to utteranceId))
         }
+
     }
 
     fun synthesizeToFile(text: String, outFile: File,
-                         progressListener: ProgressListener = {}) {
-        // TODO Allow sharing file paths to the app.
-        setOnUtteranceListener(progressListener)
+                         listener: SpeakerEventListener) {
+        // Set the listener.
+        tts.setOnUtteranceProgressListener(listener)
+
+        // Get an utterance ID.
+        val utteranceId = getUtteranceId()
+
         if (Build.VERSION.SDK_INT >= 21) {
-            tts.synthesizeToFile(text, null, outFile,
-                    "$utteranceId")
+            tts.synthesizeToFile(text, null, outFile, utteranceId)
         } else {
             @Suppress("deprecation")
-            tts.synthesizeToFile(text, hashMapOf<String, String>(),
+            tts.synthesizeToFile(
+                    text, hashMapOf(KEY_PARAM_UTTERANCE_ID to utteranceId),
                     outFile.absolutePath)
         }
     }
@@ -148,7 +126,6 @@ class Speaker(private val context: Context,
         if ( tts.isSpeaking ) {
             tts.stop()
         }
-        appCtx.releaseAudioFocus()
     }
 
     fun free() {

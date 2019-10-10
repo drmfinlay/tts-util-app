@@ -148,7 +148,7 @@ class MainActivity : SpeakerActivity() {
     private fun speakFromInputLayout() {
         val content = ttsInputLayout.editText?.text?.toString()
         if (!content.isNullOrBlank()) {
-            speaker?.speak(listOf(content))
+            speaker?.speak(content)
         } else {
             // Get sample text from the TTS engine.
             // This is handled by SpeakerActivity.onActivityResult().
