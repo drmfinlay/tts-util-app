@@ -5,6 +5,8 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import org.jetbrains.anko.longToast
+import org.jetbrains.anko.runOnUiThread
 
 // IntentService actions.
 private const val ACTION_READ_TEXT = "${APP_NAME}.action.READ_TEXT"
@@ -48,7 +50,16 @@ class SpeakerIntentService : IntentService("SpeakerIntentService") {
      * parameters.
      */
     private fun handleActionReadText(text: String) {
-        TODO("Handle action ReadText")
+        // Display a message if 'text' is blank/empty.
+        if (text.isBlank()) {
+            runOnUiThread {
+                longToast(R.string.cannot_speak_empty_text_msg)
+            }
+            return
+        }
+
+        // Speak the text.
+        speaker?.speak(text)
     }
 
     /**
