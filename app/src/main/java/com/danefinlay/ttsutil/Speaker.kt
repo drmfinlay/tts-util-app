@@ -6,6 +6,7 @@ import android.os.Build
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import android.speech.tts.TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID
 import java.io.File
 
 typealias ProgressListener = (Speaker.UtteranceProgress) -> Unit
@@ -111,7 +112,8 @@ class Speaker(private val context: Context,
             }
         } else {
             val streamValue = AudioManager.STREAM_MUSIC.toString()
-            val map = hashMapOf(streamKey to streamValue)
+            val map = hashMapOf(streamKey to streamValue,
+                    KEY_PARAM_UTTERANCE_ID to "$utteranceId")
             lines.mapNotNull {
                 @Suppress("deprecation")  // handled above.
                 tts.speak(it, TextToSpeech.QUEUE_ADD, map)
