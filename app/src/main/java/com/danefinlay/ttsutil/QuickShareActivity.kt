@@ -54,3 +54,16 @@ class ReadClipboardActivity : QuickShareActivity() {
         }
     }
 }
+
+
+class ReadTextActivity : QuickShareActivity() {
+    override fun startServiceAction() {
+        val intent = intent ?: return
+        when (intent.action) {
+            Intent.ACTION_SEND -> {
+                val text = intent.getStringExtra(Intent.EXTRA_TEXT)
+                SpeakerIntentService.startActionReadText(this, text)
+            }
+        }
+    }
+}

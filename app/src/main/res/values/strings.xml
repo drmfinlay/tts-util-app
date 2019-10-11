@@ -8,6 +8,7 @@
     <string name="file_activity_description1">Read from text files</string>
     <string name="file_activity_description2">Write speech to a file</string>
     <string name="read_clipboard_text_label">Read clipboard text</string>
+    <string name="read_text_label">Read text</string>
 
     <!--Button strings.-->
     <string name="speak_button_text">Speak text</string>

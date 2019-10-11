@@ -21,17 +21,11 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.SEND" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="text/plain" />
-            </intent-filter>
 
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
         </activity>
-
         <activity
             android:name=".AboutActivity"
             android:label="@string/about_activity_label" />
@@ -43,6 +37,17 @@
             android:label="@string/read_clipboard_text_label"
             android:taskAffinity=""
             android:theme="@style/Theme.AppCompat.Translucent" />
+        <activity
+            android:name=".ReadTextActivity"
+            android:label="@string/read_text_label"
+            android:taskAffinity=""
+            android:theme="@style/Theme.AppCompat.Translucent" >
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
         <service
             android:name=".SpeakerIntentService"
             android:exported="false" />
