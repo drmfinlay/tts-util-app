@@ -80,6 +80,10 @@ class SpeakerIntentService : IntentService("SpeakerIntentService") {
                 ClipboardManager)
         val clipData = clipboardManager.primaryClip
         if (clipData == null || !clipboardManager.hasPrimaryClip()) {
+            // Note: this can also occur on Android 10 and above if this app isn't
+            // the foreground app. This is for privacy reasons, which is fine. It
+            // just means we  need to have an activity running while the clipboard
+            // is read.
             runOnUiThread {
                 longToast(R.string.cannot_speak_empty_text_msg)
             }
