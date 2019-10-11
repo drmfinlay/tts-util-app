@@ -1,10 +1,10 @@
 package com.danefinlay.ttsutil
 
 import android.app.IntentService
-import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import org.jetbrains.anko.ctx
 import org.jetbrains.anko.longToast
 import org.jetbrains.anko.runOnUiThread
 
@@ -49,9 +49,9 @@ class SpeakerIntentService : IntentService("SpeakerIntentService") {
      * Handle action ReadText in the provided background thread with the provided
      * parameters.
      */
-    private fun handleActionReadText(text: String) {
+    private fun handleActionReadText(text: String?) {
         // Display a message if 'text' is blank/empty.
-        if (text.isBlank()) {
+        if (text == null || text.isBlank()) {
             runOnUiThread {
                 longToast(R.string.cannot_speak_empty_text_msg)
             }
@@ -74,35 +74,8 @@ class SpeakerIntentService : IntentService("SpeakerIntentService") {
      * Handle action ReadClipboard in the provided background thread.
      */
     private fun handleActionReadClipboard() {
-        // Get the primary ClipData object from the manager.
-        // Return early if there is no clipboard data.
-        val clipboardManager = (getSystemService(Context.CLIPBOARD_SERVICE) as
-                ClipboardManager)
-        val clipData = clipboardManager.primaryClip
-        if (clipData == null || !clipboardManager.hasPrimaryClip()) {
-            // Note: this can also occur on Android 10 and above if this app isn't
-            // the foreground app. This is for privacy reasons, which is fine. It
-            // just means we  need to have an activity running while the clipboard
-            // is read.
-            runOnUiThread {
-                longToast(R.string.cannot_speak_empty_text_msg)
-            }
-            return
-        }
-
-        // Find the first clipboard Item that coerces successfully to text.
-        var text = ""
-        for (i in 0 until clipData.itemCount) {
-            val item = clipData.getItemAt(i)
-            val itemText = item?.text
-            if (!itemText.isNullOrBlank()) {
-                text = itemText.toString()
-                break
-            }
-        }
-
-        // Read text.
-        handleActionReadText(text)
+        // Read clipboard text.
+        handleActionReadText(ctx.getClipboardText())
     }
 
     /**
@@ -129,7 +102,7 @@ class SpeakerIntentService : IntentService("SpeakerIntentService") {
          * @see IntentService
          */
         @JvmStatic
-        fun startActionReadText(ctx: Context, text: String) {
+        fun startActionReadText(ctx: Context, text: String?) {
             val intent = Intent(ctx, SpeakerIntentService::class.java).apply {
                 action = ACTION_READ_TEXT
                 putExtra(EXTRA_TEXT, text)
