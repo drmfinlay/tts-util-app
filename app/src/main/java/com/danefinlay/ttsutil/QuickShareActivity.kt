@@ -1,8 +1,10 @@
 package com.danefinlay.ttsutil
 
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
+import org.jetbrains.anko.longToast
 
 /**
  * Activity to quickly read text from an input source.
@@ -28,7 +30,12 @@ class QuickShareActivity : SpeakerActivity() {
         val intent = intent ?: return
         when (intent.action) {
             ACTION_READ_CLIPBOARD -> {
-                SpeakerIntentService.startActionReadClipboard(this)
+                if (Build.VERSION.SDK_INT < 29) {
+                    SpeakerIntentService.startActionReadClipboard(this)
+                } else {
+                    // Display a message about this action on Android 10.
+                    longToast(R.string.cannot_read_clipboard_android_10_msg)
+                }
             }
         }
     }
