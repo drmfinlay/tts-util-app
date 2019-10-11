@@ -78,7 +78,13 @@ class SpeakerIntentService : IntentService("SpeakerIntentService") {
         // Return early if there is no clipboard data.
         val clipboardManager = (getSystemService(Context.CLIPBOARD_SERVICE) as
                 ClipboardManager)
-        val clipData = clipboardManager.primaryClip ?: return
+        val clipData = clipboardManager.primaryClip
+        if (clipData == null || !clipboardManager.hasPrimaryClip()) {
+            runOnUiThread {
+                longToast(R.string.cannot_speak_empty_text_msg)
+            }
+            return
+        }
 
         // Find the first clipboard Item that coerces successfully to text.
         var text = ""
