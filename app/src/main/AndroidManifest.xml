@@ -39,12 +39,13 @@
             android:name=".FileActivity"
             android:label="@string/file_activity_label" />
         <activity
-            android:name=".QuickShareActivity"
+            android:name=".ReadClipboardActivity"
+            android:label="@string/read_clipboard_text_label"
             android:taskAffinity=""
             android:theme="@style/Theme.AppCompat.Translucent" />
         <service
             android:name=".SpeakerIntentService"
-            android:exported="false"/>
+            android:exported="false" />
     </application>
 
 </manifest>

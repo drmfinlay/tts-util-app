@@ -10,8 +10,7 @@ import org.jetbrains.anko.longToast
  * Activity to quickly read text from an input source.
  * Reading text is done via SpeakerIntentService.
  */
-class QuickShareActivity : SpeakerActivity() {
-
+abstract class QuickShareActivity : SpeakerActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (speaker.isReady()) {
@@ -26,19 +25,7 @@ class QuickShareActivity : SpeakerActivity() {
         }
     }
 
-    private fun startServiceAction() {
-        val intent = intent ?: return
-        when (intent.action) {
-            ACTION_READ_CLIPBOARD -> {
-                if (Build.VERSION.SDK_INT < 29) {
-                    SpeakerIntentService.startActionReadClipboard(this)
-                } else {
-                    // Display a message about this action on Android 10.
-                    longToast(R.string.cannot_read_clipboard_android_10_msg)
-                }
-            }
-        }
-    }
+    abstract fun startServiceAction()
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
@@ -50,6 +37,20 @@ class QuickShareActivity : SpeakerActivity() {
 
             // Finish the activity.
             finish()
+        }
+    }
+}
+
+class ReadClipboardActivity : QuickShareActivity() {
+    override fun startServiceAction() {
+        val intent = intent ?: return
+        if (intent.action == ACTION_READ_CLIPBOARD) {
+            if (Build.VERSION.SDK_INT < 29) {
+                SpeakerIntentService.startActionReadClipboard(this)
+            } else {
+                // Display a message about this action on Android 10.
+                longToast(R.string.cannot_read_clipboard_android_10_msg)
+            }
         }
     }
 }
