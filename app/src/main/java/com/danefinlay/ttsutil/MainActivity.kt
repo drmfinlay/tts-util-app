@@ -32,6 +32,17 @@ class MainActivity : SpeakerActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        // TODO Probably should be another activity
+        if (savedInstanceState == null && intent?.action == Intent.ACTION_SEND) {
+            val text = intent?.getStringExtra(Intent.EXTRA_TEXT)
+            if (text != null) {
+                ttsInputLayout.editText?.text?.apply {
+                    clear()
+                    append(text)
+                }
+            }
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle?) {
@@ -112,17 +123,6 @@ class MainActivity : SpeakerActivity() {
 
         clearBoxButton.onClick {
             ttsInputLayout.editText?.text?.clear()
-        }
-
-        // TODO Probably should be another activity
-        if (intent?.action == Intent.ACTION_SEND) {
-            val text = intent?.getStringExtra(Intent.EXTRA_TEXT)
-            if (text != null) {
-                ttsInputLayout.editText?.text?.apply {
-                    clear()
-                    append(text)
-                }
-            }
         }
     }
 
