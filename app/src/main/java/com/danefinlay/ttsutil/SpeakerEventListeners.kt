@@ -7,9 +7,11 @@ import org.jetbrains.anko.*
 
 abstract class SpeakerEventListener(private val ctx: Context):
         UtteranceProgressListener() {
+
     override fun onError(utteranceId: String?) { // deprecated
         onError(utteranceId, -1)
     }
+
     override fun onError(utteranceId: String?, errorCode: Int) {
         // Display a toast message.
         ctx.runOnUiThread {
@@ -22,28 +24,46 @@ abstract class SpeakerEventListener(private val ctx: Context):
 class SpeakingEventListener(private val app: ApplicationEx):
         SpeakerEventListener(app) {
 
+    private val notificationId = SPEAKING_NOTIFICATION_ID
+    private val notification =
+            buildSpeakerNotification(app, notificationId)
+
     var finalUtteranceId: String? = null
     private var audioFocusRequestGranted = false
+
+    private fun startNotification() {
+        app.notificationManager.notify(notificationId, notification)
+    }
+
+    private fun cancelNotification() {
+        app.notificationManager.cancel(notificationId)
+    }
 
     override fun onStart(utteranceId: String?) {
         // Only request audio focus if we don't already have it.
         if (!audioFocusRequestGranted) {
             audioFocusRequestGranted = app.requestAudioFocus()
+            startNotification()
         }
     }
 
     override fun onError(utteranceId: String?, errorCode: Int) {
         super.onError(utteranceId, errorCode)
+        cancelNotification()
     }
 
     override fun onStop(utteranceId: String?, interrupted: Boolean) {
         super.onStop(utteranceId, interrupted)
-        if (interrupted) app.releaseAudioFocus()
+        if (interrupted) {
+            app.releaseAudioFocus()
+            cancelNotification()
+        }
     }
 
     override fun onDone(utteranceId: String?) {
         if (utteranceId == finalUtteranceId || finalUtteranceId == null) {
             app.releaseAudioFocus()
+            cancelNotification()
         }
     }
 }
@@ -80,6 +100,6 @@ class SynthesisEventListener(private val ctx: Context,
 
     override fun onError(utteranceId: String?, errorCode: Int) {
         // TODO Display a toast message?
-
+        super.onError(utteranceId, errorCode)
     }
 }
