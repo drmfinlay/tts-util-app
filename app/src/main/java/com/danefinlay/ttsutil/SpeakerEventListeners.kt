@@ -2,21 +2,25 @@ package com.danefinlay.ttsutil
 
 import android.content.Context
 import android.speech.tts.UtteranceProgressListener
-import org.jetbrains.anko.AlertDialogBuilder
-import org.jetbrains.anko.ctx
-import org.jetbrains.anko.runOnUiThread
+import org.jetbrains.anko.*
 
 
-abstract class SpeakerEventListener: UtteranceProgressListener() {
+abstract class SpeakerEventListener(private val ctx: Context):
+        UtteranceProgressListener() {
     override fun onError(utteranceId: String?) { // deprecated
         onError(utteranceId, -1)
     }
-    override fun onError(utteranceId: String?, errorCode: Int) {}
+    override fun onError(utteranceId: String?, errorCode: Int) {
+        // Display a toast message.
+        ctx.runOnUiThread {
+            longToast(R.string.text_synthesis_error_msg)
+        }
+    }
 }
 
 
 class SpeakingEventListener(private val app: ApplicationEx):
-        SpeakerEventListener() {
+        SpeakerEventListener(app) {
 
     var finalUtteranceId: String? = null
     private var audioFocusRequestGranted = false
@@ -30,7 +34,6 @@ class SpeakingEventListener(private val app: ApplicationEx):
 
     override fun onError(utteranceId: String?, errorCode: Int) {
         super.onError(utteranceId, errorCode)
-        // TODO display a toast message?
     }
 
     override fun onStop(utteranceId: String?, interrupted: Boolean) {
@@ -47,7 +50,7 @@ class SpeakingEventListener(private val app: ApplicationEx):
 
 class SynthesisEventListener(private val ctx: Context,
                              private val filename: String):
-        SpeakerEventListener() {
+        SpeakerEventListener(ctx) {
 
     override fun onStart(utteranceId: String?) {
 
