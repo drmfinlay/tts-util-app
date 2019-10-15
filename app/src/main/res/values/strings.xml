@@ -45,6 +45,7 @@
 
     <!--Shortcut-related strings.-->
     <string name="read_clipboard_shortcut">Read clipboard</string>
+    <string name="edit_read_clipboard_shortcut">Edit &amp; read clipboard</string>
 
     <!--Menu-related strings.-->
     <string name="menu_about">About</string>

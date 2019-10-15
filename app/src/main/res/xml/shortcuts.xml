@@ -15,4 +15,15 @@
             android:targetClass="com.danefinlay.ttsutil.ReadClipboardActivity"/>
     </shortcut>
 
+    <shortcut
+        android:shortcutId="edit_read_clipboard"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/edit_read_clipboard_shortcut">
+        <intent
+            android:action="com.danefinlay.ttsutil.action.EDIT_READ_CLIPBOARD"
+            android:targetPackage="com.danefinlay.ttsutil"
+            android:targetClass="com.danefinlay.ttsutil.EditReadActivity"/>
+    </shortcut>
+
 </shortcuts>

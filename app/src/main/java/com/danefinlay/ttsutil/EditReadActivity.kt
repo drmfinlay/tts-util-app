@@ -7,6 +7,7 @@ import android.support.design.widget.TextInputLayout
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Button
+import org.jetbrains.anko.ctx
 import org.jetbrains.anko.find
 import org.jetbrains.anko.onClick
 import org.jetbrains.anko.toast
@@ -25,17 +26,25 @@ class EditReadActivity : SpeakerActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_edit_read)
-        when (intent.action) {
-            Intent.ACTION_SEND -> {
+        if (savedInstanceState == null) {
+            var text: String? = null
+            when (intent.action) {
+                Intent.ACTION_SEND -> {
+                    text = intent.getStringExtra(Intent.EXTRA_TEXT)
+                }
+                ACTION_EDIT_READ_CLIPBOARD -> {
+                    text = ctx.getClipboardText() ?: ""
+                }
+
+            }
+            if (text != null) {
                 // Set the contents of the input layout to the shared text.
-                val text = intent.getStringExtra(Intent.EXTRA_TEXT)
-                if (text != null) {
-                    ttsInputLayout.editText?.text?.apply {
-                        clear()
-                        append(text)
-                    }
+                ttsInputLayout.editText?.text?.apply {
+                    clear()
+                    append(text)
                 }
             }
+
         }
 
         speakButton.onClick {onSpeakButtonClick()}
