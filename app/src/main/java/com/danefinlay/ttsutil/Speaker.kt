@@ -43,7 +43,10 @@ class Speaker(private val context: Context,
     }
 
     fun speak(string: String?) {
-        speak(listOf(string))
+        // Split the text on any new lines to get a list. Utterance pauses will be
+        // inserted this way.
+        val lines = string?.split("\n") ?: return
+        speak(lines)
     }
 
     fun speak(lines: List<String?>) {
