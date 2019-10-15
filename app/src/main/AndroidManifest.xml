@@ -33,6 +33,17 @@
             android:name=".FileActivity"
             android:label="@string/file_activity_label" />
         <activity
+            android:name=".EditReadActivity"
+            android:label="@string/edit_read_activity_label"
+            android:taskAffinity=""
+            android:launchMode="singleTop">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".ReadClipboardActivity"
             android:label="@string/read_clipboard_text_label"
             android:taskAffinity=""
