@@ -3,7 +3,6 @@ package com.danefinlay.ttsutil
 import android.app.IntentService
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import org.jetbrains.anko.ctx
 import org.jetbrains.anko.longToast
 import org.jetbrains.anko.runOnUiThread
@@ -11,13 +10,11 @@ import org.jetbrains.anko.runOnUiThread
 // IntentService actions.
 private const val ACTION_READ_TEXT = "${APP_NAME}.action.READ_TEXT"
 private const val ACTION_EDIT_READ_TEXT = "${APP_NAME}.action.EDIT_READ_TEXT"
-private const val ACTION_READ_FILE = "${APP_NAME}.action.READ_FILE"
 const val ACTION_STOP_SPEAKING = "${APP_NAME}.action.STOP_SPEAKING"
 const val ACTION_READ_CLIPBOARD = "${APP_NAME}.action.READ_CLIPBOARD"
 
 // Parameter constants (for Intent extras).
 private const val EXTRA_TEXT = "${APP_NAME}.extra.TEXT"
-private const val EXTRA_FILE_URI = "${APP_NAME}.extra.FILE_URI"
 
 /**
  * An [IntentService] subclass for handling asynchronous task requests in
@@ -36,10 +33,6 @@ class SpeakerIntentService : IntentService("SpeakerIntentService") {
         when (intent?.action) {
             ACTION_READ_TEXT -> handleActionReadText(text)
             ACTION_EDIT_READ_TEXT -> handleActionEditReadText(text)
-            ACTION_READ_FILE -> {
-                val uri = intent.getParcelableExtra<Uri>(EXTRA_FILE_URI)
-                handleActionReadFile(uri)
-            }
             ACTION_READ_CLIPBOARD -> handleActionReadClipboard()
             ACTION_STOP_SPEAKING -> handleActionStopSpeaking()
         }
@@ -76,14 +69,6 @@ class SpeakerIntentService : IntentService("SpeakerIntentService") {
     private fun handleActionReadClipboard() {
         // Read clipboard text.
         handleActionReadText(ctx.getClipboardText())
-    }
-
-    /**
-     * Handle action ReadFile in the provided background thread with the provided
-     * parameters.
-     */
-    private fun handleActionReadFile(text: Uri) {
-        TODO("Handle action ReadFile")
     }
 
     /**
@@ -135,21 +120,6 @@ class SpeakerIntentService : IntentService("SpeakerIntentService") {
         fun startActionReadClipboard(ctx: Context) {
             val intent = Intent(ctx, SpeakerIntentService::class.java).apply {
                 action = ACTION_READ_CLIPBOARD
-            }
-            ctx.startService(intent)
-        }
-
-        /**
-         * Starts this service to perform action ReadFile. If the service is already
-         * performing a task this action will be queued.
-         *
-         * @see IntentService
-         */
-        @JvmStatic
-        fun startActionReadFile(ctx: Context, fileUri: Uri) {
-            val intent = Intent(ctx, SpeakerIntentService::class.java).apply {
-                action = ACTION_READ_FILE
-                putExtra(EXTRA_FILE_URI, fileUri)
             }
             ctx.startService(intent)
         }
