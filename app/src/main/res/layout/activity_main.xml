@@ -93,7 +93,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_centerHorizontal="false"
-                android:maxLines="10"
                 android:maxWidth="40dp"
                 android:inputType="textAutoComplete|textMultiLine"
                 android:singleLine="false"
