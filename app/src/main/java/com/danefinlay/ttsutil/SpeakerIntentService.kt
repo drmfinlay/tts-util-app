@@ -62,7 +62,12 @@ class SpeakerIntentService : IntentService("SpeakerIntentService") {
      * provided parameters.
      */
     private fun handleActionEditReadText(text: String) {
-        TODO("Handle action EditReadText")
+        val intent = Intent(ctx, EditReadActivity::class.java).apply {
+            addFlags(START_ACTIVITY_FLAGS)
+            action = Intent.ACTION_SEND
+            putExtra(Intent.EXTRA_TEXT, text)
+        }
+        startActivity(intent)
     }
 
     /**
