@@ -12,6 +12,7 @@ private const val ACTION_READ_TEXT = "${APP_NAME}.action.READ_TEXT"
 private const val ACTION_EDIT_READ_TEXT = "${APP_NAME}.action.EDIT_READ_TEXT"
 const val ACTION_STOP_SPEAKING = "${APP_NAME}.action.STOP_SPEAKING"
 const val ACTION_READ_CLIPBOARD = "${APP_NAME}.action.READ_CLIPBOARD"
+const val ACTION_EDIT_READ_CLIPBOARD = "${APP_NAME}.action.EDIT_READ_CLIPBOARD"
 
 // Parameter constants (for Intent extras).
 private const val EXTRA_TEXT = "${APP_NAME}.extra.TEXT"
@@ -34,6 +35,7 @@ class SpeakerIntentService : IntentService("SpeakerIntentService") {
             ACTION_READ_TEXT -> handleActionReadText(text)
             ACTION_EDIT_READ_TEXT -> handleActionEditReadText(text)
             ACTION_READ_CLIPBOARD -> handleActionReadClipboard()
+            ACTION_EDIT_READ_CLIPBOARD -> handleActionEditReadClipboard()
             ACTION_STOP_SPEAKING -> handleActionStopSpeaking()
         }
     }
@@ -69,6 +71,14 @@ class SpeakerIntentService : IntentService("SpeakerIntentService") {
     private fun handleActionReadClipboard() {
         // Read clipboard text.
         handleActionReadText(ctx.getClipboardText())
+    }
+
+    /**
+     * Handle action EditReadClipboard in the provided background thread.
+     */
+    private fun handleActionEditReadClipboard() {
+        val text = ctx.getClipboardText() ?: ""
+        handleActionEditReadText(text)
     }
 
     /**
@@ -120,6 +130,20 @@ class SpeakerIntentService : IntentService("SpeakerIntentService") {
         fun startActionReadClipboard(ctx: Context) {
             val intent = Intent(ctx, SpeakerIntentService::class.java).apply {
                 action = ACTION_READ_CLIPBOARD
+            }
+            ctx.startService(intent)
+        }
+
+        /**
+         * Starts this service to perform action EditReadClipboard. If the service
+         * is already performing a task this action will be queued.
+         *
+         * @see IntentService
+         */
+        @JvmStatic
+        fun startActionEditReadClipboard(ctx: Context) {
+            val intent = Intent(ctx, SpeakerIntentService::class.java).apply {
+                action = ACTION_EDIT_READ_CLIPBOARD
             }
             ctx.startService(intent)
         }
