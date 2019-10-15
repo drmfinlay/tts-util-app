@@ -64,5 +64,7 @@
     <string name="cannot_speak_empty_text_msg">Cannot speak empty/blank text!</string>
     <string name="cannot_read_clipboard_android_10_msg">\'Read clipboard\' doesn\'t work on Android 10 yet.</string>
     <string name="text_synthesis_error_msg">There was an error during text synthesis.</string>
+    <string name="pre_file_synthesis_msg">Stopping speech prior to file synthesis.</string>
+    <string name="file_synthesis_interrupted_msg">File synthesis was interrupted.</string>
 
 </resources>

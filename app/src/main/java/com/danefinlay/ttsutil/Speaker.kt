@@ -6,6 +6,8 @@ import android.os.Build
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.speech.tts.TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID
+import org.jetbrains.anko.runOnUiThread
+import org.jetbrains.anko.toast
 import java.io.File
 
 class Speaker(private val context: Context,
@@ -25,6 +27,7 @@ class Speaker(private val context: Context,
 
     var ready = false
         private set
+    private var lastUtteranceWasFileSynthesis: Boolean = false
 
     private var currentUtteranceId: Long = 0
     private fun getUtteranceId(): String {
@@ -52,6 +55,12 @@ class Speaker(private val context: Context,
     fun speak(lines: List<String?>) {
         if (!(ready && speechAllowed)) {
             return
+        }
+
+        // Stop possible file synthesis before speaking.
+        if (lastUtteranceWasFileSynthesis) {
+            tts.stop()
+            lastUtteranceWasFileSynthesis = false
         }
 
         // Set the listener.
@@ -110,6 +119,14 @@ class Speaker(private val context: Context,
 
     fun synthesizeToFile(text: String, outFile: File,
                          listener: SpeakerEventListener) {
+        // Stop speech before synthesizing.
+        if (tts.isSpeaking) {
+            tts.stop()
+            context.runOnUiThread {
+                toast(getString(R.string.pre_file_synthesis_msg))
+            }
+        }
+
         // Set the listener.
         tts.setOnUtteranceProgressListener(listener)
 
@@ -124,6 +141,9 @@ class Speaker(private val context: Context,
                     text, hashMapOf(KEY_PARAM_UTTERANCE_ID to utteranceId),
                     outFile.absolutePath)
         }
+
+        // Set an internal variable for keeping track of file synthesis.
+        lastUtteranceWasFileSynthesis = true
     }
 
     fun stopSpeech() {

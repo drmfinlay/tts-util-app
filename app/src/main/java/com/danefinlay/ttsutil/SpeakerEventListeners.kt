@@ -79,8 +79,9 @@ class SynthesisEventListener(private val ctx: Context,
     override fun onStop(utteranceId: String?, interrupted: Boolean) {
         super.onStop(utteranceId, interrupted)
         if (interrupted) {
-            // TODO Display a toast message?
-
+            ctx.runOnUiThread {
+                toast(getString(R.string.file_synthesis_interrupted_msg))
+            }
         }
     }
 
