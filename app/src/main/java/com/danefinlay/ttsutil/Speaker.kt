@@ -60,19 +60,20 @@ class Speaker(private val context: Context,
 
         // Get Android's TTS framework to speak each non-null line.
         // This is, quite typically, different in some versions of Android.
+        val nonEmptyLines = lines.mapNotNull { it }.filter { !it.isBlank() }
         val streamKey = TextToSpeech.Engine.KEY_PARAM_STREAM
         var utteranceId: String? = null
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             val bundle = Bundle()
             bundle.putInt(streamKey, AudioManager.STREAM_MUSIC)
-            lines.mapNotNull {
+            nonEmptyLines.forEach {
                 utteranceId = getUtteranceId()
                 tts.speak(it, TextToSpeech.QUEUE_ADD, bundle, utteranceId)
                 pause(100)
             }
         } else {
             val streamValue = AudioManager.STREAM_MUSIC.toString()
-            lines.mapNotNull {
+            nonEmptyLines.forEach {
                 utteranceId = getUtteranceId()
                 val map = hashMapOf(streamKey to streamValue,
                         KEY_PARAM_UTTERANCE_ID to utteranceId)
