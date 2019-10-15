@@ -56,6 +56,8 @@
     <!--Notification-related strings.-->
     <string name="speaking_notification_title">Speech in progress</string>
     <string name="speaking_notification_text">Text-to-speech output in progress…</string>
+    <string name="synthesis_notification_title">File synthesis in progress</string>
+    <string name="synthesis_notification_text">Text-to-speech synthesis in progress…</string>
 
     <!--Miscellaneous.-->
     <string name="not_yet_implemented">Not implemented yet.</string>

@@ -1,5 +1,6 @@
 package com.danefinlay.ttsutil
 
+import android.app.Notification
 import android.content.Context
 import android.speech.tts.UtteranceProgressListener
 import org.jetbrains.anko.*
@@ -7,6 +8,9 @@ import org.jetbrains.anko.*
 
 abstract class SpeakerEventListener(private val ctx: Context):
         UtteranceProgressListener() {
+
+    protected abstract val notificationId: Int
+    protected abstract val notification: Notification
 
     override fun onError(utteranceId: String?) { // deprecated
         onError(utteranceId, -1)
@@ -18,26 +22,26 @@ abstract class SpeakerEventListener(private val ctx: Context):
             longToast(R.string.text_synthesis_error_msg)
         }
     }
+
+    protected fun startNotification() {
+        ctx.notificationManager.notify(notificationId, notification)
+    }
+
+    protected fun cancelNotification() {
+        ctx.notificationManager.cancel(notificationId)
+    }
 }
 
 
 class SpeakingEventListener(private val app: ApplicationEx):
         SpeakerEventListener(app) {
 
-    private val notificationId = SPEAKING_NOTIFICATION_ID
-    private val notification =
+    override val notificationId = SPEAKING_NOTIFICATION_ID
+    override val notification =
             buildSpeakerNotification(app, notificationId)
 
     var finalUtteranceId: String? = null
     private var audioFocusRequestGranted = false
-
-    private fun startNotification() {
-        app.notificationManager.notify(notificationId, notification)
-    }
-
-    private fun cancelNotification() {
-        app.notificationManager.cancel(notificationId)
-    }
 
     override fun onStart(utteranceId: String?) {
         // Only request audio focus if we don't already have it.
@@ -72,13 +76,22 @@ class SynthesisEventListener(private val ctx: Context,
                              private val filename: String):
         SpeakerEventListener(ctx) {
 
-    override fun onStart(utteranceId: String?) {
+    override val notificationId = SYNTHESIS_NOTIFICATION_ID
+    override val notification =
+            buildSpeakerNotification(ctx, notificationId)
+    private var notificationStarted = false
 
+    override fun onStart(utteranceId: String?) {
+        if (!notificationStarted) {
+            startNotification()
+            notificationStarted = true
+        }
     }
 
     override fun onStop(utteranceId: String?, interrupted: Boolean) {
         super.onStop(utteranceId, interrupted)
         if (interrupted) {
+            cancelNotification()
             ctx.runOnUiThread {
                 toast(getString(R.string.file_synthesis_interrupted_msg))
             }
@@ -97,10 +110,6 @@ class SynthesisEventListener(private val ctx: Context,
                 show()
             }
         }
-    }
-
-    override fun onError(utteranceId: String?, errorCode: Int) {
-        // TODO Display a toast message?
-        super.onError(utteranceId, errorCode)
+        cancelNotification()
     }
 }

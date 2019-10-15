@@ -12,10 +12,10 @@ import android.support.v4.app.NotificationCompat
 import org.jetbrains.anko.notificationManager
 
 const val SPEAKING_NOTIFICATION_ID = 1
-// const val SYNTHESIS_NOTIFICATION_ID = 2
+const val SYNTHESIS_NOTIFICATION_ID = 2
 
-
-fun buildSpeakerNotification(ctx: Context, notificationId: Int): Notification {
+private fun getNotificationBuilder(ctx: Context, notificationId: Int):
+        NotificationCompat.Builder {
     // Create an Intent and PendingIntent for when the user clicks on the
     // notification. This should just open/re-open MainActivity.
     val notificationIdUri = Uri.parse("notificationId:$notificationId")
@@ -52,13 +52,9 @@ fun buildSpeakerNotification(ctx: Context, notificationId: Int): Notification {
             NotificationCompat.Builder(ctx)
         }
     }
-    notificationBuilder.apply {
+    return notificationBuilder.apply {
         // Set the icon for the notification
         setSmallIcon(android.R.drawable.ic_btn_speak_now)
-
-        // Set the title and text.
-        setContentTitle(ctx.getString(R.string.speaking_notification_title))
-        setContentText(ctx.getString(R.string.speaking_notification_text))
 
         // Set pending intents.
         setContentIntent(contentPendingIntent)
@@ -73,6 +69,26 @@ fun buildSpeakerNotification(ctx: Context, notificationId: Int): Notification {
                 ctx.getString(R.string.stop_speaking_button),
                 onDeletePendingIntent)
     }
+}
 
-    return notificationBuilder.build()
+
+fun buildSpeakerNotification(ctx: Context, notificationId: Int): Notification {
+    val builder = getNotificationBuilder(ctx, notificationId)
+    builder.apply {
+        // Set the title and text depending on the notification ID.
+        when (notificationId) {
+            SPEAKING_NOTIFICATION_ID -> {
+                setContentTitle(ctx.getString(R.string.speaking_notification_title))
+                setContentText(ctx.getString(R.string.speaking_notification_text))
+            }
+            SYNTHESIS_NOTIFICATION_ID -> {
+                setContentTitle(ctx.getString(R.string.synthesis_notification_title))
+                setContentText(ctx.getString(R.string.synthesis_notification_text))
+            }
+            else -> {
+
+            }
+        }
+    }
+    return builder.build()
 }
