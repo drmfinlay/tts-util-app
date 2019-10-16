@@ -1,9 +1,13 @@
-package com.danefinlay.ttsutil
+package com.danefinlay.ttsutil.ui
 
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
+import com.danefinlay.ttsutil.ACTION_READ_CLIPBOARD
+import com.danefinlay.ttsutil.R
+import com.danefinlay.ttsutil.SpeakerIntentService
+import com.danefinlay.ttsutil.isReady
 import org.jetbrains.anko.longToast
 
 /**

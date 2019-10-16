@@ -15,7 +15,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         tools:ignore="GoogleAppIndexingWarning">
-        <activity android:name=".MainActivity">
+        <activity android:name=".ui.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -27,13 +27,13 @@
                 android:resource="@xml/shortcuts" />
         </activity>
         <activity
-            android:name=".AboutActivity"
+            android:name=".ui.AboutActivity"
             android:label="@string/about_activity_label" />
         <activity
-            android:name=".FileActivity"
+            android:name=".ui.FileActivity"
             android:label="@string/file_activity_label" />
         <activity
-            android:name=".EditReadActivity"
+            android:name=".ui.EditReadActivity"
             android:label="@string/edit_read_activity_label"
             android:taskAffinity=""
             android:launchMode="singleTop">
@@ -44,12 +44,12 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".ReadClipboardActivity"
+            android:name=".ui.ReadClipboardActivity"
             android:label="@string/read_clipboard_text_label"
             android:taskAffinity=""
             android:theme="@style/Theme.AppCompat.Translucent" />
         <activity
-            android:name=".ReadTextActivity"
+            android:name=".ui.ReadTextActivity"
             android:label="@string/read_text_label"
             android:taskAffinity=""
             android:theme="@style/Theme.AppCompat.Translucent" >

@@ -1,7 +1,8 @@
-package com.danefinlay.ttsutil
+package com.danefinlay.ttsutil.ui
 
 import android.os.Bundle
 import android.view.MenuItem
+import com.danefinlay.ttsutil.R
 
 class AboutActivity : SpeakerActivity() {
 

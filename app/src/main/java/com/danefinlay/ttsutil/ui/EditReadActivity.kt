@@ -1,4 +1,4 @@
-package com.danefinlay.ttsutil
+package com.danefinlay.ttsutil.ui
 
 import android.content.Intent
 import android.os.Bundle
@@ -7,6 +7,7 @@ import android.support.design.widget.TextInputLayout
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Button
+import com.danefinlay.ttsutil.*
 import org.jetbrains.anko.ctx
 import org.jetbrains.anko.find
 import org.jetbrains.anko.onClick

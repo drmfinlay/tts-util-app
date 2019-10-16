@@ -9,6 +9,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.support.v4.app.NotificationCompat
+import com.danefinlay.ttsutil.ui.MainActivity
 import org.jetbrains.anko.notificationManager
 
 const val SPEAKING_NOTIFICATION_ID = 1

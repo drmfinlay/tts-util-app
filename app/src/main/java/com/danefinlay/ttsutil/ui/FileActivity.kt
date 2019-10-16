@@ -1,4 +1,4 @@
-package com.danefinlay.ttsutil
+package com.danefinlay.ttsutil.ui
 
 import android.Manifest.permission.READ_EXTERNAL_STORAGE
 import android.Manifest.permission.WRITE_EXTERNAL_STORAGE
@@ -11,6 +11,7 @@ import android.os.Environment
 import android.view.MenuItem
 import android.widget.Button
 import android.widget.TextView
+import com.danefinlay.ttsutil.*
 import org.jetbrains.anko.*
 import java.io.File
 

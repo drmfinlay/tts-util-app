@@ -1,4 +1,4 @@
-package com.danefinlay.ttsutil
+package com.danefinlay.ttsutil.ui
 
 import android.app.Activity
 import android.app.Activity.RESULT_OK

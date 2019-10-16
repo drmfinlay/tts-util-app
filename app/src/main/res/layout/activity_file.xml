@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="5dp"
-    tools:context=".FileActivity">
+    tools:context=".ui.FileActivity">
 
     <android.support.constraint.ConstraintLayout
         android:id="@+id/read_from_container"

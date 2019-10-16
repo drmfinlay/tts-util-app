@@ -1,10 +1,14 @@
-package com.danefinlay.ttsutil
+package com.danefinlay.ttsutil.ui
 
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.support.v7.app.AppCompatActivity
+import com.danefinlay.ttsutil.ApplicationEx
+import com.danefinlay.ttsutil.R
+import com.danefinlay.ttsutil.Speaker
+import com.danefinlay.ttsutil.isReady
 import org.jetbrains.anko.AlertDialogBuilder
 
 /**
