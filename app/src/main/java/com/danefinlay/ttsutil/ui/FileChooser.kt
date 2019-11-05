@@ -6,10 +6,10 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.support.v4.app.Fragment
 import org.jetbrains.anko.toast
 
 interface FileChooser {
-    fun getActivity(): Activity
     /** Default suggested value is Intent.ACTION_OPEN_DOCUMENT */
     var chooseFileAction: String
     /** Default suggested value is Intent.CATEGORY_OPENABLE */
@@ -39,6 +39,10 @@ interface FileChooser {
             // Potentially direct the user to the Market with a Dialog
             toast("Please install a File Manager.")
         }
+    }
+
+    fun Fragment.showFileChooser() {
+        activity?.showFileChooser()
     }
 
     fun onFileChosen(uri: Uri?)
