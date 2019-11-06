@@ -8,7 +8,6 @@ import android.support.v7.app.AppCompatActivity
 import com.danefinlay.ttsutil.ApplicationEx
 import com.danefinlay.ttsutil.R
 import com.danefinlay.ttsutil.Speaker
-import com.danefinlay.ttsutil.isReady
 import org.jetbrains.anko.AlertDialogBuilder
 
 /**
@@ -83,20 +82,6 @@ open class SpeakerActivity: AppCompatActivity() {
                     showTTSInstallFailureDialog()
                 }
             }
-
-            SPEAK_SAMPLE_TEXT -> {
-                // Get sample text
-                val extraKey = TextToSpeech.Engine.EXTRA_SAMPLE_TEXT
-                var sampleText = data?.getStringExtra(extraKey)
-                if (sampleText.isNullOrBlank()) {
-                    sampleText = getString(R.string.sample_tts_sentence)
-                }
-
-                // Get the Speaker to read it if possible.
-                if (speaker.isReady()) {
-                    speaker?.speak(sampleText)
-                }
-            }
         }
         super.onActivityResult(requestCode, resultCode, data)
     }
@@ -105,6 +90,5 @@ open class SpeakerActivity: AppCompatActivity() {
         const val CHECK_TTS = 1
         const val CHECK_TTS_SPEAK_AFTERWARDS = 2
         const val INSTALL_TTS_DATA = 3
-        const val SPEAK_SAMPLE_TEXT = 4
     }
 }
