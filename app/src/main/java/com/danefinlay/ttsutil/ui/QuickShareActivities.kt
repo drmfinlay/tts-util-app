@@ -1,14 +1,11 @@
 package com.danefinlay.ttsutil.ui
 
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import com.danefinlay.ttsutil.ACTION_READ_CLIPBOARD
-import com.danefinlay.ttsutil.R
 import com.danefinlay.ttsutil.SpeakerIntentService
 import com.danefinlay.ttsutil.isReady
-import org.jetbrains.anko.longToast
 
 /**
  * Activity to quickly read text from an input source.
@@ -49,12 +46,7 @@ class ReadClipboardActivity : QuickShareActivity() {
     override fun startServiceAction() {
         val intent = intent ?: return
         if (intent.action == ACTION_READ_CLIPBOARD) {
-            if (Build.VERSION.SDK_INT < 29) {
-                SpeakerIntentService.startActionReadClipboard(this)
-            } else {
-                // Display a message about this action on Android 10.
-                longToast(R.string.cannot_read_clipboard_android_10_msg)
-            }
+            SpeakerIntentService.startActionReadClipboard(this)
         }
     }
 }

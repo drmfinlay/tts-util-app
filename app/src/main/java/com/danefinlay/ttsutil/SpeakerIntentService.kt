@@ -3,6 +3,7 @@ package com.danefinlay.ttsutil
 import android.app.IntentService
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import com.danefinlay.ttsutil.ui.EditReadActivity
 import org.jetbrains.anko.ctx
 import org.jetbrains.anko.longToast
@@ -75,6 +76,14 @@ class SpeakerIntentService : IntentService("SpeakerIntentService") {
      * Handle action ReadClipboard in the provided background thread.
      */
     private fun handleActionReadClipboard() {
+        // Show a warning toast message about this action on Android 10.
+        if (Build.VERSION.SDK_INT >= 29) {
+            runOnUiThread {
+                longToast(R.string.cannot_read_clipboard_android_10_msg)
+            }
+            return
+        }
+
         // Read clipboard text.
         handleActionReadText(ctx.getClipboardText())
     }
