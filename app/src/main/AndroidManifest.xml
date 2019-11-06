@@ -15,7 +15,10 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         tools:ignore="GoogleAppIndexingWarning">
-        <activity android:name=".ui.MainActivity">
+        <activity
+            android:name=".ui.MainActivity"
+            android:theme="@style/AppTheme.NoActionBar">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -30,35 +33,37 @@
             android:name=".ui.AboutActivity"
             android:label="@string/about_activity_label" />
         <activity
-            android:name=".ui.FileActivity"
-            android:label="@string/file_activity_label" />
-        <activity
             android:name=".ui.EditReadActivity"
             android:label="@string/edit_read_activity_label"
-            android:taskAffinity=""
-            android:launchMode="singleTop">
+            android:launchMode="singleTop"
+            android:taskAffinity="">
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
+
                 <category android:name="android.intent.category.DEFAULT" />
+
                 <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
         <activity
             android:name=".ui.ReadClipboardActivity"
-            android:label="@string/read_clipboard_text_label"
+            android:label="@string/read_clipboard_fragment_label"
             android:taskAffinity=""
             android:theme="@style/Theme.AppCompat.Translucent" />
         <activity
             android:name=".ui.ReadTextActivity"
-            android:label="@string/read_text_label"
+            android:label="@string/read_text_fragment_label"
             android:taskAffinity=""
-            android:theme="@style/Theme.AppCompat.Translucent" >
+            android:theme="@style/Theme.AppCompat.Translucent">
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
+
                 <category android:name="android.intent.category.DEFAULT" />
+
                 <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
+
         <service
             android:name=".SpeakerIntentService"
             android:exported="false" />

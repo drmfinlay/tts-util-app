@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn="navigation_view">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_read_text"
+            android:icon="@drawable/ic_text_fields"
+            android:title="@string/read_text_fragment_label" />
+        <item
+            android:id="@+id/nav_read_clipboard"
+            android:icon="@drawable/ic_content_paste"
+            android:title="@string/read_clipboard_fragment_label" />
+        <item
+            android:id="@+id/nav_read_files"
+            android:icon="@drawable/ic_folder"
+            android:title="@string/read_files_fragment_label" />
+        <item
+            android:id="@+id/nav_write_files"
+            android:icon="@drawable/ic_save"
+            android:title="@string/write_files_fragment_label" />
+    </group>
+
+</menu>

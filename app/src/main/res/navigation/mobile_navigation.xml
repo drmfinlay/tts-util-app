@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mobile_navigation"
+    app:startDestination="@+id/nav_read_text">
+
+    <fragment
+        android:id="@+id/nav_read_text"
+        android:name="com.danefinlay.ttsutil.ui.ReadTextFragment"
+        android:label="@string/read_text_fragment_label"
+        tools:layout="@layout/fragment_read_text" />
+
+    <fragment
+        android:id="@+id/nav_read_clipboard"
+        android:name="com.danefinlay.ttsutil.ui.ReadClipboardFragment"
+        android:label="@string/read_clipboard_fragment_label"
+        tools:layout="@layout/fragment_read_clipboard" />
+
+    <fragment
+        android:id="@+id/nav_read_files"
+        android:name="com.danefinlay.ttsutil.ui.ReadFilesFragment"
+        android:label="@string/read_files_fragment_label"
+        tools:layout="@layout/fragment_read_files" />
+
+    <fragment
+        android:id="@+id/nav_write_files"
+        android:name="com.danefinlay.ttsutil.ui.WriteFilesFragment"
+        android:label="@string/write_files_fragment_label"
+        tools:layout="@layout/fragment_write_files" />
+</navigation>

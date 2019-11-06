@@ -5,82 +5,17 @@
     tools:context=".ui.EditReadActivity"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
+
     <android.support.constraint.ConstraintLayout
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:padding="5dp">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/activity_description"
-            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-            android:text="@string/edit_read_activity_description"
-            app:layout_constraintHorizontal_bias="0.5"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
-
-        <android.support.constraint.ConstraintLayout
-            android:id="@+id/button_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/fragment_margin">
+        <RelativeLayout
+            android:id="@+id/fragment_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:layout_constraintHorizontal_chainStyle="packed"
-            app:layout_constraintHorizontal_bias="0.5"
-            app:layout_constraintTop_toBottomOf="@id/activity_description"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginTop="20dp"
-            android:layout_marginBottom="20dp" >
-
-            <Button
-                android:id="@+id/speak_button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/speak_button_text"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent" />
-
-            <Button
-                android:id="@+id/stop_speaking_button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/stop_speaking_button"
-                app:layout_constraintTop_toBottomOf="@id/speak_button"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent" />
-        </android.support.constraint.ConstraintLayout>
-
-        <android.support.design.widget.TextInputLayout
-            android:id="@+id/tts_input_layout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="@string/tts_input_label"
-            app:layout_constraintTop_toBottomOf="@id/button_container"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            android:layout_centerHorizontal="true">
-
-            <!-- Dummy item to prevent EditText from receiving focus on Fragment start -->
-            <LinearLayout
-                android:focusable="true"
-                android:focusableInTouchMode="true"
-                android:layout_width="0px"
-                android:layout_height="0px"
-                tools:ignore="UselessLeaf" />
-
-            <android.support.design.widget.TextInputEditText
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_centerHorizontal="false"
-                android:maxWidth="40dp"
-                android:inputType="textAutoComplete|textMultiLine"
-                android:singleLine="false"
-                android:nextFocusLeft="@id/tts_input_layout"
-                android:nextFocusUp="@id/tts_input_layout"
-                android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
-        </android.support.design.widget.TextInputLayout>
-
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
     </android.support.constraint.ConstraintLayout>
 </ScrollView>

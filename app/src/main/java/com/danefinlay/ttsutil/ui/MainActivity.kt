@@ -1,120 +1,107 @@
 package com.danefinlay.ttsutil.ui
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
-import android.speech.tts.TextToSpeech
-import android.speech.tts.TextToSpeech.Engine.ACTION_GET_SAMPLE_TEXT
-import android.support.design.widget.TextInputLayout
+import android.support.design.widget.NavigationView
+import android.support.v4.widget.DrawerLayout
+import android.support.v7.widget.Toolbar
 import android.view.Menu
 import android.view.MenuItem
-import android.widget.Button
+import androidx.navigation.findNavController
+import androidx.navigation.ui.AppBarConfiguration
+import androidx.navigation.ui.navigateUp
+import androidx.navigation.ui.setupActionBarWithNavController
+import androidx.navigation.ui.setupWithNavController
+import com.danefinlay.ttsutil.APP_NAME
 import com.danefinlay.ttsutil.R
-import com.danefinlay.ttsutil.isReady
+import com.danefinlay.ttsutil.getDisplayName
+import org.jetbrains.anko.ctx
+import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.find
-import org.jetbrains.anko.onClick
-import org.jetbrains.anko.toast
 
-class MainActivity : SpeakerActivity() {
+class MainActivity : SpeakerActivity(), FileChooser {
 
-    private val fileActivityButton: Button
-        get() = find(R.id.file_activity_button)
+    private lateinit var appBarConfiguration: AppBarConfiguration
 
-    private val speakButton: Button
-        get() = find(R.id.speak_button)
+    override var chooseFileAction = Intent.ACTION_OPEN_DOCUMENT
+    override var chooseFileCategory = Intent.CATEGORY_OPENABLE
+    override var chooseFileMimeType = "text/*"
 
-    private val stopSpeakingButton: Button
-        get() = find(R.id.stop_speaking_button)
-
-    private val clearBoxButton: Button
-        get() = find(R.id.clear_box_button)
-
-    private val ttsInputLayout: TextInputLayout
-        get() = find(R.id.tts_input_layout)
+    var fileToRead: Uri? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-    }
 
-    override fun onSaveInstanceState(outState: Bundle?) {
-        val content = ttsInputLayout.editText?.text?.toString()
-        outState?.putString("inputBoxContent", content)
-        super.onSaveInstanceState(outState)
-    }
+        // Set up the toolbar.
+        val toolbar = find<Toolbar>(R.id.toolbar)
+        setSupportActionBar(toolbar)
 
-    override fun onRestoreInstanceState(savedInstanceState: Bundle?) {
-        val content = savedInstanceState?.getString("inputBoxContent")
-        if (content != null) {
-            ttsInputLayout.editText?.text?.apply {
-                clear()
-                append(content)
-            }
+        // Set up the drawer + navigation view and controller.
+        val drawerLayout = find<DrawerLayout>(R.id.drawer_layout)
+        val navView = find<NavigationView>(R.id.nav_view)
+        val navController = findNavController(R.id.nav_host_fragment)
+        // Passing each menu ID as a set of Ids because each
+        // menu should be considered as top level destinations.
+        appBarConfiguration = AppBarConfiguration(setOf(
+                R.id.nav_read_text, R.id.nav_read_files, R.id.nav_write_files,
+                R.id.nav_read_clipboard), drawerLayout)
+        setupActionBarWithNavController(navController, appBarConfiguration)
+        navView.setupWithNavController(navController)
+
+        if (savedInstanceState == null) {
+            // Restore fileToRead from shared preferences.
+            val prefs = ctx.getSharedPreferences(ctx.packageName, MODE_PRIVATE)
+            val uriString = prefs.getString(CHOSEN_FILE_URI_KEY, "")
+            fileToRead = Uri.parse(uriString)
         }
-        super.onRestoreInstanceState(savedInstanceState)
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        val inflater = menuInflater
-        inflater.inflate(R.menu.app_menu, menu)
+        // Inflate the menu; this adds items to the action bar if it is present.
+        menuInflater.inflate(R.menu.main, menu)
         return true
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean =
-            when (item.itemId) {
-
-                R.id.menu_about -> {
-                    val activity = AboutActivity::class.java
-                    startActivity(Intent(this, activity))
-                    true
-                }
-
-                R.id.menu_tts_settings -> {
-                    // Got this from: https://stackoverflow.com/a/8688354
-                    val intent = Intent()
-                    intent.action = "com.android.settings.TTS_SETTINGS"
-                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                    startActivity(intent)
-                    true
-                }
-
-                else -> {
-                    // Display a not implemented yet toast message
-                    toast(R.string.not_yet_implemented)
-
-                    // return the super class method's value for other menu cases
-                    super.onOptionsItemSelected(item)
-                }
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.menu_about -> {
+                val activity = AboutActivity::class.java
+                startActivity(Intent(this, activity))
+                true
             }
 
-    override fun onStart() {
-        super.onStart()
-
-        fileActivityButton.onClick {
-            // Start the file activity when the button is pressed.
-            val activity = FileActivity::class.java
-            val fileActivityIntent = Intent(this, activity)
-            startActivity(fileActivityIntent)
-        }
-
-        speakButton.onClick {
-            if (speaker.isReady()) {
-                speakFromInputLayout()
-            } else {
-                // Speaker isn't set up.
-                toast(R.string.speaker_not_ready_message)
-
-                // Check (and eventually setup) text-to-speech.
-                checkTTS(CHECK_TTS_SPEAK_AFTERWARDS)
+            R.id.menu_tts_settings -> {
+                // Got this from: https://stackoverflow.com/a/8688354
+                val intent = Intent()
+                intent.action = "com.android.settings.TTS_SETTINGS"
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                startActivity(intent)
+                true
             }
+            else -> return super.onOptionsItemSelected(item)
         }
+    }
 
-        stopSpeakingButton.onClick {
-            speaker?.stopSpeech()
-        }
+    override fun onSupportNavigateUp(): Boolean {
+        val navController = findNavController(R.id.nav_host_fragment)
+        return navController.navigateUp(appBarConfiguration) ||
+                super.onSupportNavigateUp()
+    }
 
-        clearBoxButton.onClick {
-            ttsInputLayout.editText?.text?.clear()
-        }
+    override fun onSaveInstanceState(outState: Bundle?) {
+        super.onSaveInstanceState(outState)
+
+        // Save instance state here.
+        outState?.putParcelable("fileToRead", fileToRead)
+    }
+
+    override fun onRestoreInstanceState(savedInstanceState: Bundle?) {
+        super.onRestoreInstanceState(savedInstanceState)
+
+        val uri: Uri? = savedInstanceState?.getParcelable("fileToRead")
+        fileToRead = uri
     }
 
     override fun onDestroy() {
@@ -127,25 +114,26 @@ class MainActivity : SpeakerActivity() {
         }
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == CHECK_TTS_SPEAK_AFTERWARDS &&
-                resultCode == TextToSpeech.Engine.CHECK_VOICE_DATA_PASS) {
-            // The Speaker should have been initialised by the super method.
-            speakFromInputLayout()
+    override fun onFileChosen(uri: Uri?) {
+        // Set the shared preference values asynchronously.
+        fileToRead = uri
+        doAsync {
+            val prefs = ctx.getSharedPreferences(ctx.packageName, MODE_PRIVATE)
+            prefs.edit()
+                    .putString(CHOSEN_FILE_URI_KEY, uri?.toString() ?: "")
+                    .putString(CHOSEN_FILE_NAME_KEY,
+                            uri?.getDisplayName(ctx) ?: "")
+                    .apply()
         }
     }
 
-    private fun speakFromInputLayout() {
-        val content = ttsInputLayout.editText?.text?.toString()
-        if (!content.isNullOrBlank()) {
-            speaker?.speak(content)
-        } else {
-            // Get sample text from the TTS engine.
-            // This is handled by SpeakerActivity.onActivityResult().
-            val intent = Intent()
-            intent.action = ACTION_GET_SAMPLE_TEXT
-            startActivityForResult(intent, SPEAK_SAMPLE_TEXT)
-        }
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super<FileChooser>.onActivityResult(requestCode, resultCode, data)
+        super<SpeakerActivity>.onActivityResult(requestCode, resultCode, data)
+    }
+
+    companion object {
+        private const val CHOSEN_FILE_URI_KEY = "$APP_NAME.CHOSEN_FILE_URI_KEY"
+        const val CHOSEN_FILE_NAME_KEY = "$APP_NAME.CHOSEN_FILE_NAME_KEY"
     }
 }

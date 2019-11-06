@@ -101,7 +101,7 @@ class SynthesisEventListener(private val ctx: Context,
     override fun onDone(utteranceId: String?) {
         ctx.runOnUiThread {
             AlertDialogBuilder(ctx).apply {
-                title(R.string.file_activity_description2)
+                title(R.string.write_files_fragment_label)
                 val msgPart1 = ctx.getString(
                         R.string.write_to_file_alert_message_success)
                 val fullMsg = "$msgPart1 \"$filename\""

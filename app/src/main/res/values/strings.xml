@@ -1,20 +1,27 @@
 <resources>
     <!--Labels and names.-->
     <string name="app_name">TTS Util</string>
-    <string name="main_activity_description">This app integrates with Android\'s text-to-speech framework to allow speaking the text entered below, from a file or shared from another app.</string>
+    <string name="app_name_long">Text-to-speech utility app</string>
     <string name="tts_input_label">Enter text to speak…</string>
-    <string name="about_activity_label">About TTS Util</string>
-    <string name="file_activity_label">Read from/to files</string>
-    <string name="file_activity_description1">Read from text files</string>
-    <string name="file_activity_description2">Write speech to a file</string>
-    <string name="read_clipboard_text_label">Read clipboard text</string>
-    <string name="read_text_label">Read text</string>
+
+    <!--Fragment & activity labels and descriptions.-->
+    <string name="read_text_fragment_label">Read text</string>
+    <string name="read_text_fragment_desc">This app integrates with Android\'s text-to-speech framework.\n\nEnter text below and press the \'Speak text\' button to have it synthesised.</string>
+    <string name="read_clipboard_fragment_label">Read clipboard text</string>
+    <string name="read_clipboard_fragment_desc">Press the \'Speak text\' button to read clipboard text with text-to-speech.\n\nThe text field can be updated with the current clipboard text by pressing the \'Update text\' button.</string>
+    <string name="read_files_fragment_label">Read from files</string>
+    <string name="read_files_fragment_desc">This part of the app can process text files using text-to-speech.\n\nChoose a text file from storage and press the \'Read from file\' button.</string>
+    <string name="write_files_fragment_label">Write to files</string>
+    <string name="write_files_fragment_desc">This part of the app can create a speech wave file using text from a chosen file. Most media player applications will be able to play wave files.\n\nChoose a text file from storage and press the \'Write to file\' button.\n\nSuccessfully synthesised wave files will be placed in internal storage.</string>
     <string name="edit_read_activity_label">Edit &amp; read text</string>
-    <string name="edit_read_activity_description">Edit the text below and have it read with text-to-speech.</string>
+    <string name="edit_read_activity_desc">Edit the text below and have it read with text-to-speech.</string>
+    <string name="about_activity_label">TTS Util</string>
 
     <!--Button strings.-->
     <string name="speak_button_text">Speak text</string>
     <string name="stop_speaking_button">Stop speaking</string>
+    <string name="stop_synthesis_button">Stop file synthesis</string>
+    <string name="update_text_field_button">Update text</string>
     <string name="clear_input_button">Clear input</string>
     <string name="choose_file_button">Choose file</string>
     <string name="read_file_button">Read from file</string>
@@ -25,7 +32,7 @@
     <string name="alert_negative_message1">No thanks</string>
     <string name="alert_negative_message2">Never mind</string>
     <string name="no_tts_data_alert_title">No usable TTS engine</string>
-    <string name="no_tts_data_alert_message">"The app could not detected a working text-to-speech engine on this device. \nShould it try to install one?"</string>
+    <string name="no_tts_data_alert_message">"The app could not detected a working text-to-speech engine on this device.\nShould I try to install one?"</string>
     <string name="failed_to_get_tts_data_title">Failed to get TTS data</string>
     <string name="failed_to_get_tts_data_msg">Your device was unable to download the text-to-speech data. Perhaps your device has no network access? It is also possible that there is no data available for your selected language.\n\nTry looking in your device\'s settings for \"Text-to-speech output\". You should be able to change your selected language or use a different text-to-speech engine.</string>
     <string name="speaker_not_ready_message">Text-to-speech isn\'t ready. Try again in a moment.</string>
@@ -42,16 +49,13 @@
     <!--File-related strings.-->
     <string name="chosen_file_label">File to read text from:</string>
     <string name="no_file_chosen">*No file chosen*</string>
-
-    <!--Shortcut-related strings.-->
-    <string name="read_clipboard_shortcut">Read clipboard</string>
-    <string name="edit_read_clipboard_shortcut">Edit &amp; read clipboard</string>
+    <string name="no_file_chosen2">No file chosen</string>
 
     <!--Menu-related strings.-->
     <string name="menu_about">About</string>
-    <string name="menu_settings">Settings</string>
     <string name="menu_tts_settings">Text-to-speech settings</string>
     <string name="menu_speak_in_bg">Speak text in background</string>
+    <string name="edit_read_clipboard_shortcut">Edit &amp; read clipboard</string>
 
     <!--Notification-related strings.-->
     <string name="speaking_notification_title">Speech in progress</string>
@@ -64,9 +68,12 @@
     <!--Only used if the TTS engine returns a null or empty sample string.-->
     <string name="sample_tts_sentence">This is a sample English sentence.</string>
     <string name="cannot_speak_empty_text_msg">Cannot speak empty/blank text!</string>
+    <string name="clipboard_is_empty_blank_msg">Clipboard is empty/blank!</string>
     <string name="cannot_read_clipboard_android_10_msg">\'Read clipboard\' doesn\'t work on Android 10 yet.</string>
     <string name="text_synthesis_error_msg">There was an error during text synthesis.</string>
     <string name="pre_file_synthesis_msg">Stopping speech prior to file synthesis.</string>
     <string name="file_synthesis_interrupted_msg">File synthesis was interrupted.</string>
-
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="nav_header_desc">Navigation header</string>
 </resources>
