@@ -1,6 +1,7 @@
 package com.danefinlay.ttsutil.ui
 
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.support.design.widget.TextInputLayout
 import android.support.v4.app.Fragment
@@ -12,6 +13,7 @@ import com.danefinlay.ttsutil.R
 import com.danefinlay.ttsutil.Speaker
 import com.danefinlay.ttsutil.getClipboardText
 import com.danefinlay.ttsutil.isReady
+import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.onClick
 import org.jetbrains.anko.support.v4.find
 import org.jetbrains.anko.toast
@@ -143,8 +145,29 @@ class ReadClipboardFragment : ReadTextFragmentBase() {
         updateTextFieldButton.onClick {
             onClickUpdateTextFieldButton()
         }
+    }
+
+    override fun onActivityCreated(savedInstanceState: Bundle?) {
+        super.onActivityCreated(savedInstanceState)
+
         if (savedInstanceState == null) {
-            updateTextField(myActivity.getClipboardText())
+            val text = myActivity.getClipboardText()
+
+            // Android 10 restricts access to the clipboard for privacy reasons.
+            // Accessing it from the foreground activity is permitted, but it seems
+            // to require a short delay (async).
+            if (text == null && Build.VERSION.SDK_INT >= 29) {
+                doAsync {
+                    Thread.sleep(100)
+                    myActivity.runOnUiThread {
+                        if (this@ReadClipboardFragment.view != null)
+                            updateTextField(myActivity.getClipboardText())
+                    }
+                }
+            } else {
+                // Otherwise just update the text field.
+                updateTextField(text)
+            }
         }
     }
 
