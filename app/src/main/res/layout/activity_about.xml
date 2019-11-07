@@ -52,8 +52,8 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/about_license"
-            android:text="@string/about_license"
+            android:id="@+id/about_app"
+            android:text="@string/about_app"
             android:textAppearance="@style/TextAppearance.AppCompat.Body2"
             android:layout_marginTop="16dp"
             app:layout_constraintTop_toBottomOf="@id/about_copyright"
@@ -66,7 +66,7 @@
             android:text="@string/about_acknowledgements_title"
             android:textAppearance="@style/TextAppearance.AppCompat.Title"
             android:layout_marginTop="16dp"
-            app:layout_constraintTop_toBottomOf="@id/about_license"
+            app:layout_constraintTop_toBottomOf="@id/about_app"
             app:layout_constraintStart_toStartOf="parent"/>
 
         <TextView

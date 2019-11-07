@@ -51,8 +51,9 @@
         Apache 2.0).-->
     <string name="about_version">TTS Util Version %1$s (%2$d)</string>
     <string name="about_copyright">© 2019 - Dane Finlay</string>
-    <string name="about_license">TTS Util is free software licensed under the %1$s licence.</string>
+    <string name="about_app">TTS Util is free software licensed under the %1$s licence. The app\'s source code is available %2$s.</string>
     <string name="link_apache2" translatable="false">&lt;a href=&quot;https://www.apache.org/licenses/LICENSE-2.0.html&quot;&gt;Apache 2.0&lt;/a&gt;</string>
+    <string name="link_source_code" translatable="false">&lt;a href=&quot;https://github.com/Danesprite/tts-util-app&quot;&gt;on GitHub&lt;/a&gt;</string>
     <string name="about_acknowledgements_title">Acknowledgements &amp; Licences</string>
     <string name="about_acknowledgements_msg">Parts of the following projects were used in the development of this application:</string>
     <string name="about_ack_material_design_icons">%1$s (%2$s) — icons used in this app</string>

@@ -53,8 +53,9 @@ class AboutActivity : AppCompatActivity() {
 
         // Set the license text and link.
         val apache2 = getString(R.string.link_apache2)
-        val license = getString(R.string.about_license, apache2)
-        find<TextView>(R.id.about_license).setLinkText(license)
+        val sourceLink = getString(R.string.link_source_code)
+        val aboutApp = getString(R.string.about_app, apache2, sourceLink)
+        find<TextView>(R.id.about_app).setLinkText(aboutApp)
 
         // Set each acknowledgement text and link.
         setAckText(R.id.about_ack_material_design_icons,
