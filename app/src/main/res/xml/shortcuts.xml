@@ -27,7 +27,7 @@
     <shortcut
         android:shortcutId="read_clipboard"
         android:enabled="true"
-        android:icon="@drawable/ic_content_paste"
+        android:icon="@mipmap/ic_read_clipboard_shortcut"
         android:shortcutShortLabel="@string/read_clipboard_fragment_label">
         <intent
             android:action="com.danefinlay.ttsutil.action.READ_CLIPBOARD"
@@ -38,7 +38,7 @@
     <shortcut
         android:shortcutId="edit_read_clipboard"
         android:enabled="true"
-        android:icon="@drawable/ic_content_paste"
+        android:icon="@mipmap/ic_edit_clipboard_shortcut"
         android:shortcutShortLabel="@string/edit_read_clipboard_shortcut">
         <intent
             android:action="com.danefinlay.ttsutil.action.EDIT_READ_CLIPBOARD"
