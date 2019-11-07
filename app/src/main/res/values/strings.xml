@@ -47,6 +47,23 @@
     <string name="read_file_button">Read from file</string>
     <string name="write_to_file_button">Write to file</string>
 
+    <!--This was adapted from the FreeOTP app's source code (also licensed under
+        Apache 2.0).-->
+    <string name="about_version">TTS Util Version %1$s (%2$d)</string>
+    <string name="about_copyright">© 2019 - Dane Finlay</string>
+    <string name="about_license">TTS Util is free software licensed under the %1$s licence.</string>
+    <string name="link_apache2" translatable="false">&lt;a href=&quot;https://www.apache.org/licenses/LICENSE-2.0.html&quot;&gt;Apache 2.0&lt;/a&gt;</string>
+    <string name="about_acknowledgements_title">Acknowledgements &amp; Licences</string>
+    <string name="about_acknowledgements_msg">Parts of the following projects were used in the development of this application:</string>
+    <string name="about_ack_material_design_icons">%1$s (%2$s) — icons used in this app</string>
+    <string name="link_material_design_icons" translatable="false">&lt;a href=&quot;https://material.io/resources/icons/&quot;&gt;Google\'s Material Design Icons&lt;/a&gt;</string>
+    <string name="about_ack_anko">%1$s (%2$s) — Pleasant Android application development</string>
+    <string name="link_anko" translatable="false">&lt;a href=&quot;https://github.com/Kotlin/anko&quot;&gt;Anko&lt;/a&gt;</string>
+    <string name="about_ack_kotlin">%1$s (%2$s) — programming language used</string>
+    <string name="link_kotlin" translatable="false">&lt;a href=&quot;https://kotlinlang.org/&quot;&gt;Kotlin&lt;/a&gt;</string>
+    <string name="about_ack_free_otp">%1$s (%2$s) — portions used to create this About section</string>
+    <string name="link_freeotp" translatable="false">&lt;a href=&quot;https://freeotp.github.io&quot;&gt;FreeOTP&lt;/a&gt;</string>
+
     <!--Dialog strings.-->
     <string name="alert_positive_message">Okay</string>
     <string name="alert_negative_message1">No thanks</string>
