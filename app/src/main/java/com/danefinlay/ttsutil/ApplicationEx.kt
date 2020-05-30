@@ -26,6 +26,7 @@ import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.media.AudioManager.OnAudioFocusChangeListener
 import android.os.Build
+import android.speech.tts.TextToSpeech
 import org.jetbrains.anko.audioManager
 
 class ApplicationEx : Application() {
@@ -89,9 +90,9 @@ class ApplicationEx : Application() {
         }
     }
 
-    fun startSpeaker() {
+    fun startSpeaker(initListener: TextToSpeech.OnInitListener) {
         if (speaker == null) {
-            speaker = Speaker(this, true)
+            speaker = Speaker(this, true, initListener)
         }
     }
 

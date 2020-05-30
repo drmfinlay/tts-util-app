@@ -35,7 +35,7 @@ import org.jetbrains.anko.AlertDialogBuilder
  * be redefined for each activity.
  */
 @SuppressLint("Registered")
-open class SpeakerActivity: AppCompatActivity() {
+open class SpeakerActivity: AppCompatActivity(), TextToSpeech.OnInitListener {
     val myApplication: ApplicationEx
         get() = application as ApplicationEx
 
@@ -58,6 +58,10 @@ open class SpeakerActivity: AppCompatActivity() {
         val check = Intent()
         check.action = TextToSpeech.Engine.ACTION_CHECK_TTS_DATA
         startActivityForResult(check, code)
+    }
+
+    override fun onInit(status: Int) {
+        speaker?.ready = status == TextToSpeech.SUCCESS
     }
 
     private fun showNoTTSDataDialog() {
@@ -89,7 +93,7 @@ open class SpeakerActivity: AppCompatActivity() {
             CHECK_TTS, CHECK_TTS_SPEAK_AFTERWARDS -> {
                 if (resultCode == TextToSpeech.Engine.CHECK_VOICE_DATA_PASS) {
                     // Start the speaker.
-                    myApplication.startSpeaker()
+                    myApplication.startSpeaker(this)
                 } else {
                     // Show a dialogue *and then* start an activity to install a
                     // text to speech engine if the user agrees.

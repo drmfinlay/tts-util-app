@@ -32,21 +32,16 @@ import java.io.File
 
 class Speaker(private val context: Context,
               var speechAllowed: Boolean,
-              onReady: Speaker.() -> Unit = {}) : TextToSpeech.OnInitListener {
+              initListener: TextToSpeech.OnInitListener) {
 
-    private val tts = TextToSpeech(context.applicationContext, this)
+    val tts = TextToSpeech(context.applicationContext, initListener)
 
     private val appCtx: ApplicationEx
         get() = context.applicationContext as ApplicationEx
 
-    var onReady: Speaker.() -> Unit = onReady
-        set(value) {
-            field = value
-            if ( ready ) value()
-        }
-
+    /** This should be changed by the OnInitListener. */
     var ready = false
-        private set
+
     private var lastUtteranceWasFileSynthesis: Boolean = false
 
     private var currentUtteranceId: Long = 0
@@ -54,15 +49,6 @@ class Speaker(private val context: Context,
         val id = currentUtteranceId
         currentUtteranceId += 1
         return "$id"
-    }
-
-    override fun onInit(status: Int) {
-        when ( status ) {
-            TextToSpeech.SUCCESS -> {
-                ready = true
-                onReady()
-            }
-        }
     }
 
     fun speak(string: String?) {
