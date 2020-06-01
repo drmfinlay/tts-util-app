@@ -22,6 +22,8 @@ package com.danefinlay.ttsutil
 
 import android.app.Notification
 import android.content.Context
+import android.os.Build
+import android.speech.tts.TextToSpeech.*
 import android.speech.tts.UtteranceProgressListener
 import org.jetbrains.anko.*
 
@@ -43,9 +45,27 @@ abstract class SpeakerEventListener(protected val app: ApplicationEx):
             return
         }
 
-        // Display a toast message.
+        // Get the matching error message string for errorCode.
+        val errorMsg = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            // Handle error messages available in SDK version 21 and above.
+            when (errorCode) {
+                ERROR_SYNTHESIS -> R.string.synthesis_error_msg_synthesis
+                ERROR_SERVICE -> R.string.synthesis_error_msg_service
+                ERROR_OUTPUT -> R.string.synthesis_error_msg_output
+                ERROR_NETWORK -> R.string.synthesis_error_msg_network
+                ERROR_NETWORK_TIMEOUT -> R.string.synthesis_error_msg_net_timeout
+                ERROR_INVALID_REQUEST -> R.string.synthesis_error_msg_invalid_req
+                ERROR_NOT_INSTALLED_YET -> R.string.synthesis_error_msg_voice_data
+                else -> R.string.synthesis_error_msg_generic
+            }
+        } else {
+            // Use the generic error message for version 20.
+            R.string.synthesis_error_msg_generic
+        }
+
+        // Display the error message.
         app.runOnUiThread {
-            longToast(R.string.text_synthesis_error_msg)
+            longToast(errorMsg)
         }
     }
 

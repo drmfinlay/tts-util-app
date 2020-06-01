@@ -102,6 +102,20 @@
     <string name="synthesis_notification_title">File synthesis in progress</string>
     <string name="synthesis_notification_text">Text-to-speech synthesis in progress…</string>
 
+    <!--Text-to-speech error message strings.-->
+    <string name="synthesis_error_msg_generic">There was an error during text synthesis.</string>
+    <string name="synthesis_error_msg_synthesis">The text-to-speech engine failed to synthesise the text.</string>
+    <string name="synthesis_error_msg_service">The text-to-speech service failed unexpectedly.</string>
+    <string name="synthesis_error_msg_output">The text-to-speech engine failed to send output audio.</string>
+    <string name="synthesis_error_msg_network">Text-to-speech failed due to network connectivity problems.</string>
+    <string name="synthesis_error_msg_net_timeout">Text-to-speech failed due to a network timeout.</string>
+    <string name="synthesis_error_msg_invalid_req">Text-to-speech failed due to a network timeout.</string>
+    <string name="synthesis_error_msg_voice_data">Text-to-speech failed because voice data was not installed.</string>
+    <string name="file_synthesis_interrupted_msg">File synthesis was interrupted.</string>
+    <string name="tts_initialisation_failure_msg">Text-to-speech engine failed to initialise.</string>
+    <string name="tts_language_not_available_msg1">Selected speaker language is not available, using default instead.</string>
+    <string name="tts_language_not_available_msg2">Neither the selected nor the default speaker languages are available.</string>
+
     <!--Miscellaneous.-->
     <string name="not_yet_implemented">Not implemented yet.</string>
     <!--Only used if the TTS engine returns a null or empty sample string.-->
@@ -109,13 +123,8 @@
     <string name="cannot_speak_empty_text_msg">Cannot speak empty/blank text!</string>
     <string name="clipboard_is_empty_blank_msg">Clipboard is empty/blank!</string>
     <string name="cannot_read_clipboard_android_10_msg">\'Read clipboard\' doesn\'t work on Android 10 yet.</string>
-    <string name="text_synthesis_error_msg">There was an error during text synthesis.</string>
     <string name="pre_file_synthesis_msg">Stopping speech prior to file synthesis.</string>
-    <string name="file_synthesis_interrupted_msg">File synthesis was interrupted.</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
     <string name="nav_header_desc">Navigation header</string>
-    <string name="tts_initialisation_failure_msg">Text-to-speech engine failed to initialise.</string>
-    <string name="tts_language_not_available_msg1">Selected speaker language is not available, using default instead.</string>
-    <string name="tts_language_not_available_msg2">Neither the selected nor the default speaker languages are available.</string>
 </resources>
