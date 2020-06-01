@@ -282,7 +282,7 @@ class WriteFilesFragment : FileChooserFragment() {
         val dir = Environment.getExternalStorageDirectory()
         val filename = "${uri.getDisplayName(ctx)}.mp4"
         val file = File(dir, filename)
-        val listener = SynthesisEventListener(ctx, filename)
+        val listener = SynthesisEventListener(myActivity.myApplication, filename)
         speaker?.synthesizeToFile(content, file, listener)
     }
 

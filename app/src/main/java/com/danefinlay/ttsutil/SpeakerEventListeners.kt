@@ -21,12 +21,11 @@
 package com.danefinlay.ttsutil
 
 import android.app.Notification
-import android.content.Context
 import android.speech.tts.UtteranceProgressListener
 import org.jetbrains.anko.*
 
 
-abstract class SpeakerEventListener(private val ctx: Context):
+abstract class SpeakerEventListener(protected val app: ApplicationEx):
         UtteranceProgressListener() {
 
     protected abstract val notificationId: Int
@@ -38,23 +37,22 @@ abstract class SpeakerEventListener(private val ctx: Context):
 
     override fun onError(utteranceId: String?, errorCode: Int) {
         // Display a toast message.
-        ctx.runOnUiThread {
+        app.runOnUiThread {
             longToast(R.string.text_synthesis_error_msg)
         }
     }
 
     protected fun startNotification() {
-        ctx.notificationManager.notify(notificationId, notification)
+        app.notificationManager.notify(notificationId, notification)
     }
 
     protected fun cancelNotification() {
-        ctx.notificationManager.cancel(notificationId)
+        app.notificationManager.cancel(notificationId)
     }
 }
 
 
-class SpeakingEventListener(private val app: ApplicationEx):
-        SpeakerEventListener(app) {
+class SpeakingEventListener(app: ApplicationEx): SpeakerEventListener(app) {
 
     override val notificationId = SPEAKING_NOTIFICATION_ID
     override val notification =
@@ -92,13 +90,12 @@ class SpeakingEventListener(private val app: ApplicationEx):
     }
 }
 
-class SynthesisEventListener(private val ctx: Context,
-                             private val filename: String):
-        SpeakerEventListener(ctx) {
+class SynthesisEventListener(app: ApplicationEx, private val filename: String):
+        SpeakerEventListener(app) {
 
     override val notificationId = SYNTHESIS_NOTIFICATION_ID
     override val notification =
-            buildSpeakerNotification(ctx, notificationId)
+            buildSpeakerNotification(app, notificationId)
     private var notificationStarted = false
 
     override fun onStart(utteranceId: String?) {
@@ -112,15 +109,15 @@ class SynthesisEventListener(private val ctx: Context,
         super.onStop(utteranceId, interrupted)
         if (interrupted) {
             cancelNotification()
-            ctx.runOnUiThread {
+            app.runOnUiThread {
                 toast(getString(R.string.file_synthesis_interrupted_msg))
             }
         }
     }
 
     override fun onDone(utteranceId: String?) {
-        ctx.runOnUiThread {
-            AlertDialogBuilder(ctx).apply {
+        app.runOnUiThread {
+            AlertDialogBuilder(app).apply {
                 title(R.string.write_files_fragment_label)
                 val msgPart1 = ctx.getString(
                         R.string.write_to_file_alert_message_success)
