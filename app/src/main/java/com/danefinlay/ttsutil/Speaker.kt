@@ -39,13 +39,16 @@ class Speaker(private val context: Context,
     private val appCtx: ApplicationEx
         get() = context.applicationContext as ApplicationEx
 
-    /** This should be changed by the OnInitListener. */
+    /**
+     * Whether the object is ready for speech synthesis.
+     *
+     * This should be changed by the OnInitListener.
+     * */
     var ready = false
 
     /**
      * Whether TTS synthesis has been or is in the process of being stopped.
      * */
-    /**  */
     var stoppingSpeech = false
         private set
 
