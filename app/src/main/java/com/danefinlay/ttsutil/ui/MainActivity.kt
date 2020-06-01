@@ -100,6 +100,14 @@ class MainActivity : SpeakerActivity(), FileChooser {
                 startActivity(intent)
                 true
             }
+
+            R.id.menu_reinitialise_tts -> {
+                // Reinitialise the Speaker object.
+                myApplication.freeSpeaker()
+                myApplication.startSpeaker(this)
+                true
+            }
+
             else -> return super.onOptionsItemSelected(item)
         }
     }
