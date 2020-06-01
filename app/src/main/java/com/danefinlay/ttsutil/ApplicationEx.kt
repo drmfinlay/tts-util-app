@@ -28,6 +28,7 @@ import android.media.AudioManager.OnAudioFocusChangeListener
 import android.os.Build
 import android.speech.tts.TextToSpeech
 import org.jetbrains.anko.audioManager
+import org.jetbrains.anko.notificationManager
 
 class ApplicationEx : Application() {
 
@@ -99,6 +100,10 @@ class ApplicationEx : Application() {
     fun freeSpeaker() {
         speaker?.free()
         speaker = null
+
+        // Cancel any TTS notifications present.
+        notificationManager.cancel(SPEAKING_NOTIFICATION_ID)
+        notificationManager.cancel(SYNTHESIS_NOTIFICATION_ID)
     }
 
     override fun onLowMemory() {
