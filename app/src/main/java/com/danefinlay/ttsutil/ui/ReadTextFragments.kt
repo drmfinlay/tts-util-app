@@ -63,9 +63,6 @@ abstract class ReadTextFragmentBase : Fragment() {
             } else {
                 // Speaker isn't set up.
                 myActivity.toast(R.string.speaker_not_ready_message)
-
-                // Check (and eventually setup) text-to-speech.
-                myActivity.checkTTS(SpeakerActivity.CHECK_TTS_SPEAK_AFTERWARDS)
             }
         }
 

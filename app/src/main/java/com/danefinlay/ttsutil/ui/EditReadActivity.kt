@@ -25,7 +25,6 @@ import android.os.Bundle
 import android.view.MenuItem
 import com.danefinlay.ttsutil.ACTION_EDIT_READ_CLIPBOARD
 import com.danefinlay.ttsutil.R
-import com.danefinlay.ttsutil.isReady
 
 class EditReadActivity : SpeakerActivity() {
 
@@ -42,11 +41,6 @@ class EditReadActivity : SpeakerActivity() {
             supportFragmentManager.beginTransaction()
                     .replace(R.id.fragment_container, fragment)
                     .commit()
-
-            // Set up text-to-speech if necessary.
-            if (!speaker.isReady()) {
-                checkTTS(CHECK_TTS)
-            }
         }
     }
 

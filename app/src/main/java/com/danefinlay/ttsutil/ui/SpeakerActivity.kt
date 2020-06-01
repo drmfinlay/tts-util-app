@@ -22,6 +22,8 @@ package com.danefinlay.ttsutil.ui
 
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.os.Build
+import android.os.Build.VERSION_CODES.LOLLIPOP
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.support.v7.app.AppCompatActivity
@@ -29,6 +31,8 @@ import com.danefinlay.ttsutil.ApplicationEx
 import com.danefinlay.ttsutil.R
 import com.danefinlay.ttsutil.Speaker
 import org.jetbrains.anko.AlertDialogBuilder
+import org.jetbrains.anko.longToast
+import java.util.*
 
 /**
  * Custom activity class so things like 'myApplication' and 'speaker' don't need to
@@ -45,23 +49,76 @@ open class SpeakerActivity: AppCompatActivity(), TextToSpeech.OnInitListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        if ( savedInstanceState == null ) {
-            // Check if there is a TTS engine is installed on the device.
-            // Only necessary if the Speaker is null.
-            if (speaker == null) {
-                checkTTS(CHECK_TTS)
-            }
+        if ( savedInstanceState == null && speaker == null ) {
+            // Start the speaker.
+            myApplication.startSpeaker(this)
         }
     }
 
-    fun checkTTS(code: Int) {
-        val check = Intent()
-        check.action = TextToSpeech.Engine.ACTION_CHECK_TTS_DATA
-        startActivityForResult(check, code)
-    }
-
     override fun onInit(status: Int) {
-        speaker?.ready = status == TextToSpeech.SUCCESS
+        // Handle errors.
+        val speaker = speaker
+        val tts = speaker?.tts
+        if (status == TextToSpeech.ERROR || tts == null) {
+            runOnUiThread {
+                longToast(R.string.tts_initialisation_failure_msg)
+            }
+
+            myApplication.freeSpeaker()
+            return
+        }
+
+        // Check if the language is available.
+        @Suppress("deprecation")
+        val language = when {
+            Build.VERSION.SDK_INT >= LOLLIPOP -> tts.voice?.locale
+            else -> tts.language
+        } ?: tts.language ?: Locale.getDefault()
+        when (tts.isLanguageAvailable(language)) {
+            // Set the language if it is available and there is no current voice.
+            TextToSpeech.LANG_AVAILABLE, TextToSpeech.LANG_COUNTRY_AVAILABLE,
+            TextToSpeech.LANG_COUNTRY_VAR_AVAILABLE -> {
+                if (Build.VERSION.SDK_INT < LOLLIPOP ||
+                        Build.VERSION.SDK_INT >= LOLLIPOP && tts.voice == null)
+                    tts.language = language
+
+                // The Speaker is now ready to process text into speech.
+                speaker.ready = true
+            }
+
+            // Install missing voice data if required.
+            TextToSpeech.LANG_MISSING_DATA -> {
+                runOnUiThread {
+                    showNoTTSDataDialog()
+                }
+            }
+
+            // Inform the user that the selected language is not available.
+            TextToSpeech.LANG_NOT_SUPPORTED -> {
+                // Attempt to fall back on the default language.
+                val defaultLanguage = Locale.getDefault()
+                when (tts.isLanguageAvailable(defaultLanguage)) {
+                    TextToSpeech.LANG_AVAILABLE,
+                    TextToSpeech.LANG_COUNTRY_AVAILABLE,
+                    TextToSpeech.LANG_COUNTRY_VAR_AVAILABLE -> {
+                        runOnUiThread {
+                            longToast(R.string.tts_language_not_available_msg1)
+                        }
+                        tts.language = defaultLanguage
+
+                        // The Speaker is now ready to process text into speech.
+                        speaker.ready = true
+
+                    }
+
+                    else -> runOnUiThread {
+                        // Neither the selected nor the default languages are
+                        // available.
+                        longToast(R.string.tts_language_not_available_msg2)
+                    }
+                }
+            }
+        }
     }
 
     private fun showNoTTSDataDialog() {
@@ -69,40 +126,44 @@ open class SpeakerActivity: AppCompatActivity(), TextToSpeech.OnInitListener {
             title(R.string.no_tts_data_alert_title)
             message(R.string.no_tts_data_alert_message)
             positiveButton(R.string.alert_positive_message) {
-                val install = Intent()
-                install.action = TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA
-                startActivityForResult(install, INSTALL_TTS_DATA)
+                noTTSDataDialogPositiveButton()
             }
-            negativeButton(R.string.alert_negative_message1)
+            negativeButton(R.string.alert_negative_message1) {
+                onDoNotInstallTTSData()
+            }
             show()
         }
     }
+
+    open fun noTTSDataDialogPositiveButton() {
+        val install = Intent()
+        install.action = TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA
+        startActivityForResult(install, INSTALL_TTS_DATA)
+    }
+
+    open fun onDoNotInstallTTSData() { }
 
     private fun showTTSInstallFailureDialog() {
         // Show a dialog if installing TTS data failed.
         AlertDialogBuilder(this).apply {
             title(R.string.failed_to_get_tts_data_title)
             message(R.string.failed_to_get_tts_data_msg)
-            positiveButton(R.string.alert_positive_message) {}
+            positiveButton(R.string.alert_positive_message) {
+                onTTSInstallFailureDialogExit()
+            }
+            onCancel { onTTSInstallFailureDialogExit() }
             show()
         }
     }
 
+    open fun onTTSInstallFailureDialogExit() { }
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         when (requestCode) {
-            CHECK_TTS, CHECK_TTS_SPEAK_AFTERWARDS -> {
-                if (resultCode == TextToSpeech.Engine.CHECK_VOICE_DATA_PASS) {
-                    // Start the speaker.
-                    myApplication.startSpeaker(this)
-                } else {
-                    // Show a dialogue *and then* start an activity to install a
-                    // text to speech engine if the user agrees.
-                    showNoTTSDataDialog()
-                }
-            }
-
             INSTALL_TTS_DATA -> {
-                if (resultCode == TextToSpeech.ERROR) {
+                if (resultCode == TextToSpeech.SUCCESS) {
+                    speaker?.ready = true
+                } else {
                     showTTSInstallFailureDialog()
                 }
             }
@@ -111,8 +172,6 @@ open class SpeakerActivity: AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     companion object {
-        const val CHECK_TTS = 1
-        const val CHECK_TTS_SPEAK_AFTERWARDS = 2
-        const val INSTALL_TTS_DATA = 3
+        const val INSTALL_TTS_DATA = 1
     }
 }

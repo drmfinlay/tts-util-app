@@ -114,4 +114,7 @@
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
     <string name="nav_header_desc">Navigation header</string>
+    <string name="tts_initialisation_failure_msg">Text-to-speech engine failed to initialise.</string>
+    <string name="tts_language_not_available_msg1">Selected speaker language is not available, using default instead.</string>
+    <string name="tts_language_not_available_msg2">Neither the selected nor the default speaker languages are available.</string>
 </resources>

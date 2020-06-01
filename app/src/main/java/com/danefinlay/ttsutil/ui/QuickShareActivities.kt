@@ -22,7 +22,6 @@ package com.danefinlay.ttsutil.ui
 
 import android.content.Intent
 import android.os.Bundle
-import android.speech.tts.TextToSpeech
 import com.danefinlay.ttsutil.ACTION_READ_CLIPBOARD
 import com.danefinlay.ttsutil.SpeakerIntentService
 import com.danefinlay.ttsutil.isReady
@@ -35,15 +34,33 @@ abstract class QuickShareActivity : SpeakerActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (speaker.isReady()) {
-            // Start the appropriate service action if the Speaker is ready.
+            // Start the appropriate service action and finish the activity.
             startServiceAction()
-
-            // Finish the activity.
             finish()
-        } else {
-            // Check (and eventually setup) text-to-speech.
-            checkTTS(CHECK_TTS_SPEAK_AFTERWARDS)
         }
+    }
+
+    override fun onInit(status: Int) {
+        super.onInit(status)
+        // Start the appropriate service action if the Speaker is ready.
+        if (speaker.isReady()) {
+            startServiceAction()
+        }
+
+        // Finish the activity.
+        finish()
+    }
+
+    override fun onDoNotInstallTTSData() {
+        // Finish the quick share activity if the user doesn't want TTS data
+        // installed.
+        finish()
+    }
+
+    override fun onTTSInstallFailureDialogExit() {
+        // Finish the quick share activity after informing the user that installing
+        // TTS data failed.
+        finish()
     }
 
     abstract fun startServiceAction()
@@ -51,14 +68,13 @@ abstract class QuickShareActivity : SpeakerActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
-        // Start the appropriate service action now that the Speaker is ready.
-        if (requestCode == CHECK_TTS_SPEAK_AFTERWARDS &&
-                resultCode == TextToSpeech.Engine.CHECK_VOICE_DATA_PASS) {
+        // Start the appropriate service action if the Speaker is ready.
+        if (speaker.isReady()) {
             startServiceAction()
-
-            // Finish the activity.
-            finish()
         }
+
+        // Finish the activity.
+        finish()
     }
 }
 
