@@ -21,6 +21,7 @@
 package com.danefinlay.ttsutil
 
 import android.app.Notification
+import android.content.Context
 import android.speech.tts.UtteranceProgressListener
 import org.jetbrains.anko.*
 
@@ -96,7 +97,8 @@ class SpeakingEventListener(app: ApplicationEx): SpeakerEventListener(app) {
     }
 }
 
-class SynthesisEventListener(app: ApplicationEx, private val filename: String):
+class SynthesisEventListener(app: ApplicationEx, private val filename: String,
+                             private val uiCtx: Context):
         SpeakerEventListener(app) {
 
     override val notificationId = SYNTHESIS_NOTIFICATION_ID
@@ -123,7 +125,8 @@ class SynthesisEventListener(app: ApplicationEx, private val filename: String):
 
     override fun onDone(utteranceId: String?) {
         app.runOnUiThread {
-            AlertDialogBuilder(app).apply {
+            // Use the given UI context to build and show the alert dialog.
+            AlertDialogBuilder(uiCtx).apply {
                 title(R.string.write_files_fragment_label)
                 val msgPart1 = ctx.getString(
                         R.string.write_to_file_alert_message_success)
