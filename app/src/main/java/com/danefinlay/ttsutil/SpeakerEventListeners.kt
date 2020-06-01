@@ -36,6 +36,12 @@ abstract class SpeakerEventListener(protected val app: ApplicationEx):
     }
 
     override fun onError(utteranceId: String?, errorCode: Int) {
+        // Return early if synthesis is only stopping.
+        val speaker = app.speaker
+        if (speaker?.stoppingSpeech == true) {
+            return
+        }
+
         // Display a toast message.
         app.runOnUiThread {
             longToast(R.string.text_synthesis_error_msg)

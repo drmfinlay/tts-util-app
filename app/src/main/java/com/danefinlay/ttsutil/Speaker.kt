@@ -42,6 +42,13 @@ class Speaker(private val context: Context,
     /** This should be changed by the OnInitListener. */
     var ready = false
 
+    /**
+     * Whether TTS synthesis has been or is in the process of being stopped.
+     * */
+    /**  */
+    var stoppingSpeech = false
+        private set
+
     private var lastUtteranceWasFileSynthesis: Boolean = false
 
     private var currentUtteranceId: Long = 0
@@ -62,6 +69,9 @@ class Speaker(private val context: Context,
         if (!(ready && speechAllowed)) {
             return
         }
+
+        // Reset the stopping speech flag.
+        stoppingSpeech = false
 
         // Stop possible file synthesis before speaking.
         if (lastUtteranceWasFileSynthesis) {
@@ -133,6 +143,9 @@ class Speaker(private val context: Context,
             }
         }
 
+        // Reset the stopping speech flag.
+        stoppingSpeech = false
+
         // Set the listener.
         tts.setOnUtteranceProgressListener(listener)
 
@@ -154,6 +167,10 @@ class Speaker(private val context: Context,
 
     fun stopSpeech() {
         if ( tts.isSpeaking ) {
+            // Set the stopping speech flag.
+            stoppingSpeech = true
+
+            // Tell the TTS engine to stop speech synthesis.
             tts.stop()
         }
     }
