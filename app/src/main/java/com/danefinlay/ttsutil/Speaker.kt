@@ -68,6 +68,43 @@ class Speaker(private val context: Context,
         speak(lines)
     }
 
+    private fun splitLongLines(lines: List<String>): List<String> {
+        val maxLength = TextToSpeech.getMaxSpeechInputLength()
+        val result = mutableListOf<String>()
+        for (line in lines) {
+            if (line.length < maxLength) {
+                result.add(line)
+                continue
+            }
+
+            // Split long lines into multiple strings of reasonable length.
+            val shorterLines = mutableListOf("")
+            line.forEach {
+                val lastString = shorterLines.last()
+                if (lastString.length < maxLength) {
+                    // Separate on whitespace close to the maximum length where
+                    // possible.
+                    if (it.isWhitespace() && lastString.length > maxLength - 50)
+                        shorterLines.add(it.toString())
+
+                    // Add to the last string.
+                    else {
+                        val newLine = lastString + it.toString()
+                        shorterLines[shorterLines.lastIndex] = newLine
+                    }
+                }
+
+                // Add a new string.
+                else shorterLines.add(it.toString())
+            }
+
+            // Add the shorter lines to the result list.
+            result.addAll(shorterLines)
+        }
+
+        return result
+    }
+
     fun speak(lines: List<String?>) {
         if (!(ready && speechAllowed)) {
             return
@@ -82,26 +119,30 @@ class Speaker(private val context: Context,
             lastUtteranceWasFileSynthesis = false
         }
 
+        // Handle lines that are null, blank or too long.
+        val inputLines = splitLongLines(
+                lines.mapNotNull { it }.filter { !it.isBlank() }
+        )
+
         // Set the listener.
         val listener = SpeakingEventListener(appCtx)
         tts.setOnUtteranceProgressListener(listener)
 
-        // Get Android's TTS framework to speak each non-null line.
+        // Get Android's TTS framework to speak each line.
         // This is, quite typically, different in some versions of Android.
-        val nonEmptyLines = lines.mapNotNull { it }.filter { !it.isBlank() }
         val streamKey = TextToSpeech.Engine.KEY_PARAM_STREAM
         var utteranceId: String? = null
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             val bundle = Bundle()
             bundle.putInt(streamKey, AudioManager.STREAM_MUSIC)
-            nonEmptyLines.forEach {
+            inputLines.forEach {
                 utteranceId = getUtteranceId()
                 tts.speak(it, TextToSpeech.QUEUE_ADD, bundle, utteranceId)
                 pause(100)
             }
         } else {
             val streamValue = AudioManager.STREAM_MUSIC.toString()
-            nonEmptyLines.forEach {
+            inputLines.forEach {
                 utteranceId = getUtteranceId()
                 val map = hashMapOf(streamKey to streamValue,
                         KEY_PARAM_UTTERANCE_ID to utteranceId)
@@ -148,6 +189,8 @@ class Speaker(private val context: Context,
 
         // Reset the stopping speech flag.
         stoppingSpeech = false
+
+        // TODO Handle lines that are null, blank or too long.
 
         // Set the listener.
         tts.setOnUtteranceProgressListener(listener)
