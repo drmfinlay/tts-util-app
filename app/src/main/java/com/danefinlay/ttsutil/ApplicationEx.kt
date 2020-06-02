@@ -21,6 +21,7 @@
 package com.danefinlay.ttsutil
 
 import android.app.Application
+import android.content.res.Resources
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
@@ -29,11 +30,33 @@ import android.os.Build
 import android.speech.tts.TextToSpeech
 import org.jetbrains.anko.audioManager
 import org.jetbrains.anko.notificationManager
+import java.util.*
 
 class ApplicationEx : Application() {
 
     var speaker: Speaker? = null
         private set
+
+    /**
+     * Return the system's current locale.
+     *
+     * This will be a Locale object representing the user's preferred language as
+     * set in the system settings.
+     */
+    val currentSystemLocale: Locale
+        get() {
+            val systemConfig = Resources.getSystem().configuration
+            val systemLocale = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                systemConfig?.locales?.get(0)
+            } else {
+                @Suppress("deprecation")
+                systemConfig?.locale
+            }
+
+            // Return the system locale. Fallback on the default JVM locale if
+            // necessary.
+            return systemLocale ?: Locale.getDefault()
+        }
 
     private val audioFocusGain = AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
     private val audioFocusRequest: AudioFocusRequest by lazy {

@@ -32,7 +32,6 @@ import com.danefinlay.ttsutil.R
 import com.danefinlay.ttsutil.Speaker
 import org.jetbrains.anko.AlertDialogBuilder
 import org.jetbrains.anko.longToast
-import java.util.*
 
 /**
  * Custom activity class so things like 'myApplication' and 'speaker' don't need to
@@ -69,11 +68,12 @@ open class SpeakerActivity: AppCompatActivity(), TextToSpeech.OnInitListener {
         }
 
         // Check if the language is available.
+        val systemLocale = myApplication.currentSystemLocale
         @Suppress("deprecation")
         val language = when {
             Build.VERSION.SDK_INT >= LOLLIPOP -> tts.voice?.locale
             else -> tts.language
-        } ?: tts.language ?: Locale.getDefault()
+        } ?: tts.language ?: systemLocale
         when (tts.isLanguageAvailable(language)) {
             // Set the language if it is available and there is no current voice.
             TextToSpeech.LANG_AVAILABLE, TextToSpeech.LANG_COUNTRY_AVAILABLE,
@@ -95,16 +95,15 @@ open class SpeakerActivity: AppCompatActivity(), TextToSpeech.OnInitListener {
 
             // Inform the user that the selected language is not available.
             TextToSpeech.LANG_NOT_SUPPORTED -> {
-                // Attempt to fall back on the default language.
-                val defaultLanguage = Locale.getDefault()
-                when (tts.isLanguageAvailable(defaultLanguage)) {
+                // Attempt to fall back on the system language.
+                when (tts.isLanguageAvailable(systemLocale)) {
                     TextToSpeech.LANG_AVAILABLE,
                     TextToSpeech.LANG_COUNTRY_AVAILABLE,
                     TextToSpeech.LANG_COUNTRY_VAR_AVAILABLE -> {
                         runOnUiThread {
                             longToast(R.string.tts_language_not_available_msg1)
                         }
-                        tts.language = defaultLanguage
+                        tts.language = systemLocale
 
                         // The Speaker is now ready to process text into speech.
                         speaker.ready = true
