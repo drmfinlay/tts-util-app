@@ -45,6 +45,16 @@ abstract class SpeakerEventListener(protected val app: ApplicationEx):
             return
         }
 
+        // Schedule the notification to be cancelled and audio focus released in
+        // roughly 300 ms. This is being done asynchronously because it is possible
+        // that neither the notification has been started nor the audio focus has
+        // been acquired by the time this is run.
+        app.doAsync {
+            Thread.sleep(300)
+            cancelNotification()
+            app.releaseAudioFocus()
+        }
+
         // Get the matching error message string for errorCode.
         val errorMsg = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             // Handle error messages available in SDK version 21 and above.
@@ -94,11 +104,6 @@ class SpeakingEventListener(app: ApplicationEx): SpeakerEventListener(app) {
             audioFocusRequestGranted = app.requestAudioFocus()
             startNotification()
         }
-    }
-
-    override fun onError(utteranceId: String?, errorCode: Int) {
-        super.onError(utteranceId, errorCode)
-        cancelNotification()
     }
 
     override fun onStop(utteranceId: String?, interrupted: Boolean) {
