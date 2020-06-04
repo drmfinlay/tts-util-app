@@ -37,6 +37,10 @@ abstract class QuickShareActivity : SpeakerActivity() {
             // Start the appropriate service action and finish the activity.
             startServiceAction()
             finish()
+        } else {
+            // Show the speaker not ready message and finish the activity.
+            showSpeakerNotReadyMessage()
+            finish()
         }
     }
 
@@ -45,6 +49,9 @@ abstract class QuickShareActivity : SpeakerActivity() {
         // Start the appropriate service action if the Speaker is ready.
         if (speaker.isReady()) {
             startServiceAction()
+        } else {
+            // Show the speaker not ready message.
+            showSpeakerNotReadyMessage()
         }
 
         // Finish the activity.
@@ -71,6 +78,9 @@ abstract class QuickShareActivity : SpeakerActivity() {
         // Start the appropriate service action if the Speaker is ready.
         if (speaker.isReady()) {
             startServiceAction()
+        } else {
+            // Show the speaker not ready message.
+            showSpeakerNotReadyMessage()
         }
 
         // Finish the activity.

@@ -219,6 +219,12 @@ class ReadFilesFragment : FileChooserFragment() {
     }
 
     private fun onClickReadFile() {
+        // Show the speaker not ready message if appropriate.
+        if (!speaker.isReady()) {
+            myActivity.showSpeakerNotReadyMessage()
+            return
+        }
+
         val fileToRead = fileToRead
         when (fileToRead?.validFilePath(ctx)) {
             true -> fileToRead.getContent(ctx)?.reader()?.forEachLine {
@@ -298,6 +304,12 @@ class WriteFilesFragment : FileChooserFragment() {
                 activity?.toast(R.string.no_file_chosen2)
                 return
             }
+        }
+
+        // Show the speaker not ready message if appropriate.
+        if (!speaker.isReady()) {
+            myActivity.showSpeakerNotReadyMessage()
+            return
         }
 
         // Build and display an appropriate alert dialog.

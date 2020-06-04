@@ -67,6 +67,10 @@ class SpeakerIntentService : IntentService("SpeakerIntentService") {
      * parameters.
      */
     private fun handleActionReadText(text: String?) {
+        if (!speaker.isReady()) {
+            return
+        }
+
         // Display a message if 'text' is blank/empty.
         if (text == null || text.isBlank()) {
             runOnUiThread {

@@ -29,6 +29,7 @@ import android.media.AudioManager.OnAudioFocusChangeListener
 import android.os.Build
 import android.speech.tts.TextToSpeech
 import org.jetbrains.anko.audioManager
+import org.jetbrains.anko.longToast
 import org.jetbrains.anko.notificationManager
 import java.util.*
 
@@ -36,6 +37,8 @@ class ApplicationEx : Application() {
 
     var speaker: Speaker? = null
         private set
+
+    var errorMessageId: Int? = null
 
     /**
      * Return the system's current locale.
@@ -118,6 +121,16 @@ class ApplicationEx : Application() {
         if (speaker == null) {
             speaker = Speaker(this, true, initListener)
         }
+    }
+
+    /**
+     * Show the speaker error message (if set) or the default speaker not ready
+     * message.
+     */
+    fun showSpeakerNotReadyMessage() {
+        val defaultMessageId = R.string.speaker_not_ready_message
+        val errorMessageId = errorMessageId
+        longToast(errorMessageId ?: defaultMessageId)
     }
 
     fun freeSpeaker() {

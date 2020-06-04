@@ -58,11 +58,22 @@ open class SpeakerActivity: AppCompatActivity(), TextToSpeech.OnInitListener {
         // Handle errors.
         val speaker = speaker
         val tts = speaker?.tts
+        myApplication.errorMessageId = null
         if (status == TextToSpeech.ERROR || tts == null) {
-            runOnUiThread {
-                longToast(R.string.tts_initialisation_failure_msg)
+            // Check the number of available TTS engines and set an appropriate
+            // error message.
+            val engines = speaker?.tts?.engines ?: listOf()
+            val messageId = if (engines.isEmpty()) {
+                // No usable TTS engines.
+                R.string.no_engine_available_message
+            } else {
+                // General TTS initialisation failure.
+                R.string.tts_initialisation_failure_msg
             }
+            runOnUiThread { longToast(messageId) }
 
+            // Save the error message ID for later use, free the Speaker and return.
+            myApplication.errorMessageId = messageId
             myApplication.freeSpeaker()
             return
         }
@@ -107,17 +118,22 @@ open class SpeakerActivity: AppCompatActivity(), TextToSpeech.OnInitListener {
 
                         // The Speaker is now ready to process text into speech.
                         speaker.ready = true
-
                     }
 
-                    else -> runOnUiThread {
+                    else -> {
                         // Neither the selected nor the default languages are
                         // available.
-                        longToast(R.string.tts_language_not_available_msg2)
+                        val messageId = R.string.tts_language_not_available_msg2
+                        myApplication.errorMessageId = messageId
+                        runOnUiThread { longToast(messageId) }
                     }
                 }
             }
         }
+    }
+
+    fun showSpeakerNotReadyMessage() {
+        myApplication.showSpeakerNotReadyMessage()
     }
 
     private fun showNoTTSDataDialog() {
