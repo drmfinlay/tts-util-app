@@ -115,7 +115,7 @@ class Speaker(private val context: Context,
 
         // Stop possible file synthesis before speaking.
         if (lastUtteranceWasFileSynthesis) {
-            tts.stop()
+            stopSpeech()
             lastUtteranceWasFileSynthesis = false
         }
 
@@ -181,7 +181,7 @@ class Speaker(private val context: Context,
                          listener: SpeakerEventListener) {
         // Stop speech before synthesizing.
         if (tts.isSpeaking) {
-            tts.stop()
+            stopSpeech()
             context.runOnUiThread {
                 toast(getString(R.string.pre_file_synthesis_msg))
             }
