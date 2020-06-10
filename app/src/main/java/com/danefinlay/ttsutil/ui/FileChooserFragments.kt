@@ -284,9 +284,9 @@ class WriteFilesFragment : FileChooserFragment() {
         }
 
         // Save the file in the external storage directory using the filename
-        // + '.mp4'.
+        // + '.wav'.
         val dir = Environment.getExternalStorageDirectory()
-        val filename = "${uri.getDisplayName(ctx)}.mp4"
+        val filename = "${uri.getDisplayName(ctx)}.wav"
         val file = File(dir, filename)
         val listener = SynthesisEventListener(myActivity.myApplication, filename,
                 ctx)
@@ -317,7 +317,7 @@ class WriteFilesFragment : FileChooserFragment() {
         val msgPart2 = getString(R.string.write_to_file_alert_message_p2)
         val filename = "${uri?.getDisplayName(ctx)}"
         val fullMsg = "$msgPart1 \"$filename\"\n" +
-                "\n$msgPart2 \"$filename.mp4\""
+                "\n$msgPart2 \"$filename.wav\""
         AlertDialogBuilder(ctx).apply {
             title(R.string.write_files_fragment_label)
             message(fullMsg)
