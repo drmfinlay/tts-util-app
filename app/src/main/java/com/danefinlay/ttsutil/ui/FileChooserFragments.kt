@@ -289,8 +289,8 @@ class WriteFilesFragment : FileChooserFragment() {
         val filename = "${uri.getDisplayName(ctx)}.wav"
         val file = File(dir, filename)
         val listener = SynthesisEventListener(myActivity.myApplication, filename,
-                ctx)
-        speaker?.synthesizeToFile(content, file, listener)
+                ctx, file)
+        speaker?.synthesizeToFile(content, listener)
     }
 
     private fun onClickWriteFile() {

@@ -178,8 +178,7 @@ class Speaker(private val context: Context,
 
     }
 
-    fun synthesizeToFile(text: String, outFile: File,
-                         listener: SpeakerEventListener) {
+    fun synthesizeToFile(text: String, listener: SynthesisEventListener) {
         // Stop speech before synthesizing.
         if (tts.isSpeaking) {
             stopSpeech()
@@ -191,22 +190,35 @@ class Speaker(private val context: Context,
         // Reset the stopping speech flag.
         stoppingSpeech = false
 
-        // TODO Handle lines that are null, blank or too long.
+        // Handle lines that are too long.
+        val inputLines = splitLongLines(listOf(text))
 
         // Set the listener.
         tts.setOnUtteranceProgressListener(listener)
 
-        // Get an utterance ID.
-        val utteranceId = getUtteranceId()
+        // Get Android's TTS framework to synthesise each input line.
+        val filesDir = appCtx.filesDir
+        var utteranceId: String? = null
+        inputLines.forEach {
+            // Get the next utterance ID.
+            utteranceId = getUtteranceId()
 
-        if (Build.VERSION.SDK_INT >= 21) {
-            tts.synthesizeToFile(text, null, outFile, utteranceId)
-        } else {
-            @Suppress("deprecation")
-            tts.synthesizeToFile(
-                    text, hashMapOf(KEY_PARAM_UTTERANCE_ID to utteranceId),
-                    outFile.absolutePath)
+            // Create a wave file for this utterance.
+            val file = File(filesDir, "$utteranceId.wav")
+
+            // Add this utterance to the queue.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                tts.synthesizeToFile(it, null, file, utteranceId)
+            } else {
+                @Suppress("deprecation")
+                tts.synthesizeToFile(
+                        it, hashMapOf(KEY_PARAM_UTTERANCE_ID to utteranceId),
+                        file.absolutePath)
+            }
         }
+
+        // Set the listener's final utterance ID and output file.
+        listener.finalUtteranceId = utteranceId
 
         // Set an internal variable for keeping track of file synthesis.
         lastUtteranceWasFileSynthesis = true

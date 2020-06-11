@@ -26,6 +26,7 @@ import android.os.Build
 import android.speech.tts.TextToSpeech.*
 import android.speech.tts.UtteranceProgressListener
 import org.jetbrains.anko.*
+import java.io.File
 
 
 abstract class SpeakerEventListener(protected val app: ApplicationEx):
@@ -33,6 +34,7 @@ abstract class SpeakerEventListener(protected val app: ApplicationEx):
 
     protected abstract val notificationId: Int
     protected abstract val notification: Notification
+    var finalUtteranceId: String? = null
 
     override fun onError(utteranceId: String?) { // deprecated
         onError(utteranceId, -1)
@@ -95,7 +97,6 @@ class SpeakingEventListener(app: ApplicationEx): SpeakerEventListener(app) {
     override val notification =
             buildSpeakerNotification(app, notificationId)
 
-    var finalUtteranceId: String? = null
     private var audioFocusRequestGranted = false
 
     override fun onStart(utteranceId: String?) {
@@ -123,34 +124,69 @@ class SpeakingEventListener(app: ApplicationEx): SpeakerEventListener(app) {
 }
 
 class SynthesisEventListener(app: ApplicationEx, private val filename: String,
-                             private val uiCtx: Context):
+                             private val uiCtx: Context, private val outFile: File):
         SpeakerEventListener(app) {
 
     override val notificationId = SYNTHESIS_NOTIFICATION_ID
     override val notification =
             buildSpeakerNotification(app, notificationId)
     private var notificationStarted = false
+    private val utteranceIds = mutableListOf<String>()
+    private val inWaveFiles: List<File>
+        get() {
+            val filesDir = app.filesDir
+            return utteranceIds.map { File(filesDir, "$it.wav") }
+        }
+
+    private fun deleteWaveFiles() {
+        inWaveFiles.forEach {
+            if (it.isFile && it.canWrite()) {
+                it.delete()
+            }
+        }
+    }
 
     override fun onStart(utteranceId: String?) {
         if (!notificationStarted) {
             startNotification()
             notificationStarted = true
         }
+
+        // Store the utterance ID.
+        if (utteranceId != null) utteranceIds.add(utteranceId)
     }
 
     override fun onStop(utteranceId: String?, interrupted: Boolean) {
         super.onStop(utteranceId, interrupted)
         if (interrupted) {
             cancelNotification()
+            deleteWaveFiles()
             app.runOnUiThread {
                 toast(getString(R.string.file_synthesis_interrupted_msg))
             }
         }
     }
 
+    override fun onError(utteranceId: String?, errorCode: Int) {
+        super.onError(utteranceId, errorCode)
+        deleteWaveFiles()
+    }
+
     override fun onDone(utteranceId: String?) {
+        // Only continue if this is the final utterance.
+        if (finalUtteranceId != null && utteranceId != finalUtteranceId)
+            return
+
+        // Join each utterance's wave file into one wave file. Use the output
+        // file passed to this listener.
+        joinWaveFiles(inWaveFiles, outFile)
+
+        // Delete the temporary wave files afterwards.
+        deleteWaveFiles()
+
+        // Build and show an alert dialog once finished.
         app.runOnUiThread {
-            // Use the given UI context to build and show the alert dialog.
+            // Use the given UI context.
             AlertDialogBuilder(uiCtx).apply {
                 title(R.string.write_files_fragment_label)
                 val msgPart1 = ctx.getString(
