@@ -132,25 +132,26 @@ class Speaker(private val context: Context,
         // This is, quite typically, different in some versions of Android.
         val streamKey = TextToSpeech.Engine.KEY_PARAM_STREAM
         var utteranceId: String? = null
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            val bundle = Bundle()
-            bundle.putInt(streamKey, AudioManager.STREAM_MUSIC)
-            inputLines.forEach {
-                utteranceId = getUtteranceId()
+        inputLines.forEach {
+            // Get the next utterance ID.
+            utteranceId = getUtteranceId()
+
+            // Add this utterance to the queue.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                val bundle = Bundle()
+                bundle.putInt(streamKey, AudioManager.STREAM_MUSIC)
                 tts.speak(it, TextToSpeech.QUEUE_ADD, bundle, utteranceId)
-                pause(100)
-            }
-        } else {
-            val streamValue = AudioManager.STREAM_MUSIC.toString()
-            inputLines.forEach {
-                utteranceId = getUtteranceId()
+            } else {
+                val streamValue = AudioManager.STREAM_MUSIC.toString()
                 val map = hashMapOf(streamKey to streamValue,
                         KEY_PARAM_UTTERANCE_ID to utteranceId)
 
                 @Suppress("deprecation")  // handled above.
                 tts.speak(it, TextToSpeech.QUEUE_ADD, map)
-                pause(100)
             }
+
+            // Add a short pause after each utterance.
+            pause(100)
         }
 
         // Set the listener's final utterance ID.
