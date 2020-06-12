@@ -20,7 +20,6 @@
 
 package com.danefinlay.ttsutil
 
-import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -93,9 +92,10 @@ private fun getNotificationBuilder(ctx: Context, notificationId: Int):
 }
 
 
-fun buildSpeakerNotification(ctx: Context, notificationId: Int): Notification {
+fun speakerNotificationBuilder(ctx: Context, notificationId: Int):
+        NotificationCompat.Builder {
     val builder = getNotificationBuilder(ctx, notificationId)
-    builder.apply {
+    return builder.apply {
         // Set the title and text depending on the notification ID.
         when (notificationId) {
             SPEAKING_NOTIFICATION_ID -> {
@@ -111,5 +111,4 @@ fun buildSpeakerNotification(ctx: Context, notificationId: Int): Notification {
             }
         }
     }
-    return builder.build()
 }

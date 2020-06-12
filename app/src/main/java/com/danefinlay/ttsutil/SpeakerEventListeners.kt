@@ -20,20 +20,22 @@
 
 package com.danefinlay.ttsutil
 
-import android.app.Notification
 import android.content.Context
 import android.os.Build
 import android.speech.tts.TextToSpeech.*
 import android.speech.tts.UtteranceProgressListener
+import android.support.v4.app.NotificationCompat
 import org.jetbrains.anko.*
 import java.io.File
+import java.lang.RuntimeException
 
 
 abstract class SpeakerEventListener(protected val app: ApplicationEx):
         UtteranceProgressListener() {
 
     protected abstract val notificationId: Int
-    protected abstract val notification: Notification
+    protected abstract val notificationBuilder: NotificationCompat.Builder
+    var firstUtteranceId: String? = null
     var finalUtteranceId: String? = null
 
     override fun onError(utteranceId: String?) { // deprecated
@@ -82,6 +84,22 @@ abstract class SpeakerEventListener(protected val app: ApplicationEx):
     }
 
     protected fun startNotification() {
+        val notification = notificationBuilder
+                .setProgress(100, 0, false)
+                .build()
+        app.notificationManager.notify(notificationId, notification)
+    }
+
+    protected fun setProgressNotification(utteranceId: String?) {
+        val iUtteranceId = utteranceId?.toInt() ?: return
+        val iFirstUtteranceId = firstUtteranceId?.toInt() ?: return
+        val iFinalUtteranceId = finalUtteranceId?.toInt() ?: return
+
+        val progress = (iUtteranceId - iFirstUtteranceId).toFloat() /
+                (iFinalUtteranceId - iFirstUtteranceId).toFloat() * 100
+        val notification = notificationBuilder
+                .setProgress(100, progress.toInt(), false)
+                .build()
         app.notificationManager.notify(notificationId, notification)
     }
 
@@ -94,8 +112,8 @@ abstract class SpeakerEventListener(protected val app: ApplicationEx):
 class SpeakingEventListener(app: ApplicationEx): SpeakerEventListener(app) {
 
     override val notificationId = SPEAKING_NOTIFICATION_ID
-    override val notification =
-            buildSpeakerNotification(app, notificationId)
+    override val notificationBuilder =
+            speakerNotificationBuilder(app, notificationId)
 
     private var audioFocusRequestGranted = false
 
@@ -119,6 +137,8 @@ class SpeakingEventListener(app: ApplicationEx): SpeakerEventListener(app) {
         if (utteranceId == finalUtteranceId || finalUtteranceId == null) {
             app.releaseAudioFocus()
             cancelNotification()
+        } else {
+            setProgressNotification(utteranceId)
         }
     }
 }
@@ -128,8 +148,8 @@ class SynthesisEventListener(app: ApplicationEx, private val filename: String,
         SpeakerEventListener(app) {
 
     override val notificationId = SYNTHESIS_NOTIFICATION_ID
-    override val notification =
-            buildSpeakerNotification(app, notificationId)
+    override val notificationBuilder =
+            speakerNotificationBuilder(app, notificationId)
     private var notificationStarted = false
     private val utteranceIds = mutableSetOf<String>()
     private val inWaveFiles: List<File>
@@ -174,8 +194,10 @@ class SynthesisEventListener(app: ApplicationEx, private val filename: String,
 
     override fun onDone(utteranceId: String?) {
         // Only continue if this is the final utterance.
-        if (finalUtteranceId != null && utteranceId != finalUtteranceId)
+        if (finalUtteranceId != null && utteranceId != finalUtteranceId) {
+            setProgressNotification(utteranceId)
             return
+        }
 
         // Join each utterance's wave file into one wave file. Use the output
         // file passed to this listener.

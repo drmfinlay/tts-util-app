@@ -131,10 +131,10 @@ class Speaker(private val context: Context,
         // Get Android's TTS framework to speak each line.
         // This is, quite typically, different in some versions of Android.
         val streamKey = TextToSpeech.Engine.KEY_PARAM_STREAM
-        var utteranceId: String? = null
+        val firstUtteranceId = "$currentUtteranceId"
         inputLines.forEach {
             // Get the next utterance ID.
-            utteranceId = getUtteranceId()
+            val utteranceId = getUtteranceId()
 
             // Add this utterance to the queue.
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -154,8 +154,9 @@ class Speaker(private val context: Context,
             pause(100)
         }
 
-        // Set the listener's final utterance ID.
-        listener.finalUtteranceId = utteranceId
+        // Set the listener's first and final utterance IDs.
+        listener.firstUtteranceId = firstUtteranceId
+        listener.finalUtteranceId = "${currentUtteranceId - 1}"
     }
 
     fun pause(duration: Long, listener: SpeakerEventListener) {
@@ -198,10 +199,10 @@ class Speaker(private val context: Context,
 
         // Get Android's TTS framework to synthesise each input line.
         val filesDir = appCtx.filesDir
-        var utteranceId: String? = null
+        val firstUtteranceId = "$currentUtteranceId"
         inputLines.forEach {
             // Get the next utterance ID.
-            utteranceId = getUtteranceId()
+            val utteranceId = getUtteranceId()
 
             // Create a wave file for this utterance.
             val file = File(filesDir, "$utteranceId.wav")
@@ -217,8 +218,9 @@ class Speaker(private val context: Context,
             }
         }
 
-        // Set the listener's final utterance ID and output file.
-        listener.finalUtteranceId = utteranceId
+        // Set the listener's first and final utterance IDs.
+        listener.firstUtteranceId = firstUtteranceId
+        listener.finalUtteranceId = "${currentUtteranceId - 1}"
 
         // Set an internal variable for keeping track of file synthesis.
         lastUtteranceWasFileSynthesis = true
