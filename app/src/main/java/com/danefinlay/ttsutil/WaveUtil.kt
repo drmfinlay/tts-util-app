@@ -139,12 +139,27 @@ class WaveFile(stream: InputStream) {
 
 /**
  * Function for taking wave files and writing a joined wave file.
+ *
+ * I note here that although all TTS engines I've tested have used wave files,
+ * Android's TextToSpeech documentation makes no specific reference to them:
+ * https://developer.android.com/reference/android/speech/tts/TextToSpeech
+ *
+ * This, of course, has no bearing if the reader wishes to use this code on other
+ * platforms.
+ *
  * @param   inFiles     List of WAVE files.
  * @param   outFile     Output file where the joined wave file will be written.
  * @exception   RuntimeException         Raised for invalid/incompatible Wave files.
  */
 fun joinWaveFiles(inFiles: List<File>, outFile: File) {
+    // Handle special case: empty list.
     if (inFiles.isEmpty()) return
+    // Handle special case: single input file.
+    // This also handles single non-wave input files.
+    if (inFiles.size == 1) {
+        outFile.writeBytes(inFiles.first().readBytes())
+        return
+    }
 
     val waveFiles = mutableListOf<WaveFile>()
     for (file in inFiles) {
