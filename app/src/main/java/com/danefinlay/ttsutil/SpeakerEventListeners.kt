@@ -179,24 +179,44 @@ class SynthesisEventListener(app: ApplicationEx, private val filename: String,
 
         // Join each utterance's wave file into one wave file. Use the output
         // file passed to this listener.
-        joinWaveFiles(inWaveFiles, outFile)
+        val errorMessage = try {
+            joinWaveFiles(inWaveFiles, outFile)
+            null
+        } catch (error: RuntimeException) {
+            when (error) {
+                is IncompatibleWaveFileException ->
+                    app.getString(R.string.incompatible_wave_file_error_msg)
+                else -> {
+                    val errorInfo = error.javaClass.simpleName +
+                            "(message = \"${error.localizedMessage}\")"
+                    app.getString(R.string.generic_wave_file_error_msg,
+                            errorInfo)
+                }
+            }
+        }
 
         // Delete the temporary wave files afterwards.
         deleteWaveFiles()
+
+        // Cancel the notification.
+        cancelNotification()
 
         // Build and show an alert dialog once finished.
         app.runOnUiThread {
             // Use the given UI context.
             AlertDialogBuilder(uiCtx).apply {
                 title(R.string.write_files_fragment_label)
-                val msgPart1 = ctx.getString(
-                        R.string.write_to_file_alert_message_success)
-                val fullMsg = "$msgPart1 \"$filename\""
+                val fullMsg = if (errorMessage == null) {
+                    val msgPart1 = uiCtx.getString(
+                            R.string.write_to_file_alert_message_success)
+                    "$msgPart1 \"$filename\""
+                } else {
+                    errorMessage
+                }
                 message(fullMsg)
                 positiveButton(R.string.alert_positive_message) {}
                 show()
             }
         }
-        cancelNotification()
     }
 }

@@ -85,8 +85,8 @@ class WaveFile(stream: InputStream) {
 
         // We do not support non-PCM wave files with extra parameters.
         if (result != "data") {
-            throw RuntimeException("Non-PCM wave files with extra parameters are " +
-                    "not unsupported")
+            throw IncompatibleWaveFileException("Non-PCM wave files with extra " +
+                    "parameters are not unsupported")
         }
 
         // PCM wave file.
@@ -99,7 +99,7 @@ class WaveFile(stream: InputStream) {
     val soundData = stream.readBytes()
 
     override fun toString(): String {
-        return "${this.javaClass.canonicalName}(" +
+        return "${javaClass.simpleName}(" +
                 "chunkId=$chunkId, chunkSize=$chunkSize, format=$format, " +
                 "subChunk1Id=$subChunk1Id, subChunk1Size=$subChunk1Size, " +
                 "audioFormat=$audioFormat, numChannels=$numChannels, " +
@@ -149,7 +149,8 @@ class WaveFile(stream: InputStream) {
  *
  * @param   inFiles     List of WAVE files.
  * @param   outFile     Output file where the joined wave file will be written.
- * @exception   RuntimeException         Raised for invalid/incompatible Wave files.
+ * @exception   IncompatibleWaveFileException   Raised for invalid/incompatible Wave
+ * files.
  */
 fun joinWaveFiles(inFiles: List<File>, outFile: File) {
     // Handle special case: empty list.
