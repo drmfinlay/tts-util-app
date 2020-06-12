@@ -227,8 +227,9 @@ class ReadFilesFragment : FileChooserFragment() {
 
         val fileToRead = fileToRead
         when (fileToRead?.validFilePath(ctx)) {
-            true -> fileToRead.getContent(ctx)?.reader()?.forEachLine {
-                speaker?.speak(it)
+            true -> {
+                val lines = fileToRead.getContent(ctx)?.reader()?.readLines()
+                speaker?.speak(lines ?: return)
             }
             false -> buildInvalidFileAlertDialog().show()
             else -> activity?.toast(R.string.no_file_chosen2)
