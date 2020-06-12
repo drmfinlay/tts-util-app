@@ -131,7 +131,7 @@ class SynthesisEventListener(app: ApplicationEx, private val filename: String,
     override val notification =
             buildSpeakerNotification(app, notificationId)
     private var notificationStarted = false
-    private val utteranceIds = mutableListOf<String>()
+    private val utteranceIds = mutableSetOf<String>()
     private val inWaveFiles: List<File>
         get() {
             val filesDir = app.filesDir
