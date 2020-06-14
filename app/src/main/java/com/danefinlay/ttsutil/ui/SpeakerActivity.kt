@@ -20,7 +20,6 @@
 
 package com.danefinlay.ttsutil.ui
 
-import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Build
 import android.os.Build.VERSION_CODES.LOLLIPOP
@@ -34,11 +33,10 @@ import org.jetbrains.anko.AlertDialogBuilder
 import org.jetbrains.anko.longToast
 
 /**
- * Custom activity class so things like 'myApplication' and 'speaker' don't need to
- * be redefined for each activity.
+ * Abstract activity class inherited from classes that use text-to-speech in some
+ * way.
  */
-@SuppressLint("Registered")
-open class SpeakerActivity: AppCompatActivity(), TextToSpeech.OnInitListener {
+abstract class SpeakerActivity: AppCompatActivity(), TextToSpeech.OnInitListener {
     val myApplication: ApplicationEx
         get() = application as ApplicationEx
 
