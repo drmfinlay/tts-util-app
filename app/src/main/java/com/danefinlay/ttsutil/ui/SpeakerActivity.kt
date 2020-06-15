@@ -26,6 +26,7 @@ import android.os.Build.VERSION_CODES.LOLLIPOP
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.support.v7.app.AppCompatActivity
+import android.support.v7.preference.PreferenceManager
 import com.danefinlay.ttsutil.ApplicationEx
 import com.danefinlay.ttsutil.R
 import com.danefinlay.ttsutil.Speaker
@@ -48,8 +49,32 @@ abstract class SpeakerActivity: AppCompatActivity(), TextToSpeech.OnInitListener
 
         if ( savedInstanceState == null && speaker == null ) {
             // Start the speaker.
-            myApplication.startSpeaker(this)
+            myApplication.startSpeaker(this, null)
         }
+    }
+
+    private fun setSpeakerReady() {
+        val speaker = speaker ?: return
+        speaker.ready = true
+
+        // Set the preferred voice if one has been set in the preferences.
+        val tts = speaker.tts
+        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+        val voiceName = prefs.getString("pref_tts_voice", null)
+        if (voiceName != null && Build.VERSION.SDK_INT >= LOLLIPOP) {
+            val voices = tts.voices?.toList()
+            if (voices != null && voices.isNotEmpty()) {
+                val voiceNames = voices.map { it.name }
+                val voiceIndex = voiceNames.indexOf(voiceName)
+                tts.voice = if (voiceIndex == -1) {
+                    tts.voice ?: tts.defaultVoice
+                } else voices[voiceIndex]
+            }
+        }
+
+        // Set the preferred pitch and speech rate.
+        tts.setPitch(prefs.getFloat("pref_tts_pitch", 1.0f))
+        tts.setSpeechRate(prefs.getFloat("pref_tts_speech_rate", 1.0f))
     }
 
     override fun onInit(status: Int) {
@@ -92,7 +117,7 @@ abstract class SpeakerActivity: AppCompatActivity(), TextToSpeech.OnInitListener
                     tts.language = language
 
                 // The Speaker is now ready to process text into speech.
-                speaker.ready = true
+                setSpeakerReady()
             }
 
             // Install missing voice data if required.
@@ -115,7 +140,7 @@ abstract class SpeakerActivity: AppCompatActivity(), TextToSpeech.OnInitListener
                         tts.language = systemLocale
 
                         // The Speaker is now ready to process text into speech.
-                        speaker.ready = true
+                        setSpeakerReady()
                     }
 
                     else -> {
@@ -132,6 +157,14 @@ abstract class SpeakerActivity: AppCompatActivity(), TextToSpeech.OnInitListener
 
     fun showSpeakerNotReadyMessage() {
         myApplication.showSpeakerNotReadyMessage()
+    }
+
+    fun openSystemTTSSettings() {
+        // Got this from: https://stackoverflow.com/a/8688354
+        val intent = Intent()
+        intent.action = "com.android.settings.TTS_SETTINGS"
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        startActivity(intent)
     }
 
     private fun showNoTTSDataDialog() {

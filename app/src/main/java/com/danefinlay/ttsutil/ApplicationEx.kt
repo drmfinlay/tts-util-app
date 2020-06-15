@@ -28,6 +28,7 @@ import android.media.AudioManager
 import android.media.AudioManager.OnAudioFocusChangeListener
 import android.os.Build
 import android.speech.tts.TextToSpeech
+import android.support.v7.preference.PreferenceManager
 import org.jetbrains.anko.audioManager
 import org.jetbrains.anko.longToast
 import org.jetbrains.anko.notificationManager
@@ -117,9 +118,18 @@ class ApplicationEx : Application() {
         }
     }
 
-    fun startSpeaker(initListener: TextToSpeech.OnInitListener) {
+    fun startSpeaker(initListener: TextToSpeech.OnInitListener,
+                     preferredEngine: String?) {
         if (speaker == null) {
-            speaker = Speaker(this, true, initListener)
+            // Try to get the preferred engine package from shared preferences if
+            // it is null.
+            val engineName = preferredEngine ?:
+            PreferenceManager.getDefaultSharedPreferences(this)
+                    .getString("pref_tts_engine", null)
+
+            // Initialise the Speaker object.
+            speaker = Speaker(this, true, initListener,
+                    engineName)
         }
     }
 
@@ -140,6 +150,12 @@ class ApplicationEx : Application() {
         // Cancel any TTS notifications present.
         notificationManager.cancel(SPEAKING_NOTIFICATION_ID)
         notificationManager.cancel(SYNTHESIS_NOTIFICATION_ID)
+    }
+
+    fun reinitialiseSpeaker(initListener: TextToSpeech.OnInitListener,
+                            preferredEngine: String?) {
+        freeSpeaker()
+        startSpeaker(initListener, preferredEngine)
     }
 
     override fun onLowMemory() {

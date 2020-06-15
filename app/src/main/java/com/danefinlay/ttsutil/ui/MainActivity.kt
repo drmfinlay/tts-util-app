@@ -66,7 +66,7 @@ class MainActivity : SpeakerActivity(), FileChooser {
         // menu should be considered as top level destinations.
         appBarConfiguration = AppBarConfiguration(setOf(
                 R.id.nav_read_text, R.id.nav_read_files, R.id.nav_write_files,
-                R.id.nav_read_clipboard), drawerLayout)
+                R.id.nav_read_clipboard, R.id.nav_settings), drawerLayout)
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
 
@@ -93,18 +93,13 @@ class MainActivity : SpeakerActivity(), FileChooser {
             }
 
             R.id.menu_tts_settings -> {
-                // Got this from: https://stackoverflow.com/a/8688354
-                val intent = Intent()
-                intent.action = "com.android.settings.TTS_SETTINGS"
-                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                startActivity(intent)
+                openSystemTTSSettings()
                 true
             }
 
             R.id.menu_reinitialise_tts -> {
                 // Reinitialise the Speaker object.
-                myApplication.freeSpeaker()
-                myApplication.startSpeaker(this)
+                myApplication.reinitialiseSpeaker(this, null)
                 true
             }
 

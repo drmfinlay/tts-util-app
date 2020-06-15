@@ -32,9 +32,11 @@ import java.io.File
 
 class Speaker(private val context: Context,
               var speechAllowed: Boolean,
-              initListener: TextToSpeech.OnInitListener) {
+              initListener: TextToSpeech.OnInitListener,
+              preferredEngine: String?) {
 
-    val tts = TextToSpeech(context.applicationContext, initListener)
+    val tts = TextToSpeech(context.applicationContext, initListener,
+            preferredEngine)
 
     private val appCtx: ApplicationEx
         get() = context.applicationContext as ApplicationEx

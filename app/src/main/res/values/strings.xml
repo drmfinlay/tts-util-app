@@ -33,6 +33,7 @@
     <string name="read_files_fragment_desc">This part of the app can process text files using text-to-speech.\n\nChoose a text file from storage and press the \'Read from file\' button.</string>
     <string name="write_files_fragment_label">Write to files</string>
     <string name="write_files_fragment_desc">This part of the app can create a speech wave file using text from a chosen file. Most media player applications will be able to play wave files.\n\nChoose a text file from storage and press the \'Write to file\' button.\n\nSuccessfully synthesised wave files will be placed in internal storage.</string>
+    <string name="settings_fragment_label">Settings</string>
     <string name="edit_read_activity_label">Edit &amp; read text</string>
     <string name="edit_read_activity_desc">Edit the text below and have it read with text-to-speech.</string>
     <string name="about_activity_label">TTS Util</string>
@@ -86,6 +87,7 @@
     <string name="give_permission_message">Give permission</string>
     <string name="incompatible_wave_file_error_msg">Error: the selected text-to-speech engine provided wave files that couldn\'t be joined together. Because of this, the app cannot produce wave files for selected text files longer than 4000 characters. Please try again using a shorter text file.</string>
     <string name="generic_wave_file_error_msg">Error: failed to join wave files internally.\n\nThe following exception was caught: %1$s</string>
+    <string name="use_default_tts_voice">Use default</string>
 
     <!--File-related strings.-->
     <string name="chosen_file_label">File to read text from:</string>
@@ -94,7 +96,7 @@
 
     <!--Menu-related strings.-->
     <string name="menu_about">About</string>
-    <string name="menu_tts_settings">Text-to-speech settings</string>
+    <string name="menu_tts_settings">System text-to-speech settings</string>
     <string name="menu_reinitialise_tts">Reinitialise text-to-speech</string>
     <string name="menu_speak_in_bg">Speak text in background</string>
     <string name="edit_read_clipboard_shortcut">Edit &amp; read clipboard</string>
@@ -119,6 +121,19 @@
     <string name="tts_language_not_available_msg1">Selected speaker language is not available, using default instead.</string>
     <string name="tts_language_not_available_msg2">Neither the selected nor the system speaker languages are available.</string>
 
+    <!--Preferences/settings.-->
+    <string name="pref_tts_engine_category">App Text-to-speech (TTS) Settings</string>
+    <string name="pref_tts_engine">TTS Engine</string>
+    <string name="pref_tts_engine_summary">Select the TTS engine.</string>
+    <string name="pref_tts_voice">TTS Voice</string>
+    <string name="pref_tts_voice_summary">Select the TTS voice.</string>
+    <string name="pref_tts_pitch">Speech Pitch</string>
+    <string name="pref_tts_pitch_summary">Select the pitch/tone of the synthesised voice.</string>
+    <string name="pref_tts_speech_rate">Speech Rate</string>
+    <string name="pref_tts_speech_rate_summary">Select the speed of the synthesised voice.</string>
+    <string name="pref_tts_system_settings">System text-to-speech settings</string>
+    <string name="pref_tts_system_settings_summary">Open the system text-to-speech settings.</string>
+
     <!--Miscellaneous.-->
     <string name="not_yet_implemented">Not implemented yet.</string>
     <!--Only used if the TTS engine returns a null or empty sample string.-->
@@ -126,6 +141,8 @@
     <string name="cannot_speak_empty_text_msg">Cannot speak empty/blank text!</string>
     <string name="clipboard_is_empty_blank_msg">Clipboard is empty/blank!</string>
     <string name="cannot_read_clipboard_android_10_msg">\'Read clipboard\' doesn\'t work on Android 10 yet.</string>
+    <string name="cannot_set_tts_voice_sdk_20_msg">The language/voice cannot be set in this version of Android.</string>
+    <string name="no_tts_voices_msg">The TTS engine reported no voice selection.</string>
     <string name="pre_file_synthesis_msg">Stopping speech prior to file synthesis.</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
