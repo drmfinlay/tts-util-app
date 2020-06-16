@@ -72,9 +72,17 @@ abstract class SpeakerActivity: AppCompatActivity(), TextToSpeech.OnInitListener
             }
         }
 
-        // Set the preferred pitch and speech rate.
-        tts.setPitch(prefs.getFloat("pref_tts_pitch", 1.0f))
-        tts.setSpeechRate(prefs.getFloat("pref_tts_speech_rate", 1.0f))
+        // Set the preferred pitch if one has been set in the preferences.
+        val preferredPitch = prefs.getFloat("pref_tts_pitch", -1.0f)
+        if (preferredPitch > 0) {
+            tts.setPitch(preferredPitch)
+        }
+
+        // Set the preferred speech rate if one has been set in the preferences.
+        val preferredSpeechRate = prefs.getFloat("pref_tts_speech_rate", -1.0f)
+        if (preferredSpeechRate > 0) {
+            tts.setSpeechRate(preferredSpeechRate)
+        }
     }
 
     override fun onInit(status: Int) {
