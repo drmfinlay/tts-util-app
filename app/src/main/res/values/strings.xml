@@ -87,7 +87,7 @@
     <string name="give_permission_message">Give permission</string>
     <string name="incompatible_wave_file_error_msg">Error: the selected text-to-speech engine provided wave files that couldn\'t be joined together. Because of this, the app cannot produce wave files for selected text files longer than 4000 characters. Please try again using a shorter text file.</string>
     <string name="generic_wave_file_error_msg">Error: failed to join wave files internally.\n\nThe following exception was caught: %1$s</string>
-    <string name="use_default_tts_voice">Use default</string>
+    <string name="use_default_tts_preference">Use default</string>
 
     <!--File-related strings.-->
     <string name="chosen_file_label">File to read text from:</string>

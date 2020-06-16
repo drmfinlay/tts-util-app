@@ -88,7 +88,8 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
     private fun displayAlertDialog(title: Int, items: List<String>,
                                    checkedItem: Int,
-                                   onClickPositiveListener: (index: Int) -> Unit) {
+                                   onClickPositiveListener: (index: Int) -> Unit,
+                                   onClickNeutralListener: () -> Unit) {
         val context = ContextThemeWrapper(context, R.style.AlertDialogTheme)
         AlertDialog.Builder(context).apply {
             setTitle(title)
@@ -100,6 +101,9 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 if (selection >= 0 && selection < items.size) {
                     onClickPositiveListener(selection)
                 }
+            }
+            setNeutralButton(R.string.use_default_tts_preference) { _, _ ->
+                onClickNeutralListener()
             }
             show()
         }
@@ -120,17 +124,21 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
         // Show a list alert dialog of the available TTS engines.
         val dialogTitle = R.string.pref_tts_engine_summary
-        displayAlertDialog(dialogTitle, engineNames, currentIndex) { index ->
+        val onClickPositiveListener = { index: Int ->
             // Get the package name from the index of the selected item and
             // use it to set the current engine.
             val packageName = engines.map { it.name }[index]
             myApplication.reinitialiseSpeaker(myActivity, packageName)
 
             // Set the engine's name in the preferences.
-            preferenceManager.sharedPreferences.edit()
-                    .putString(preferenceKey, packageName)
-                    .apply()
+            prefs.edit().putString(preferenceKey, packageName).apply()
         }
+        val onClickNeutralListener = {
+            // Remove the preferred engine's name from the preferences.
+            prefs.edit().putString(preferenceKey, null).apply()
+        }
+        displayAlertDialog(dialogTitle, engineNames, currentIndex,
+                onClickPositiveListener, onClickNeutralListener)
         return true
     }
 
@@ -168,39 +176,30 @@ class SettingsFragment : PreferenceFragmentCompat() {
         val currentIndex = voiceNames.indexOf(currentValue)
 
         // Show a list alert dialog of the available TTS voices.
-        val context = ContextThemeWrapper(context, R.style.AlertDialogTheme)
-        val items = voiceDisplayNames.toTypedArray()
-        AlertDialog.Builder(context).apply {
-            setTitle(R.string.pref_tts_voice_summary)
-            var selection = currentIndex
-            setSingleChoiceItems(items, currentIndex) { _, index ->
-                selection = index
-            }
-            setPositiveButton(R.string.alert_positive_message) { _, _ ->
-                if (selection >= 0 && selection < items.size) {
-                    // Get the Voice from the index of the selected item and
-                    // set it to the current voice of the engine.
-                    tts.voice = voicesList[selection]
+        val dialogTitle = R.string.pref_tts_voice_summary
+        val onClickPositiveListener = { index: Int ->
+            // Get the Voice from the index of the selected item and
+            // set it to the current voice of the engine.
+            tts.voice = voicesList[index]
 
-                    // Set the voice's name in the preferences.
-                    prefs.edit().putString(preferenceKey, voiceNames[selection])
-                            .apply()
-                }
-            }
-            setNeutralButton(R.string.use_default_tts_voice) { _, _ ->
-                // Use the default TTS voice/language.
-                val defaultVoice = tts.defaultVoice
-                if (defaultVoice != null) {
-                    tts.voice = defaultVoice
-                } else {
-                    tts.language = myApplication.currentSystemLocale
-                }
-
-                // Remove the current voice's name from the preferences.
-                prefs.edit().putString(preferenceKey, null).apply()
-            }
-            show()
+            // Set the voice's name in the preferences.
+            prefs.edit().putString(preferenceKey, voiceNames[index])
+                    .apply()
         }
+        val onClickNeutralListener = {
+            // Use the default TTS voice/language.
+            val defaultVoice = tts.defaultVoice
+            if (defaultVoice != null) {
+                tts.voice = defaultVoice
+            } else {
+                tts.language = myApplication.currentSystemLocale
+            }
+
+            // Remove the current voice's name from the preferences.
+            prefs.edit().putString(preferenceKey, null).apply()
+        }
+        displayAlertDialog(dialogTitle, voiceDisplayNames, currentIndex,
+                onClickPositiveListener, onClickNeutralListener)
         return true
     }
 
@@ -217,7 +216,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
         // Show a list alert dialog of pitch choices.
         val dialogTitle = R.string.pref_tts_pitch_summary
-        displayAlertDialog(dialogTitle, pitchStrings, currentIndex) { index ->
+        val onClickPositiveListener = { index: Int ->
             // Get the pitch from the index of the selected item and
             // use it to set the current voice pitch.
             val pitch = pitches[index]
@@ -226,6 +225,16 @@ class SettingsFragment : PreferenceFragmentCompat() {
             // Set the pitch in the preferences.
             prefs.edit().putFloat(preferenceKey, pitch).apply()
         }
+        val onClickNeutralListener = {
+            // Remove the preferred pitch from the preferences.
+            prefs.edit().remove(preferenceKey).apply()
+
+            // Reinitialise the TTS engine so it uses the pitch as set in the system
+            // TTS settings.
+            myApplication.reinitialiseSpeaker(myActivity, null)
+        }
+        displayAlertDialog(dialogTitle, pitchStrings, currentIndex,
+                onClickPositiveListener, onClickNeutralListener)
         return true
     }
 
@@ -243,7 +252,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
         // Show a list alert dialog of speech rate choices.
         val dialogTitle = R.string.pref_tts_speech_rate_summary
-        displayAlertDialog(dialogTitle, speechRateStrings, currentIndex) { index ->
+        val onClickPositiveListener = { index: Int ->
             // Get the speech rate from the index of the selected item and
             // use it to set the current speech rate.
             val speechRate = speechRates[index]
@@ -252,6 +261,16 @@ class SettingsFragment : PreferenceFragmentCompat() {
             // Set the speech rate in the preferences.
             prefs.edit().putFloat(preferenceKey, speechRate).apply()
         }
+        val onClickNeutralListener = {
+            // Remove the preferred speech rate from the preferences.
+            prefs.edit().remove(preferenceKey).apply()
+
+            // Reinitialise the TTS engine so it uses the speech rate as set in the
+            // system TTS settings.
+            myApplication.reinitialiseSpeaker(myActivity, null)
+        }
+        displayAlertDialog(dialogTitle, speechRateStrings, currentIndex,
+                onClickPositiveListener, onClickNeutralListener)
         return true
     }
 }
