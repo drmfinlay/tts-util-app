@@ -219,10 +219,17 @@ class ReadFilesFragment : FileChooserFragment() {
     }
 
     private fun onClickReadFile() {
+        // Show the speaker not ready message if appropriate.
+        if (!speaker.isReady()) {
+            myActivity.showSpeakerNotReadyMessage()
+            return
+        }
+
         val fileToRead = fileToRead
         when (fileToRead?.validFilePath(ctx)) {
-            true -> fileToRead.getContent(ctx)?.reader()?.forEachLine {
-                speaker?.speak(it)
+            true -> {
+                val lines = fileToRead.getContent(ctx)?.reader()?.readLines()
+                speaker?.speak(lines ?: return)
             }
             false -> buildInvalidFileAlertDialog().show()
             else -> activity?.toast(R.string.no_file_chosen2)
@@ -278,12 +285,13 @@ class WriteFilesFragment : FileChooserFragment() {
         }
 
         // Save the file in the external storage directory using the filename
-        // + '.mp4'.
+        // + '.wav'.
         val dir = Environment.getExternalStorageDirectory()
-        val filename = "${uri.getDisplayName(ctx)}.mp4"
+        val filename = "${uri.getDisplayName(ctx)}.wav"
         val file = File(dir, filename)
-        val listener = SynthesisEventListener(ctx, filename)
-        speaker?.synthesizeToFile(content, file, listener)
+        val listener = SynthesisEventListener(myActivity.myApplication, filename,
+                ctx, file)
+        speaker?.synthesizeToFile(content, listener)
     }
 
     private fun onClickWriteFile() {
@@ -299,12 +307,18 @@ class WriteFilesFragment : FileChooserFragment() {
             }
         }
 
+        // Show the speaker not ready message if appropriate.
+        if (!speaker.isReady()) {
+            myActivity.showSpeakerNotReadyMessage()
+            return
+        }
+
         // Build and display an appropriate alert dialog.
         val msgPart1 = getString(R.string.write_to_file_alert_message_p1)
         val msgPart2 = getString(R.string.write_to_file_alert_message_p2)
         val filename = "${uri?.getDisplayName(ctx)}"
         val fullMsg = "$msgPart1 \"$filename\"\n" +
-                "\n$msgPart2 \"$filename.mp4\""
+                "\n$msgPart2 \"$filename.wav\""
         AlertDialogBuilder(ctx).apply {
             title(R.string.write_files_fragment_label)
             message(fullMsg)

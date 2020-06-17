@@ -21,17 +21,46 @@
 package com.danefinlay.ttsutil
 
 import android.app.Application
+import android.content.res.Resources
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.media.AudioManager.OnAudioFocusChangeListener
 import android.os.Build
+import android.speech.tts.TextToSpeech
+import android.support.v7.preference.PreferenceManager
 import org.jetbrains.anko.audioManager
+import org.jetbrains.anko.longToast
+import org.jetbrains.anko.notificationManager
+import java.util.*
 
 class ApplicationEx : Application() {
 
     var speaker: Speaker? = null
         private set
+
+    var errorMessageId: Int? = null
+
+    /**
+     * Return the system's current locale.
+     *
+     * This will be a Locale object representing the user's preferred language as
+     * set in the system settings.
+     */
+    val currentSystemLocale: Locale
+        get() {
+            val systemConfig = Resources.getSystem().configuration
+            val systemLocale = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                systemConfig?.locales?.get(0)
+            } else {
+                @Suppress("deprecation")
+                systemConfig?.locale
+            }
+
+            // Return the system locale. Fallback on the default JVM locale if
+            // necessary.
+            return systemLocale ?: Locale.getDefault()
+        }
 
     private val audioFocusGain = AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
     private val audioFocusRequest: AudioFocusRequest by lazy {
@@ -89,15 +118,44 @@ class ApplicationEx : Application() {
         }
     }
 
-    fun startSpeaker() {
+    fun startSpeaker(initListener: TextToSpeech.OnInitListener,
+                     preferredEngine: String?) {
         if (speaker == null) {
-            speaker = Speaker(this, true)
+            // Try to get the preferred engine package from shared preferences if
+            // it is null.
+            val engineName = preferredEngine ?:
+            PreferenceManager.getDefaultSharedPreferences(this)
+                    .getString("pref_tts_engine", null)
+
+            // Initialise the Speaker object.
+            speaker = Speaker(this, true, initListener,
+                    engineName)
         }
+    }
+
+    /**
+     * Show the speaker error message (if set) or the default speaker not ready
+     * message.
+     */
+    fun showSpeakerNotReadyMessage() {
+        val defaultMessageId = R.string.speaker_not_ready_message
+        val errorMessageId = errorMessageId
+        longToast(errorMessageId ?: defaultMessageId)
     }
 
     fun freeSpeaker() {
         speaker?.free()
         speaker = null
+
+        // Cancel any TTS notifications present.
+        notificationManager.cancel(SPEAKING_NOTIFICATION_ID)
+        notificationManager.cancel(SYNTHESIS_NOTIFICATION_ID)
+    }
+
+    fun reinitialiseSpeaker(initListener: TextToSpeech.OnInitListener,
+                            preferredEngine: String?) {
+        freeSpeaker()
+        startSpeaker(initListener, preferredEngine)
     }
 
     override fun onLowMemory() {

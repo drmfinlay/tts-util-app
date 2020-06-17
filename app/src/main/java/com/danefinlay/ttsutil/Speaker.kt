@@ -22,31 +22,37 @@ package com.danefinlay.ttsutil
 
 import android.content.Context
 import android.media.AudioManager
-import android.os.Build
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
-import android.speech.tts.TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID
+import android.speech.tts.Voice
 import org.jetbrains.anko.runOnUiThread
 import org.jetbrains.anko.toast
 import java.io.File
 
 class Speaker(private val context: Context,
               var speechAllowed: Boolean,
-              onReady: Speaker.() -> Unit = {}) : TextToSpeech.OnInitListener {
+              initListener: TextToSpeech.OnInitListener,
+              preferredEngine: String?) {
 
-    private val tts = TextToSpeech(context.applicationContext, this)
+    val tts = TextToSpeech(context.applicationContext, initListener,
+            preferredEngine)
 
     private val appCtx: ApplicationEx
         get() = context.applicationContext as ApplicationEx
 
-    var onReady: Speaker.() -> Unit = onReady
-        set(value) {
-            field = value
-            if ( ready ) value()
-        }
-
+    /**
+     * Whether the object is ready for speech synthesis.
+     *
+     * This should be changed by the OnInitListener.
+     * */
     var ready = false
+
+    /**
+     * Whether TTS synthesis has been or is in the process of being stopped.
+     * */
+    var stoppingSpeech = false
         private set
+
     private var lastUtteranceWasFileSynthesis: Boolean = false
 
     private var currentUtteranceId: Long = 0
@@ -56,14 +62,79 @@ class Speaker(private val context: Context,
         return "$id"
     }
 
-    override fun onInit(status: Int) {
-        when ( status ) {
-            TextToSpeech.SUCCESS -> {
-                ready = true
-                onReady()
+    /**
+     * Wrapper for the TextToSpeech.getVoice and TextToSpeech.setVoice methods.
+     * This catches errors sometimes raised by the TextToSpeech class.
+     *
+     * @return Voice instance used by the client, or {@code null} if not set or on
+     * error.
+     *
+     * @see TextToSpeech.getVoice
+     * @see TextToSpeech.setVoice
+     * @see Voice
+     */
+    var voice: Voice?
+        get() {
+            return try {
+                // Try to retrieve the current voice.
+                // This can sometimes raise a NullPointerException.
+                tts.voice
+            }
+            catch (error: NullPointerException) {
+                null
             }
         }
-    }
+        set(value) {
+            try {
+                // Try to retrieve the current voice.
+                // This can sometimes raise a NullPointerException.
+                tts.voice = value
+            }
+            catch (error: NullPointerException) {}
+        }
+
+    /**
+     * Wrapper for the TextToSpeech.getDefaultVoice method.
+     * This catches errors sometimes raised by the TextToSpeech class.
+     *
+     * @return default Voice instance used by the client, or {@code null} if not set
+     * or on error.
+     *
+     * @see TextToSpeech.getDefaultVoice
+     * @see Voice
+     */
+    val defaultVoice: Voice?
+        get() {
+            return try {
+                // Try to retrieve the current voice.
+                // This can sometimes raise a NullPointerException.
+                tts.defaultVoice
+            }
+            catch (error: NullPointerException) {
+                null
+            }
+        }
+
+    /**
+     * Wrapper for the TextToSpeech.getVoices method.
+     * This catches errors sometimes raised by the TextToSpeech class.
+     *
+     * @return set of available Voice instances.
+     *
+     * @see TextToSpeech.getVoices
+     * @see Voice
+     */
+    val voices: MutableSet<Voice?>
+        get() {
+            return try {
+                // Try to retrieve the set of available voices.
+                // This can sometimes raise a NullPointerException.
+                tts.voices
+            }
+            catch (error: NullPointerException) {
+                return mutableSetOf()
+            }
+        }
 
     fun speak(string: String?) {
         // Split the text on any new lines to get a list. Utterance pauses will be
@@ -72,49 +143,86 @@ class Speaker(private val context: Context,
         speak(lines)
     }
 
+    private fun splitLongLines(lines: List<String>): List<String> {
+        val maxLength = TextToSpeech.getMaxSpeechInputLength()
+        val result = mutableListOf<String>()
+        for (line in lines) {
+            if (line.length < maxLength) {
+                result.add(line)
+                continue
+            }
+
+            // Split long lines into multiple strings of reasonable length.
+            val shorterLines = mutableListOf("")
+            line.forEach {
+                val lastString = shorterLines.last()
+                if (lastString.length < maxLength) {
+                    // Separate on whitespace close to the maximum length where
+                    // possible.
+                    if (it.isWhitespace() && lastString.length > maxLength - 50)
+                        shorterLines.add(it.toString())
+
+                    // Add to the last string.
+                    else {
+                        val newLine = lastString + it.toString()
+                        shorterLines[shorterLines.lastIndex] = newLine
+                    }
+                }
+
+                // Add a new string.
+                else shorterLines.add(it.toString())
+            }
+
+            // Add the shorter lines to the result list.
+            result.addAll(shorterLines)
+        }
+
+        return result
+    }
+
     fun speak(lines: List<String?>) {
         if (!(ready && speechAllowed)) {
             return
         }
 
+        // Reset the stopping speech flag.
+        stoppingSpeech = false
+
         // Stop possible file synthesis before speaking.
         if (lastUtteranceWasFileSynthesis) {
-            tts.stop()
+            stopSpeech()
             lastUtteranceWasFileSynthesis = false
         }
+
+        // Handle lines that are null, blank or too long.
+        val inputLines = splitLongLines(
+                lines.mapNotNull { it }.filter { !it.isBlank() }
+        )
 
         // Set the listener.
         val listener = SpeakingEventListener(appCtx)
         tts.setOnUtteranceProgressListener(listener)
 
-        // Get Android's TTS framework to speak each non-null line.
+        // Get Android's TTS framework to speak each line.
         // This is, quite typically, different in some versions of Android.
-        val nonEmptyLines = lines.mapNotNull { it }.filter { !it.isBlank() }
         val streamKey = TextToSpeech.Engine.KEY_PARAM_STREAM
-        var utteranceId: String? = null
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+        val firstUtteranceId = "$currentUtteranceId"
+        inputLines.forEach {
+            // Get the next utterance ID.
+            val utteranceId = getUtteranceId()
+
+            // Add this utterance to the queue.
             val bundle = Bundle()
             bundle.putInt(streamKey, AudioManager.STREAM_MUSIC)
-            nonEmptyLines.forEach {
-                utteranceId = getUtteranceId()
-                tts.speak(it, TextToSpeech.QUEUE_ADD, bundle, utteranceId)
-                pause(100)
-            }
-        } else {
-            val streamValue = AudioManager.STREAM_MUSIC.toString()
-            nonEmptyLines.forEach {
-                utteranceId = getUtteranceId()
-                val map = hashMapOf(streamKey to streamValue,
-                        KEY_PARAM_UTTERANCE_ID to utteranceId)
+            tts.speak(it, TextToSpeech.QUEUE_ADD, bundle, utteranceId)
 
-                @Suppress("deprecation")  // handled above.
-                tts.speak(it, TextToSpeech.QUEUE_ADD, map)
-                pause(100)
-            }
+            // Add a short pause after each utterance.
+            pause(100)
         }
 
-        // Set the listener's final utterance ID.
-        listener.finalUtteranceId = utteranceId
+        // Set the listener's first and final utterance IDs.
+        listener.firstUtteranceId = firstUtteranceId
+        listener.finalUtteranceId = "${currentUtteranceId - 1}"
     }
 
     fun pause(duration: Long, listener: SpeakerEventListener) {
@@ -125,42 +233,44 @@ class Speaker(private val context: Context,
 
     @Suppress("SameParameterValue")
     private fun pause(duration: Long) {
-        val utteranceId = getUtteranceId()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            tts.playSilentUtterance(duration, TextToSpeech.QUEUE_ADD,
-                    utteranceId)
-        } else {
-            @Suppress("deprecation")
-            tts.playSilence(duration, TextToSpeech.QUEUE_ADD,
-                    hashMapOf(KEY_PARAM_UTTERANCE_ID to utteranceId))
-        }
-
+        tts.playSilentUtterance(duration, TextToSpeech.QUEUE_ADD, getUtteranceId())
     }
 
-    fun synthesizeToFile(text: String, outFile: File,
-                         listener: SpeakerEventListener) {
+    fun synthesizeToFile(text: String, listener: SynthesisEventListener) {
         // Stop speech before synthesizing.
         if (tts.isSpeaking) {
-            tts.stop()
+            stopSpeech()
             context.runOnUiThread {
                 toast(getString(R.string.pre_file_synthesis_msg))
             }
         }
 
+        // Reset the stopping speech flag.
+        stoppingSpeech = false
+
+        // Handle lines that are too long.
+        val inputLines = splitLongLines(listOf(text))
+
         // Set the listener.
         tts.setOnUtteranceProgressListener(listener)
 
-        // Get an utterance ID.
-        val utteranceId = getUtteranceId()
+        // Get Android's TTS framework to synthesise each input line.
+        val filesDir = appCtx.filesDir
+        val firstUtteranceId = "$currentUtteranceId"
+        inputLines.forEach {
+            // Get the next utterance ID.
+            val utteranceId = getUtteranceId()
 
-        if (Build.VERSION.SDK_INT >= 21) {
-            tts.synthesizeToFile(text, null, outFile, utteranceId)
-        } else {
-            @Suppress("deprecation")
-            tts.synthesizeToFile(
-                    text, hashMapOf(KEY_PARAM_UTTERANCE_ID to utteranceId),
-                    outFile.absolutePath)
+            // Create a wave file for this utterance.
+            val file = File(filesDir, "$utteranceId.wav")
+
+            // Add this utterance to the queue.
+            tts.synthesizeToFile(it, null, file, utteranceId)
         }
+
+        // Set the listener's first and final utterance IDs.
+        listener.firstUtteranceId = firstUtteranceId
+        listener.finalUtteranceId = "${currentUtteranceId - 1}"
 
         // Set an internal variable for keeping track of file synthesis.
         lastUtteranceWasFileSynthesis = true
@@ -168,6 +278,10 @@ class Speaker(private val context: Context,
 
     fun stopSpeech() {
         if ( tts.isSpeaking ) {
+            // Set the stopping speech flag.
+            stoppingSpeech = true
+
+            // Tell the TTS engine to stop speech synthesis.
             tts.stop()
         }
     }

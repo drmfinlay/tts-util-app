@@ -29,10 +29,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
-import com.danefinlay.ttsutil.R
-import com.danefinlay.ttsutil.Speaker
-import com.danefinlay.ttsutil.getClipboardText
-import com.danefinlay.ttsutil.isReady
+import com.danefinlay.ttsutil.*
 import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.onClick
 import org.jetbrains.anko.support.v4.find
@@ -61,11 +58,8 @@ abstract class ReadTextFragmentBase : Fragment() {
             if (speaker.isReady()) {
                 speakFromInputLayout()
             } else {
-                // Speaker isn't set up.
-                myActivity.toast(R.string.speaker_not_ready_message)
-
-                // Check (and eventually setup) text-to-speech.
-                myActivity.checkTTS(SpeakerActivity.CHECK_TTS_SPEAK_AFTERWARDS)
+                // Show the speaker not ready message.
+                myActivity.showSpeakerNotReadyMessage()
             }
         }
 
