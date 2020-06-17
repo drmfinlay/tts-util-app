@@ -22,10 +22,8 @@ package com.danefinlay.ttsutil
 
 import android.content.Context
 import android.media.AudioManager
-import android.os.Build
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
-import android.speech.tts.TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID
 import org.jetbrains.anko.runOnUiThread
 import org.jetbrains.anko.toast
 import java.io.File
@@ -139,18 +137,9 @@ class Speaker(private val context: Context,
             val utteranceId = getUtteranceId()
 
             // Add this utterance to the queue.
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                val bundle = Bundle()
-                bundle.putInt(streamKey, AudioManager.STREAM_MUSIC)
-                tts.speak(it, TextToSpeech.QUEUE_ADD, bundle, utteranceId)
-            } else {
-                val streamValue = AudioManager.STREAM_MUSIC.toString()
-                val map = hashMapOf(streamKey to streamValue,
-                        KEY_PARAM_UTTERANCE_ID to utteranceId)
-
-                @Suppress("deprecation")  // handled above.
-                tts.speak(it, TextToSpeech.QUEUE_ADD, map)
-            }
+            val bundle = Bundle()
+            bundle.putInt(streamKey, AudioManager.STREAM_MUSIC)
+            tts.speak(it, TextToSpeech.QUEUE_ADD, bundle, utteranceId)
 
             // Add a short pause after each utterance.
             pause(100)
@@ -169,16 +158,7 @@ class Speaker(private val context: Context,
 
     @Suppress("SameParameterValue")
     private fun pause(duration: Long) {
-        val utteranceId = getUtteranceId()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            tts.playSilentUtterance(duration, TextToSpeech.QUEUE_ADD,
-                    utteranceId)
-        } else {
-            @Suppress("deprecation")
-            tts.playSilence(duration, TextToSpeech.QUEUE_ADD,
-                    hashMapOf(KEY_PARAM_UTTERANCE_ID to utteranceId))
-        }
-
+        tts.playSilentUtterance(duration, TextToSpeech.QUEUE_ADD, getUtteranceId())
     }
 
     fun synthesizeToFile(text: String, listener: SynthesisEventListener) {
@@ -210,14 +190,7 @@ class Speaker(private val context: Context,
             val file = File(filesDir, "$utteranceId.wav")
 
             // Add this utterance to the queue.
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                tts.synthesizeToFile(it, null, file, utteranceId)
-            } else {
-                @Suppress("deprecation")
-                tts.synthesizeToFile(
-                        it, hashMapOf(KEY_PARAM_UTTERANCE_ID to utteranceId),
-                        file.absolutePath)
-            }
+            tts.synthesizeToFile(it, null, file, utteranceId)
         }
 
         // Set the listener's first and final utterance IDs.

@@ -20,7 +20,6 @@
 
 package com.danefinlay.ttsutil.ui
 
-import android.os.Build
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v7.app.AlertDialog
@@ -144,13 +143,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
     private fun handleSetTtsVoice(preferenceKey: String,
                                   speaker: Speaker): Boolean {
-        // Return early for SDK version 20 as only versions 21 and above support
-        // setting the voice.
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
-            context?.toast(R.string.cannot_set_tts_voice_sdk_20_msg)
-            return true
-        }
-
         // Get the set of available TTS voices.
         // Return early if the engine returned no voices.
         val tts = speaker.tts

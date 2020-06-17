@@ -141,7 +141,6 @@
     <string name="cannot_speak_empty_text_msg">Cannot speak empty/blank text!</string>
     <string name="clipboard_is_empty_blank_msg">Clipboard is empty/blank!</string>
     <string name="cannot_read_clipboard_android_10_msg">\'Read clipboard\' doesn\'t work on Android 10 yet.</string>
-    <string name="cannot_set_tts_voice_sdk_20_msg">The language/voice cannot be set in this version of Android.</string>
     <string name="no_tts_voices_msg">The TTS engine reported no voice selection.</string>
     <string name="pre_file_synthesis_msg">Stopping speech prior to file synthesis.</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>

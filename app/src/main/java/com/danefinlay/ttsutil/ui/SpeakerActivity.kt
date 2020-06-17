@@ -21,8 +21,6 @@
 package com.danefinlay.ttsutil.ui
 
 import android.content.Intent
-import android.os.Build
-import android.os.Build.VERSION_CODES.LOLLIPOP
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.support.v7.app.AppCompatActivity
@@ -61,7 +59,7 @@ abstract class SpeakerActivity: AppCompatActivity(), TextToSpeech.OnInitListener
         val tts = speaker.tts
         val prefs = PreferenceManager.getDefaultSharedPreferences(this)
         val voiceName = prefs.getString("pref_tts_voice", null)
-        if (voiceName != null && Build.VERSION.SDK_INT >= LOLLIPOP) {
+        if (voiceName != null) {
             val voices = tts.voices?.toList()
             if (voices != null && voices.isNotEmpty()) {
                 val voiceNames = voices.map { it.name }
@@ -112,16 +110,12 @@ abstract class SpeakerActivity: AppCompatActivity(), TextToSpeech.OnInitListener
         // Check if the language is available.
         val systemLocale = myApplication.currentSystemLocale
         @Suppress("deprecation")
-        val language = when {
-            Build.VERSION.SDK_INT >= LOLLIPOP -> tts.voice?.locale
-            else -> tts.language
-        } ?: tts.language ?: systemLocale
+        val language = tts.voice?.locale ?: tts.language ?: systemLocale
         when (tts.isLanguageAvailable(language)) {
             // Set the language if it is available and there is no current voice.
             TextToSpeech.LANG_AVAILABLE, TextToSpeech.LANG_COUNTRY_AVAILABLE,
             TextToSpeech.LANG_COUNTRY_VAR_AVAILABLE -> {
-                if (Build.VERSION.SDK_INT < LOLLIPOP ||
-                        Build.VERSION.SDK_INT >= LOLLIPOP && tts.voice == null)
+                if (tts.voice == null)
                     tts.language = language
 
                 // The Speaker is now ready to process text into speech.
