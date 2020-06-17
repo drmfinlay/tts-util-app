@@ -135,6 +135,9 @@ class SettingsFragment : PreferenceFragmentCompat() {
         val onClickNeutralListener = {
             // Remove the preferred engine's name from the preferences.
             prefs.edit().putString(preferenceKey, null).apply()
+
+            // Set the default engine.
+            myApplication.reinitialiseSpeaker(myActivity, null)
         }
         displayAlertDialog(dialogTitle, engineNames, currentIndex,
                 onClickPositiveListener, onClickNeutralListener)
