@@ -17,8 +17,9 @@ Features
 - Create speech wave files from text files.
 - Share text to read using share menu entries.
 - Read clipboard text using launcher shortcuts (requires Android 8 or higher).
+- Configurable app-specific text-to-speech settings: engine, voice, pitch and speech rate.
 - Should support any text-to-speech engine that uses Android's TTS framework.
-- Supports Android 5.1 and above.
+- Supports Android 5.0 and above.
 
 Building
 --------
