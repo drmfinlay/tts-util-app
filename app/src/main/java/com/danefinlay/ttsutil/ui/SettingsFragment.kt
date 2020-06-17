@@ -145,9 +145,8 @@ class SettingsFragment : PreferenceFragmentCompat() {
                                   speaker: Speaker): Boolean {
         // Get the set of available TTS voices.
         // Return early if the engine returned no voices.
-        val tts = speaker.tts
-        val voices = tts.voices
-        if (voices == null || voices.isEmpty()) {
+        val voices = speaker.voices
+        if (voices.isEmpty()) {
             context?.toast(R.string.no_tts_voices_msg)
             return true
         }
@@ -155,7 +154,8 @@ class SettingsFragment : PreferenceFragmentCompat() {
         // Get a list of voices, voice names and display names.
         // TODO: This doesn't work for multiple voices with the same display name.
         // This is done because I'm not sure how to implement that nicely.
-        val voicesList = voices.toList().sortedBy { it.name }
+        val voicesList = voices.toList().filterNotNull()
+                .sortedBy { it.name }
                 .distinctBy { it.locale.displayName }
         val voiceNames = voicesList.map { it.name }
         val voiceDisplayNames = voicesList.map { it.locale.displayName }
@@ -163,7 +163,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         // Get the previous or default voice.
         val prefs = preferenceManager.sharedPreferences
         val currentValue = prefs.getString(preferenceKey,
-                tts.voice?.name ?: tts.defaultVoice?.name
+                speaker.voice?.name ?: speaker.defaultVoice?.name
         )
         val currentIndex = voiceNames.indexOf(currentValue)
 
@@ -172,7 +172,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         val onClickPositiveListener = { index: Int ->
             // Get the Voice from the index of the selected item and
             // set it to the current voice of the engine.
-            tts.voice = voicesList[index]
+            speaker.voice = voicesList[index]
 
             // Set the voice's name in the preferences.
             prefs.edit().putString(preferenceKey, voiceNames[index])
@@ -180,11 +180,11 @@ class SettingsFragment : PreferenceFragmentCompat() {
         }
         val onClickNeutralListener = {
             // Use the default TTS voice/language.
-            val defaultVoice = tts.defaultVoice
+            val defaultVoice = speaker.defaultVoice
             if (defaultVoice != null) {
-                tts.voice = defaultVoice
+                speaker.voice = defaultVoice
             } else {
-                tts.language = myApplication.currentSystemLocale
+                speaker.tts.language = myApplication.currentSystemLocale
             }
 
             // Remove the current voice's name from the preferences.

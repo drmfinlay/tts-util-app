@@ -60,12 +60,12 @@ abstract class SpeakerActivity: AppCompatActivity(), TextToSpeech.OnInitListener
         val prefs = PreferenceManager.getDefaultSharedPreferences(this)
         val voiceName = prefs.getString("pref_tts_voice", null)
         if (voiceName != null) {
-            val voices = tts.voices?.toList()
-            if (voices != null && voices.isNotEmpty()) {
+            val voices = speaker.voices.toList().filterNotNull()
+            if (voices.isNotEmpty()) {
                 val voiceNames = voices.map { it.name }
                 val voiceIndex = voiceNames.indexOf(voiceName)
                 tts.voice = if (voiceIndex == -1) {
-                    tts.voice ?: tts.defaultVoice
+                    speaker.voice ?: speaker.defaultVoice
                 } else voices[voiceIndex]
             }
         }
@@ -110,12 +110,12 @@ abstract class SpeakerActivity: AppCompatActivity(), TextToSpeech.OnInitListener
         // Check if the language is available.
         val systemLocale = myApplication.currentSystemLocale
         @Suppress("deprecation")
-        val language = tts.voice?.locale ?: tts.language ?: systemLocale
+        val language = speaker.voice?.locale ?: tts.language ?: systemLocale
         when (tts.isLanguageAvailable(language)) {
             // Set the language if it is available and there is no current voice.
             TextToSpeech.LANG_AVAILABLE, TextToSpeech.LANG_COUNTRY_AVAILABLE,
             TextToSpeech.LANG_COUNTRY_VAR_AVAILABLE -> {
-                if (tts.voice == null)
+                if (speaker.voice == null)
                     tts.language = language
 
                 // The Speaker is now ready to process text into speech.

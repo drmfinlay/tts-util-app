@@ -24,6 +24,7 @@ import android.content.Context
 import android.media.AudioManager
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
+import android.speech.tts.Voice
 import org.jetbrains.anko.runOnUiThread
 import org.jetbrains.anko.toast
 import java.io.File
@@ -60,6 +61,80 @@ class Speaker(private val context: Context,
         currentUtteranceId += 1
         return "$id"
     }
+
+    /**
+     * Wrapper for the TextToSpeech.getVoice and TextToSpeech.setVoice methods.
+     * This catches errors sometimes raised by the TextToSpeech class.
+     *
+     * @return Voice instance used by the client, or {@code null} if not set or on
+     * error.
+     *
+     * @see TextToSpeech.getVoice
+     * @see TextToSpeech.setVoice
+     * @see Voice
+     */
+    var voice: Voice?
+        get() {
+            return try {
+                // Try to retrieve the current voice.
+                // This can sometimes raise a NullPointerException.
+                tts.voice
+            }
+            catch (error: NullPointerException) {
+                null
+            }
+        }
+        set(value) {
+            try {
+                // Try to retrieve the current voice.
+                // This can sometimes raise a NullPointerException.
+                tts.voice = value
+            }
+            catch (error: NullPointerException) {}
+        }
+
+    /**
+     * Wrapper for the TextToSpeech.getDefaultVoice method.
+     * This catches errors sometimes raised by the TextToSpeech class.
+     *
+     * @return default Voice instance used by the client, or {@code null} if not set
+     * or on error.
+     *
+     * @see TextToSpeech.getDefaultVoice
+     * @see Voice
+     */
+    val defaultVoice: Voice?
+        get() {
+            return try {
+                // Try to retrieve the current voice.
+                // This can sometimes raise a NullPointerException.
+                tts.defaultVoice
+            }
+            catch (error: NullPointerException) {
+                null
+            }
+        }
+
+    /**
+     * Wrapper for the TextToSpeech.getVoices method.
+     * This catches errors sometimes raised by the TextToSpeech class.
+     *
+     * @return set of available Voice instances.
+     *
+     * @see TextToSpeech.getVoices
+     * @see Voice
+     */
+    val voices: MutableSet<Voice?>
+        get() {
+            return try {
+                // Try to retrieve the set of available voices.
+                // This can sometimes raise a NullPointerException.
+                tts.voices
+            }
+            catch (error: NullPointerException) {
+                return mutableSetOf()
+            }
+        }
 
     fun speak(string: String?) {
         // Split the text on any new lines to get a list. Utterance pauses will be
