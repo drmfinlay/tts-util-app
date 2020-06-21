@@ -53,24 +53,24 @@ fun Uri.validFilePath(ctx: Context): Boolean {
 }
 
 
-fun Uri.getFileProperties(ctx: Context): Map<String, String>? {
+fun Uri.getFileProperties(ctx: Context): Map<String?, String?> {
     return ctx.contentResolver.query(this, null, null, null,
             null)?.use { cursor ->
-        val result = mutableMapOf<String, String>()
+        val result = mutableMapOf<String?, String?>()
         while ( cursor.moveToNext() ) {
             cursor.columnNames.forEach {
                 result[it] = cursor.getString(cursor.getColumnIndex(it))
             }
         }
         result
-    }
+    } ?: mapOf()
 }
 
 
 fun Uri.getDisplayName(ctx: Context): String? {
     // Return the display name property, falling back on the path if the
     // display name is not available.
-    return getFileProperties(ctx)?.get("_display_name") ?: path
+    return getFileProperties(ctx)["_display_name"] ?: path
 }
 
 
