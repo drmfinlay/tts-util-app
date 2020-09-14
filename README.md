@@ -21,6 +21,11 @@ Features
 - Supports any text-to-speech engine that uses Android's TTS framework.
 - Supports Android 5.0 and above.
 
+TTS Engine Requirement
+----------------------
+
+This app is **not** itself a TTS engine. A separate text-to-speech engine app is **required** in order for this app to function. Most devices should come with one preinstalled.
+
 Building
 --------
 

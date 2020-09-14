@@ -9,3 +9,5 @@
 <li>Supports any text-to-speech engine that uses Android’s TTS framework.</li>
 <li>Supports Android 5.0 and above.</li>
 </ul>
+<p>TTS Engine Requirement:</p>
+<p>This app is <strong>not</strong> itself a TTS engine. A separate text-to-speech engine app is <strong>required</strong> in order for this app to function. Most devices should come with one preinstalled.</p>
