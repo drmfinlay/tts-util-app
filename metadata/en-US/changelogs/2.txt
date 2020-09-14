@@ -1,0 +1,8 @@
+* Add menu item for reinitialising the TTS engine.
+* Add settings screen for setting and changing app-specific TTS settings.
+* Change the minimum required Android version to Android 5.0 Lollipop.
+* Change output sound file names to use the '.wav' extension instead of '.mp4'.
+* Change the app to handle input lines and text files longer than Android's maximum speech input length.
+* Improve TTS initialisation and language handling.
+* Make TTS notifications display process of text synthesis.
+* Other bug fixes and improvements.

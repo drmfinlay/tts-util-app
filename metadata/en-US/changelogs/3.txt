@@ -1,0 +1,1 @@
+* Fix a bug that crashes the app when choosing text files to read.

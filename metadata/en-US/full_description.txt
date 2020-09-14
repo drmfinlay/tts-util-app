@@ -1,0 +1,11 @@
+<p>TTS Util is a utility app for synthesising text into audible speech using Android's text-to-speech framework.</p>
+<p>Features:</p>
+<ul>
+<li>Read input text, clipboard text or text files using text-to-speech.</li>
+<li>Create speech wave files from text files.</li>
+<li>Share text to read using share menu entries.</li>
+<li>Read clipboard text using launcher shortcuts (requires Android 8 or higher).</li>
+<li>Configurable app-specific text-to-speech settings: engine, voice, pitch and speech rate.</li>
+<li>Supports any text-to-speech engine that uses Android’s TTS framework.</li>
+<li>Supports Android 5.0 and above.</li>
+</ul>
