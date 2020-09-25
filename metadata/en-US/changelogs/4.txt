@@ -1,0 +1,2 @@
+* Add missing metadata (e.g. screenshots).
+* Update app descriptions to reflect separate TTS engine app requirement.
