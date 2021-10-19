@@ -28,7 +28,7 @@ import android.support.v4.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
+import android.widget.ImageButton
 import com.danefinlay.ttsutil.*
 import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.onClick
@@ -37,10 +37,10 @@ import org.jetbrains.anko.toast
 
 abstract class ReadTextFragmentBase : Fragment() {
 
-    private val speakButton: Button
+    private val speakButton: ImageButton
         get() = find(R.id.speak_button)
 
-    private val stopSpeakingButton: Button
+    private val stopSpeakingButton: ImageButton
         get() = find(R.id.stop_speaking_button)
 
     protected val inputLayout: TextInputLayout
@@ -109,7 +109,7 @@ class ReadTextFragment : ReadTextFragmentBase() {
     val intent: Intent?
         get() = myActivity.intent
 
-    private val clearBoxButton: Button
+    private val clearBoxButton: ImageButton
         get() = find(R.id.clear_box_button)
 
     override fun onCreateView(
@@ -142,7 +142,7 @@ class ReadTextFragment : ReadTextFragmentBase() {
 
 class ReadClipboardFragment : ReadTextFragmentBase() {
 
-    private val updateTextFieldButton: Button
+    private val updateTextFieldButton: ImageButton
         get() = find(R.id.update_text_field_button)
 
     override fun onCreateView(

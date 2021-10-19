@@ -48,31 +48,32 @@
         android:layout_marginTop="20dp"
         android:layout_marginBottom="20dp" >
 
-        <Button
+        <ImageButton
             android:id="@+id/speak_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/speak_button_text"
+            android:src="@drawable/ic_baseline_play_circle_outline_24"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toStartOf="@id/stop_speaking_button"/>
 
-        <Button
+        <ImageButton
             android:id="@+id/stop_speaking_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/stop_speaking_button"
+            android:src="@drawable/ic_outline_stop_circle_24"
             app:layout_constraintStart_toEndOf="@id/speak_button"
-            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"/>
 
-        <Button
+        <ImageButton
             android:id="@+id/clear_box_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/clear_input_button"
-            app:layout_constraintTop_toBottomOf="@id/speak_button"
-            app:layout_constraintStart_toStartOf="@id/speak_button"/>
+            android:src="@drawable/ic_outline_delete_24"
+            android:layout_marginStart="24dp"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toEndOf="@id/stop_speaking_button"/>
+
     </android.support.constraint.ConstraintLayout>
 
     <android.support.design.widget.TextInputLayout
