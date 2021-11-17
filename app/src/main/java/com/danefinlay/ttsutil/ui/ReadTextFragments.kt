@@ -126,6 +126,33 @@ class ReadTextFragment : ReadTextFragmentBase() {
     private val mem4: ImageButton
         get() = find(R.id.Memory4)
 
+    /**
+     * Event listener for the memory buttons.
+     */
+    private class MemoryButtonEventListener(val memoryKey: String,
+                                            val prefs: SharedPreferences,
+                                            val inputLayout: TextInputLayout,
+    ) : View.OnClickListener, View.OnLongClickListener {
+
+        override fun onClick(v: View?) {
+            val text = prefs.getString(memoryKey, "")
+            if (text != null) {
+                inputLayout.editText?.text?.apply {
+                    clear()
+                    append(text)
+                }
+            }
+        }
+
+        override fun onLongClick(v: View?): Boolean {
+            val content = inputLayout.editText?.text?.toString()
+            val editor: SharedPreferences.Editor = prefs.edit()
+            editor.putString(memoryKey, content)
+            editor.apply()
+            return true
+        }
+    }
+
     override fun onCreateView(
             inflater: LayoutInflater,
             container: ViewGroup?,
@@ -141,92 +168,14 @@ class ReadTextFragment : ReadTextFragmentBase() {
             inputLayout.editText?.text?.clear()
         }
 
+        // Set OnClick and OnLongClick event listeners for each memory button.
         val prefs = PreferenceManager.getDefaultSharedPreferences(context /* Activity context */)
-
-        mem1.setOnClickListener(object : View.OnClickListener {
-            override fun onClick(v: View?) {
-                val text = prefs.getString("mem1", "")
-                if (text != null) {
-                    inputLayout.editText?.text?.apply {
-                        clear()
-                        append(text)
-                    }
-                }
-            }
-        })
-        mem1.setOnLongClickListener(object : View.OnLongClickListener {
-            override fun onLongClick(v: View?): Boolean {
-                val content = inputLayout.editText?.text?.toString()
-                val editor: SharedPreferences.Editor = prefs.edit()
-                editor.putString("mem1", content)
-                editor.apply()
-                return true
-            }
-        })
-
-        mem2.setOnClickListener(object : View.OnClickListener {
-            override fun onClick(v: View?) {
-                val text = prefs.getString("mem2", "")
-                if (text != null) {
-                    inputLayout.editText?.text?.apply {
-                        clear()
-                        append(text)
-                    }
-                }
-            }
-        })
-        mem2.setOnLongClickListener(object : View.OnLongClickListener {
-            override fun onLongClick(v: View?): Boolean {
-                val content = inputLayout.editText?.text?.toString()
-                val editor: SharedPreferences.Editor = prefs.edit()
-                editor.putString("mem2", content)
-                editor.apply()
-                return true
-            }
-        })
-
-        mem3.setOnClickListener(object : View.OnClickListener {
-            override fun onClick(v: View?) {
-                val text = prefs.getString("mem3", "")
-                if (text != null) {
-                    inputLayout.editText?.text?.apply {
-                        clear()
-                        append(text)
-                    }
-                }
-            }
-        })
-        mem3.setOnLongClickListener(object : View.OnLongClickListener {
-            override fun onLongClick(v: View?): Boolean {
-                val content = inputLayout.editText?.text?.toString()
-                val editor: SharedPreferences.Editor = prefs.edit()
-                editor.putString("mem3", content)
-                editor.apply()
-                return true
-            }
-        })
-
-        mem4.setOnClickListener(object : View.OnClickListener {
-            override fun onClick(v: View?) {
-                val text = prefs.getString("mem4", "")
-                if (text != null) {
-                    inputLayout.editText?.text?.apply {
-                        clear()
-                        append(text)
-                    }
-                }
-            }
-        })
-        mem4.setOnLongClickListener(object : View.OnLongClickListener {
-            override fun onLongClick(v: View?): Boolean {
-                val content = inputLayout.editText?.text?.toString()
-                val editor: SharedPreferences.Editor = prefs.edit()
-                editor.putString("mem4", content)
-                editor.apply()
-                return true
-            }
-        })
-
+        listOf(mem1, mem2, mem3, mem4).forEachIndexed { i, button ->
+            val memoryKey = "mem${i + 1}"  // mem1..mem4
+            val listener = MemoryButtonEventListener(memoryKey, prefs, inputLayout)
+            button.setOnClickListener(listener)
+            button.setOnLongClickListener(listener)
+        }
 
         // Handle ACTION_SEND.
         if (savedInstanceState == null && intent?.action == Intent.ACTION_SEND) {
