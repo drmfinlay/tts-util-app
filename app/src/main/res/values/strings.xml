@@ -147,4 +147,7 @@
     <string name="navigation_drawer_close">Close navigation drawer</string>
     <string name="nav_header_desc">Navigation header</string>
     <string name="mem_description">Press long to store in memory, press short to retrieve</string>
+    <string name="mem_slot_empty_msg">Memory slot is empty.</string>
+    <string name="mem_slot_cleared_msg">"Memory slot cleared."</string>
+    <string name="mem_slot_set_msg">"Memory slot set."</string>
 </resources>

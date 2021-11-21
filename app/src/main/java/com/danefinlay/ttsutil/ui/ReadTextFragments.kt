@@ -20,6 +20,7 @@
 
 package com.danefinlay.ttsutil.ui
 
+import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Build
@@ -32,10 +33,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
 import com.danefinlay.ttsutil.*
-import org.jetbrains.anko.doAsync
-import org.jetbrains.anko.onClick
+import org.jetbrains.anko.*
 import org.jetbrains.anko.support.v4.find
-import org.jetbrains.anko.toast
 
 abstract class ReadTextFragmentBase : Fragment() {
 
@@ -132,11 +131,18 @@ class ReadTextFragment : ReadTextFragmentBase() {
     private class MemoryButtonEventListener(val memoryKey: String,
                                             val prefs: SharedPreferences,
                                             val inputLayout: TextInputLayout,
+                                            val ctx: Context?
     ) : View.OnClickListener, View.OnLongClickListener {
 
         override fun onClick(v: View?) {
+            // Set the text content from memory.  If the memory slot is empty,
+            // display a message.
             val text = prefs.getString(memoryKey, "")
-            if (!text.isNullOrEmpty()) {
+            if (text.isNullOrEmpty()) {
+                ctx?.runOnUiThread {
+                    toast(R.string.mem_slot_empty_msg)
+                }
+            } else {
                 inputLayout.editText?.text?.apply {
                     clear()
                     append(text)
@@ -145,10 +151,17 @@ class ReadTextFragment : ReadTextFragmentBase() {
         }
 
         override fun onLongClick(v: View?): Boolean {
+            // Store the text field content in memory, displaying an appropriate
+            // message.
             val content = inputLayout.editText?.text?.toString()
+            val messageId = if (content.isNullOrEmpty()) R.string.mem_slot_cleared_msg
+                            else R.string.mem_slot_set_msg
             val editor: SharedPreferences.Editor = prefs.edit()
             editor.putString(memoryKey, content)
             editor.apply()
+            ctx?.runOnUiThread {
+                toast(messageId)
+            }
             return true
         }
     }
@@ -169,10 +182,12 @@ class ReadTextFragment : ReadTextFragmentBase() {
         }
 
         // Set OnClick and OnLongClick event listeners for each memory button.
-        val prefs = PreferenceManager.getDefaultSharedPreferences(context /* Activity context */)
+        val ctx = context /* Activity context */
+        val prefs = PreferenceManager.getDefaultSharedPreferences(ctx)
         listOf(mem1, mem2, mem3, mem4).forEachIndexed { i, button ->
             val memoryKey = "mem${i + 1}"  // mem1..mem4
-            val listener = MemoryButtonEventListener(memoryKey, prefs, inputLayout)
+            val listener = MemoryButtonEventListener(memoryKey, prefs, inputLayout,
+                                                     ctx)
             button.setOnClickListener(listener)
             button.setOnLongClickListener(listener)
         }
