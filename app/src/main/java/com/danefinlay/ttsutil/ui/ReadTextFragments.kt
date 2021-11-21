@@ -136,7 +136,7 @@ class ReadTextFragment : ReadTextFragmentBase() {
 
         override fun onClick(v: View?) {
             val text = prefs.getString(memoryKey, "")
-            if (text != null) {
+            if (!text.isNullOrEmpty()) {
                 inputLayout.editText?.text?.apply {
                     clear()
                     append(text)
