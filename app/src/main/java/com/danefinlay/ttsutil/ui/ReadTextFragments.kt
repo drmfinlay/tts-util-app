@@ -139,9 +139,7 @@ class ReadTextFragment : ReadTextFragmentBase() {
             // display a message.
             val text = prefs.getString(memoryKey, "")
             if (text.isNullOrEmpty()) {
-                ctx?.runOnUiThread {
-                    toast(R.string.mem_slot_empty_msg)
-                }
+                ctx?.toast(R.string.mem_slot_empty_msg)
             } else {
                 inputLayout.editText?.text?.apply {
                     clear()
@@ -159,9 +157,7 @@ class ReadTextFragment : ReadTextFragmentBase() {
             val editor: SharedPreferences.Editor = prefs.edit()
             editor.putString(memoryKey, content)
             editor.apply()
-            ctx?.runOnUiThread {
-                toast(messageId)
-            }
+            ctx?.toast(messageId)
             return true
         }
     }
