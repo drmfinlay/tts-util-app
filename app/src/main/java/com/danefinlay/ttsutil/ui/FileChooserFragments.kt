@@ -33,7 +33,7 @@ import android.support.v4.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
+import android.widget.ImageButton
 import android.widget.TextView
 import com.danefinlay.ttsutil.*
 import com.danefinlay.ttsutil.ui.MainActivity.Companion.CHOSEN_FILE_NAME_KEY
@@ -192,13 +192,13 @@ abstract class FileChooserFragment : Fragment(), FileChooser {
 }
 
 class ReadFilesFragment : FileChooserFragment() {
-    private val chooseFileButton: Button
+    private val chooseFileButton: ImageButton
         get() = find(R.id.choose_file_button)
 
-    private val readFileButton: Button
+    private val readFileButton: ImageButton
         get() = find(R.id.read_file_button)
 
-    private val stopSpeakingButton: Button
+    private val stopSpeakingButton: ImageButton
         get() = find(R.id.stop_speaking_button)
 
     override fun onCreateView(
@@ -240,13 +240,13 @@ class ReadFilesFragment : FileChooserFragment() {
 
 class WriteFilesFragment : FileChooserFragment() {
 
-    private val chooseFileButton: Button
+    private val chooseFileButton: ImageButton
         get() = find(R.id.choose_file_button)
 
-    private val writeToFileButton: Button
+    private val writeToFileButton: ImageButton
         get() = find(R.id.write_to_file_button)
 
-    private val stopSynthesisButton: Button
+    private val stopSynthesisButton: ImageButton
         get() = find(R.id.stop_synthesis_button)
 
     override fun onCreateView(

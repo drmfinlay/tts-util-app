@@ -20,27 +20,28 @@
 
 package com.danefinlay.ttsutil.ui
 
+import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
 import android.support.design.widget.TextInputLayout
 import android.support.v4.app.Fragment
+import android.support.v7.preference.PreferenceManager
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
+import android.widget.ImageButton
 import com.danefinlay.ttsutil.*
-import org.jetbrains.anko.doAsync
-import org.jetbrains.anko.onClick
+import org.jetbrains.anko.*
 import org.jetbrains.anko.support.v4.find
-import org.jetbrains.anko.toast
 
 abstract class ReadTextFragmentBase : Fragment() {
 
-    private val speakButton: Button
+    private val speakButton: ImageButton
         get() = find(R.id.speak_button)
 
-    private val stopSpeakingButton: Button
+    private val stopSpeakingButton: ImageButton
         get() = find(R.id.stop_speaking_button)
 
     protected val inputLayout: TextInputLayout
@@ -109,8 +110,61 @@ class ReadTextFragment : ReadTextFragmentBase() {
     val intent: Intent?
         get() = myActivity.intent
 
-    private val clearBoxButton: Button
+    private val clearBoxButton: ImageButton
         get() = find(R.id.clear_box_button)
+
+    private val mem1: ImageButton
+        get() = find(R.id.Memory1)
+
+    private val mem2: ImageButton
+        get() = find(R.id.Memory2)
+
+    private val mem3: ImageButton
+        get() = find(R.id.Memory3)
+
+    private val mem4: ImageButton
+        get() = find(R.id.Memory4)
+
+    /**
+     * Event listener for the memory buttons.
+     */
+    private class MemoryButtonEventListener(val memoryKey: String,
+                                            val prefs: SharedPreferences,
+                                            val inputLayout: TextInputLayout,
+                                            val ctx: Context?
+    ) : View.OnClickListener, View.OnLongClickListener {
+
+        override fun onClick(v: View?) {
+            // Set the text content from memory.  If the memory slot is empty,
+            // display a message.
+            val text = prefs.getString(memoryKey, "")
+            if (text.isNullOrEmpty()) {
+                ctx?.runOnUiThread {
+                    toast(R.string.mem_slot_empty_msg)
+                }
+            } else {
+                inputLayout.editText?.text?.apply {
+                    clear()
+                    append(text)
+                }
+            }
+        }
+
+        override fun onLongClick(v: View?): Boolean {
+            // Store the text field content in memory, displaying an appropriate
+            // message.
+            val content = inputLayout.editText?.text?.toString()
+            val messageId = if (content.isNullOrEmpty()) R.string.mem_slot_cleared_msg
+                            else R.string.mem_slot_set_msg
+            val editor: SharedPreferences.Editor = prefs.edit()
+            editor.putString(memoryKey, content)
+            editor.apply()
+            ctx?.runOnUiThread {
+                toast(messageId)
+            }
+            return true
+        }
+    }
 
     override fun onCreateView(
             inflater: LayoutInflater,
@@ -125,6 +179,17 @@ class ReadTextFragment : ReadTextFragmentBase() {
         super.onViewCreated(view, savedInstanceState)
         clearBoxButton.onClick {
             inputLayout.editText?.text?.clear()
+        }
+
+        // Set OnClick and OnLongClick event listeners for each memory button.
+        val ctx = context /* Activity context */
+        val prefs = PreferenceManager.getDefaultSharedPreferences(ctx)
+        listOf(mem1, mem2, mem3, mem4).forEachIndexed { i, button ->
+            val memoryKey = "mem${i + 1}"  // mem1..mem4
+            val listener = MemoryButtonEventListener(memoryKey, prefs, inputLayout,
+                                                     ctx)
+            button.setOnClickListener(listener)
+            button.setOnLongClickListener(listener)
         }
 
         // Handle ACTION_SEND.
@@ -142,7 +207,7 @@ class ReadTextFragment : ReadTextFragmentBase() {
 
 class ReadClipboardFragment : ReadTextFragmentBase() {
 
-    private val updateTextFieldButton: Button
+    private val updateTextFieldButton: ImageButton
         get() = find(R.id.update_text_field_button)
 
     override fun onCreateView(
