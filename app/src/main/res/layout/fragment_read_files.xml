@@ -75,6 +75,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:src="@drawable/ic_outline_file_open_24"
+        android:contentDescription="@string/choose_file_button"
         android:layout_marginStart="24dp"
         app:layout_constraintStart_toEndOf="@id/stop_speaking_button"
         app:layout_constraintTop_toBottomOf="@id/chosen_file_container" />
@@ -84,6 +85,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:src="@drawable/ic_baseline_play_circle_outline_24"
+        android:contentDescription="@string/read_file_button"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/chosen_file_container" />
 
@@ -92,6 +94,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:src="@drawable/ic_outline_stop_circle_24"
+        android:contentDescription="@string/stop_speaking_button"
         app:layout_constraintStart_toEndOf="@id/read_file_button"
         app:layout_constraintTop_toBottomOf="@id/chosen_file_container"/>
 </android.support.constraint.ConstraintLayout>

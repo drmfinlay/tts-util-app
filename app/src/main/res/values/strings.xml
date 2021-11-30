@@ -47,6 +47,10 @@
     <string name="choose_file_button">Choose file</string>
     <string name="read_file_button">Read from file</string>
     <string name="write_to_file_button">Write to file</string>
+    <string name="mem_button_1">Memory 1</string>
+    <string name="mem_button_2">Memory 2</string>
+    <string name="mem_button_3">Memory 3</string>
+    <string name="mem_button_4">Memory 4</string>
 
     <!--This was adapted from the FreeOTP app's source code (also licensed under
         Apache 2.0).-->
