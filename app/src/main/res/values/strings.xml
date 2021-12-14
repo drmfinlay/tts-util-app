@@ -39,14 +39,13 @@
     <string name="about_activity_label">TTS Util</string>
 
     <!--Button strings.-->
-    <string name="speak_button_text">Speak text</string>
-    <string name="stop_speaking_button">Stop speaking</string>
-    <string name="stop_synthesis_button">Stop file synthesis</string>
-    <string name="update_text_field_button">Update text</string>
+    <string name="play_button">Play text</string>
+    <string name="stop_button">Stop</string>
+    <string name="paste_button">Paste</string>
     <string name="clear_input_button">Clear input</string>
     <string name="choose_file_button">Choose file</string>
-    <string name="read_file_button">Read from file</string>
-    <string name="write_to_file_button">Write to file</string>
+    <string name="play_file_button">Play from file</string>
+    <string name="save_button">Save</string>
     <string name="mem_button_1">Memory 1</string>
     <string name="mem_button_2">Memory 2</string>
     <string name="mem_button_3">Memory 3</string>

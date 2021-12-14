@@ -49,32 +49,32 @@
         android:layout_marginBottom="20dp" >
 
         <ImageButton
-            android:id="@+id/speak_button"
+            android:id="@+id/play_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@drawable/ic_baseline_play_circle_outline_24"
-            android:contentDescription="@string/speak_button_text"
+            android:contentDescription="@string/play_button"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/stop_speaking_button"/>
+            app:layout_constraintEnd_toStartOf="@id/stop_button"/>
 
         <ImageButton
-            android:id="@+id/stop_speaking_button"
+            android:id="@+id/stop_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@drawable/ic_outline_stop_circle_24"
-            android:contentDescription="@string/stop_speaking_button"
-            app:layout_constraintStart_toEndOf="@id/speak_button"
+            android:contentDescription="@string/stop_button"
+            app:layout_constraintStart_toEndOf="@id/play_button"
             app:layout_constraintTop_toTopOf="parent"/>
 
         <ImageButton
-            android:id="@+id/update_text_field_button"
+            android:id="@+id/paste_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@drawable/ic_content_paste"
-            android:contentDescription="@string/update_text_field_button"
+            android:contentDescription="@string/paste_button"
             android:layout_marginStart="24dp"
-            app:layout_constraintStart_toEndOf="@id/stop_speaking_button"
+            app:layout_constraintStart_toEndOf="@id/stop_button"
             app:layout_constraintTop_toTopOf="parent"/>
 
     </android.support.constraint.ConstraintLayout>

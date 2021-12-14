@@ -86,7 +86,7 @@ private fun getNotificationBuilder(ctx: Context, notificationId: Int):
         // Add a notification action for stop speaking.
         // Re-use the delete intent.
         addAction(android.R.drawable.ic_delete,
-                ctx.getString(R.string.stop_speaking_button),
+                ctx.getString(R.string.stop_button),
                 onDeletePendingIntent)
     }
 }

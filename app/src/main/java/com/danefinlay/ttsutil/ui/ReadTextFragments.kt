@@ -62,7 +62,7 @@ abstract class ReadTextFragmentBase : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         // Set OnClick listener for the start/stop speaking buttons.
-        find<ImageButton>(R.id.speak_button).onClick {
+        find<ImageButton>(R.id.play_button).onClick {
             if (speaker.isReady()) {
                 speakFromInputLayout()
             } else {
@@ -70,7 +70,7 @@ abstract class ReadTextFragmentBase : Fragment() {
                 myActivity.showSpeakerNotReadyMessage()
             }
         }
-        find<ImageButton>(R.id.stop_speaking_button).onClick {
+        find<ImageButton>(R.id.stop_button).onClick {
             speaker?.stopSpeech()
         }
     }
@@ -192,8 +192,8 @@ class ReadClipboardFragment : ReadTextFragmentBase() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Set OnClick listener for the update button.
-        find<ImageButton>(R.id.update_text_field_button).onClick {
+        // Set OnClick listener for the paste button.
+        find<ImageButton>(R.id.paste_button).onClick {
             // Get the current clipboard text.
             val text = context?.getClipboardText() ?: ""
 

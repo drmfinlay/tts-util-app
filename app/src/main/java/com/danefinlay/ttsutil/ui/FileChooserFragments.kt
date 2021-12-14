@@ -195,11 +195,11 @@ class ReadFilesFragment : FileChooserFragment() {
     private val chooseFileButton: ImageButton
         get() = find(R.id.choose_file_button)
 
-    private val readFileButton: ImageButton
-        get() = find(R.id.read_file_button)
+    private val playFileButton: ImageButton
+        get() = find(R.id.play_file_button)
 
-    private val stopSpeakingButton: ImageButton
-        get() = find(R.id.stop_speaking_button)
+    private val stopButton: ImageButton
+        get() = find(R.id.stop_button)
 
     override fun onCreateView(
             inflater: LayoutInflater,
@@ -214,8 +214,8 @@ class ReadFilesFragment : FileChooserFragment() {
         super.onViewCreated(view, savedInstanceState)
 
         chooseFileButton.onClick { activity?.showFileChooser() }
-        readFileButton.onClick { onClickReadFile() }
-        stopSpeakingButton.onClick { speaker?.stopSpeech() }
+        playFileButton.onClick { onClickReadFile() }
+        stopButton.onClick { speaker?.stopSpeech() }
     }
 
     private fun onClickReadFile() {
@@ -243,11 +243,11 @@ class WriteFilesFragment : FileChooserFragment() {
     private val chooseFileButton: ImageButton
         get() = find(R.id.choose_file_button)
 
-    private val writeToFileButton: ImageButton
-        get() = find(R.id.write_to_file_button)
+    private val saveButton: ImageButton
+        get() = find(R.id.save_button)
 
-    private val stopSynthesisButton: ImageButton
-        get() = find(R.id.stop_synthesis_button)
+    private val stopButton: ImageButton
+        get() = find(R.id.stop_button)
 
     override fun onCreateView(
             inflater: LayoutInflater,
@@ -260,9 +260,9 @@ class WriteFilesFragment : FileChooserFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        writeToFileButton.onClick { onClickWriteFile() }
+        saveButton.onClick { onClickSave() }
         chooseFileButton.onClick { showFileChooser() }
-        stopSynthesisButton.onClick { speaker?.stopSpeech() }
+        stopButton.onClick { speaker?.stopSpeech() }
     }
 
     private fun writeSpeechToFile(uri: Uri?, havePermission: Boolean) {
@@ -294,7 +294,7 @@ class WriteFilesFragment : FileChooserFragment() {
         speaker?.synthesizeToFile(content, listener)
     }
 
-    private fun onClickWriteFile() {
+    private fun onClickSave() {
         val uri = fileToRead
         when (uri?.validFilePath(ctx)) {
             false -> {
