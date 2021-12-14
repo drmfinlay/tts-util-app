@@ -31,31 +31,32 @@ import com.danefinlay.ttsutil.isReady
  * Reading text is done via SpeakerIntentService.
  */
 abstract class QuickShareActivity : SpeakerActivity() {
+
+    abstract fun startServiceAction()
+
+    private fun initialize() {
+        // Start the appropriate service action if the Speaker is ready. Otherwise,
+        // show the speaker not ready message.
+        if (speaker.isReady()) startServiceAction()
+        else showSpeakerNotReadyMessage()
+
+        // Finish the activity.
+        finish()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (speaker.isReady()) {
-            // Start the appropriate service action and finish the activity.
-            startServiceAction()
-            finish()
-        } else {
-            // Show the speaker not ready message and finish the activity.
-            showSpeakerNotReadyMessage()
-            finish()
-        }
+        initialize()
     }
 
     override fun onInit(status: Int) {
         super.onInit(status)
-        // Start the appropriate service action if the Speaker is ready.
-        if (speaker.isReady()) {
-            startServiceAction()
-        } else {
-            // Show the speaker not ready message.
-            showSpeakerNotReadyMessage()
-        }
+        initialize()
+    }
 
-        // Finish the activity.
-        finish()
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        initialize()
     }
 
     override fun onDoNotInstallTTSData() {
@@ -67,23 +68,6 @@ abstract class QuickShareActivity : SpeakerActivity() {
     override fun onTTSInstallFailureDialogExit() {
         // Finish the quick share activity after informing the user that installing
         // TTS data failed.
-        finish()
-    }
-
-    abstract fun startServiceAction()
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-
-        // Start the appropriate service action if the Speaker is ready.
-        if (speaker.isReady()) {
-            startServiceAction()
-        } else {
-            // Show the speaker not ready message.
-            showSpeakerNotReadyMessage()
-        }
-
-        // Finish the activity.
         finish()
     }
 }
@@ -101,11 +85,9 @@ class ReadClipboardActivity : QuickShareActivity() {
 class ReadTextActivity : QuickShareActivity() {
     override fun startServiceAction() {
         val intent = intent ?: return
-        when (intent.action) {
-            Intent.ACTION_SEND -> {
-                val text = intent.getStringExtra(Intent.EXTRA_TEXT)
-                SpeakerIntentService.startActionReadText(this, text)
-            }
+        if (intent.action == Intent.ACTION_SEND) {
+            val text = intent.getStringExtra(Intent.EXTRA_TEXT)
+            SpeakerIntentService.startActionReadText(this, text)
         }
     }
 }
