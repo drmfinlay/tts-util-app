@@ -83,6 +83,7 @@
         android:id="@+id/input_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:hint="@string/tts_input_label"
         app:layout_constraintTop_toBottomOf="@id/button_container"
         android:paddingTop="10dp"
         android:layout_centerHorizontal="true">
