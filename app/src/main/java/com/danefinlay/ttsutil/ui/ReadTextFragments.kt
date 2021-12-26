@@ -202,7 +202,7 @@ class ReadClipboardFragment : ReadTextFragmentBase() {
 
             // Display a message if the clipboard was empty.
             if (text.isEmpty()) {
-                activity?.toast(R.string.clipboard_is_empty_blank_msg)
+                activity?.toast(R.string.clipboard_is_empty_msg)
             }
         }
     }
