@@ -29,6 +29,7 @@
     <application
         android:name=".ApplicationEx"
         android:allowBackup="true"
+        android:fullBackupContent="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
@@ -37,6 +38,7 @@
         tools:ignore="GoogleAppIndexingWarning">
         <activity
             android:name=".ui.MainActivity"
+            android:exported="true"
             android:theme="@style/Theme.AppCompat.DayNight.NoActionBar">
 
             <intent-filter>
@@ -55,6 +57,7 @@
         <activity
             android:name=".ui.EditReadActivity"
             android:label="@string/edit_read_activity_label"
+            android:exported="true"
             android:launchMode="singleTop"
             android:taskAffinity="">
             <intent-filter>
@@ -73,6 +76,7 @@
         <activity
             android:name=".ui.ReadTextActivity"
             android:label="@string/read_text_fragment_label"
+            android:exported="true"
             android:taskAffinity=""
             android:theme="@style/Theme.AppCompat.DayNight">
             <intent-filter>
