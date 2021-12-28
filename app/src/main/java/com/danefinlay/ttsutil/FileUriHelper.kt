@@ -24,57 +24,97 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import java.io.InputStream
+import java.io.OutputStream
 
 
-fun Uri.setupUriForProcessing(ctx: Context): Uri {
+fun Uri.takeUriPermission(ctx: Context, takeFlags: Int): Uri {
     val contentResolver = ctx.contentResolver
-    val takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION or
-            Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-
-    // Handle permissions properly.
     contentResolver.takePersistableUriPermission(this, takeFlags)
     return this
 }
 
 
-fun Uri.validFilePath(ctx: Context): Boolean {
-    // Check that the returned Cursor from the content resolver query is not null
-    // If it is then the file has been moved, deleted, or is inaccessible.
+fun Uri.takeReadUriPermission(ctx: Context): Uri {
+    val takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+    return takeUriPermission(ctx, takeFlags)
+}
+
+
+fun Uri.takeWriteUriPermission(ctx: Context): Uri {
+    val takeFlags = Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+    return takeUriPermission(ctx, takeFlags)
+}
+
+
+/**
+ * Whether this Uri is for an accessible file.
+ */
+fun Uri.isAccessibleFile(ctx: Context): Boolean {
     return try {
-        setupUriForProcessing(ctx)
-        val cursor = ctx.contentResolver.query(this, null, null,
+        // Ensure we have permission to access the file.
+        takeReadUriPermission(ctx)
+        val cursor = ctx.contentResolver.query(this, arrayOf(), null,
                 null, null)
         cursor?.close()
-        /* return */ cursor != null
+
+        // The file is accessible.
+        cursor != null
     } catch (e: SecurityException) {
-        // The file probably doesn't exist or is inaccessible.
+        // The file either doesn't exist or is inaccessible.
         false
     }
 }
 
 
-fun Uri.getFileProperties(ctx: Context): Map<String?, String?> {
-    return ctx.contentResolver.query(this, null, null, null,
-            null)?.use { cursor ->
-        val result = mutableMapOf<String?, String?>()
-        while ( cursor.moveToNext() ) {
-            cursor.columnNames.forEach {
-                result[it] = cursor.getString(cursor.getColumnIndex(it))
+/**
+ * Get the display name of the file, falling back on the path if the
+ * display name is not available.
+ */
+fun Uri.retrieveFileDisplayName(ctx: Context): String? {
+    // Ensure we have permission to access the display name.
+    takeReadUriPermission(ctx)
+
+    // Retrieve the display name, falling back on the URI path, if there is one.
+    val columnName = "_display_name"
+    val cursor = ctx.contentResolver.query(this, arrayOf(columnName),
+            null, null, null)
+    cursor?.use {
+        while (it.moveToNext()) {
+            val index =  cursor.getColumnIndex(columnName)
+            if (index != -1) {
+                return cursor.getString(index)
             }
         }
-        result
-    } ?: mapOf()
+    }
+    return path
 }
 
 
-fun Uri.getDisplayName(ctx: Context): String? {
-    // Return the display name property, falling back on the path if the
-    // display name is not available.
-    return getFileProperties(ctx)["_display_name"] ?: path
-}
+/**
+ * Open an input stream on to the content associated with the URI, assuming content
+ * exists.
+ *
+ * Read permission is taken prior to opening the input stream.
+ */
+fun Uri.openContentInputStream(ctx: Context): InputStream? {
+    // Ensure we have permission to read the content.
+    takeReadUriPermission(ctx)
 
-
-fun Uri.getContent(ctx: Context): InputStream? {
-    setupUriForProcessing(ctx)
+    // Open an input stream.
     return ctx.contentResolver.openInputStream(this)
+}
+
+
+/**
+ * Open an output stream on to the content associated with the URI, assuming content
+ * exists.
+ *
+ * Write permission is taken prior to opening the output stream.
+ */
+fun Uri.openContentOutputStream(ctx: Context): OutputStream? {
+    // Ensure we have permission to write content.
+    takeWriteUriPermission(ctx)
+
+    // Open an output stream.
+    return ctx.contentResolver.openOutputStream(this)
 }

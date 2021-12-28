@@ -35,7 +35,7 @@ import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.danefinlay.ttsutil.APP_NAME
 import com.danefinlay.ttsutil.R
-import com.danefinlay.ttsutil.getDisplayName
+import com.danefinlay.ttsutil.retrieveFileDisplayName
 import org.jetbrains.anko.ctx
 import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.find
@@ -145,7 +145,7 @@ class MainActivity : SpeakerActivity(), FileChooser {
             prefs.edit()
                     .putString(CHOSEN_FILE_URI_KEY, uri?.toString() ?: "")
                     .putString(CHOSEN_FILE_NAME_KEY,
-                            uri?.getDisplayName(ctx) ?: "")
+                            uri?.retrieveFileDisplayName(ctx) ?: "")
                     .apply()
         }
     }

@@ -81,12 +81,12 @@ abstract class FileChooserFragment : Fragment(), FileChooser {
         val noFileChosen = getString(R.string.no_file_chosen)
         val displayName = if (uri == null || uri.toString() == "") {
             noFileChosen
-        } else if (!uri.validFilePath(ctx)) {
+        } else if (!uri.isAccessibleFile(ctx)) {
             // Fallback on the last display name if the path isn't valid.
             val prefs = ctx.getSharedPreferences(ctx.packageName, MODE_PRIVATE)
             prefs.getString(CHOSEN_FILE_NAME_KEY, "") ?: noFileChosen
         } else {
-            uri.getDisplayName(ctx) ?: noFileChosen
+            uri.retrieveFileDisplayName(ctx) ?: noFileChosen
         }
 
         // Set display name.
@@ -226,9 +226,9 @@ class ReadFilesFragment : FileChooserFragment() {
         }
 
         val fileToRead = fileToRead
-        when (fileToRead?.validFilePath(ctx)) {
+        when (fileToRead?.isAccessibleFile(ctx)) {
             true -> {
-                val lines = fileToRead.getContent(ctx)?.reader()?.readLines()
+                val lines = fileToRead.openContentInputStream(ctx)?.reader()?.readLines()
                 speaker?.speak(lines ?: return)
             }
             false -> buildInvalidFileAlertDialog().show()
@@ -273,12 +273,12 @@ class WriteFilesFragment : FileChooserFragment() {
         }
 
         // Validate before continuing.
-        if (uri == null || !uri.validFilePath(ctx)) {
+        if (uri == null || !uri.isAccessibleFile(ctx)) {
             ctx.runOnUiThread {buildInvalidFileAlertDialog().show()}
             return
         }
 
-        val content = uri.getContent(ctx)?.reader()?.readText()
+        val content = uri.openContentInputStream(ctx)?.reader()?.readText()
         if (content.isNullOrBlank()) {
             // Nothing to read.
             return
@@ -287,7 +287,7 @@ class WriteFilesFragment : FileChooserFragment() {
         // Save the file in the external storage directory using the filename
         // + '.wav'.
         val dir = Environment.getExternalStorageDirectory()
-        val filename = "${uri.getDisplayName(ctx)}.wav"
+        val filename = "${uri.retrieveFileDisplayName(ctx)}.wav"
         val file = File(dir, filename)
         val listener = SynthesisEventListener(myActivity.myApplication, filename,
                 ctx, file)
@@ -296,7 +296,7 @@ class WriteFilesFragment : FileChooserFragment() {
 
     private fun onClickSave() {
         val uri = fileToRead
-        when (uri?.validFilePath(ctx)) {
+        when (uri?.isAccessibleFile(ctx)) {
             false -> {
                 buildInvalidFileAlertDialog().show()
                 return
@@ -316,7 +316,7 @@ class WriteFilesFragment : FileChooserFragment() {
         // Build and display an appropriate alert dialog.
         val msgPart1 = getString(R.string.write_to_file_alert_message_p1)
         val msgPart2 = getString(R.string.write_to_file_alert_message_p2)
-        val filename = "${uri?.getDisplayName(ctx)}"
+        val filename = uri?.retrieveFileDisplayName(ctx).toString()
         val fullMsg = "$msgPart1 \"$filename\"\n" +
                 "\n$msgPart2 \"$filename.wav\""
         AlertDialogBuilder(ctx).apply {
