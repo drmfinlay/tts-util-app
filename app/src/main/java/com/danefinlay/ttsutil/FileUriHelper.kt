@@ -67,14 +67,17 @@ fun Uri.isAccessibleFile(ctx: Context): Boolean {
 
 
 /**
- * Get the display name of the file, falling back on the path if the
- * display name is not available.
+ * Get the display name of the file, falling back on the last segment in the path if
+ * the display name is not available.
+ *
+ * Read permission is taken prior to querying for the display name.
  */
 fun Uri.retrieveFileDisplayName(ctx: Context): String? {
     // Ensure we have permission to access the display name.
     takeReadUriPermission(ctx)
 
-    // Retrieve the display name, falling back on the URI path, if there is one.
+    // Retrieve the display name, falling back on the URI's last path segment, if
+    // there is one.
     val columnName = "_display_name"
     val cursor = ctx.contentResolver.query(this, arrayOf(columnName),
             null, null, null)
@@ -86,7 +89,7 @@ fun Uri.retrieveFileDisplayName(ctx: Context): String? {
             }
         }
     }
-    return path
+    return lastPathSegment
 }
 
 
