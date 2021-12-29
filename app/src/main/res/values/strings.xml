@@ -74,28 +74,31 @@
     <string name="alert_negative_message1">No thanks</string>
     <string name="alert_negative_message2">Never mind</string>
     <string name="no_tts_data_alert_title">No usable TTS engine</string>
-    <string name="no_tts_data_alert_message">"The app could not detected a working text-to-speech engine on this device.\nShould I try to install one?"</string>
+    <string name="no_tts_data_alert_message">"The app could not detect a working text-to-speech engine on this device.\nShould I try to install one?"</string>
     <string name="failed_to_get_tts_data_title">Failed to get TTS data</string>
     <string name="failed_to_get_tts_data_msg">Your device was unable to download the text-to-speech data. Perhaps your device has no network access? It is also possible that there is no data available for your selected language.\n\nTry looking in your device\'s settings for \"Text-to-speech output\". You should be able to change your selected language or use a different text-to-speech engine.</string>
     <string name="speaker_not_ready_message">Text-to-speech isn\'t ready. Try again in a moment.</string>
     <string name="no_engine_available_message">No text-to-speech engine is available.</string>
     <string name="invalid_file_dialog_title">File not found</string>
     <string name="invalid_file_dialog_message">The chosen file could not be found. Maybe it has been deleted or renamed?\n\nChoose another?</string>
+    <string name="no_file_chosen_dialog_title">No file chosen</string>
+    <string name="no_file_chosen_dialog_message">No file has been chosen. Would you like to choose one?</string>
     <string name="write_to_file_alert_message_p1">The current file is:</string>
     <string name="write_to_file_alert_message_p2">The content of that file will be synthesised and written to:</string>
     <string name="write_to_file_alert_message_success">The file was successfully synthesised as: </string>
-    <string name="write_to_file_alert_message_failure">The app doesn\'t have permission to write to external storage.</string>
     <string name="no_storage_permission_title">No write storage permission</string>
-    <string name="no_storage_permission_message">Permission to write to storage was not granted.\n\nWould you like to grant permission?</string>
-    <string name="give_permission_message">Give permission</string>
+    <string name="no_storage_permission_message">Permission to write to storage was not granted.  The app needs write access in order to save the wave file to storage. \n\nWould you like to grant permission?</string>
+    <string name="grant_permission_message">Grant permission</string>
     <string name="incompatible_wave_file_error_msg">Error: the selected text-to-speech engine provided wave files that couldn\'t be joined together. Because of this, the app cannot produce wave files for selected text files longer than 4000 characters. Please try again using a shorter text file.</string>
     <string name="generic_wave_file_error_msg">Error: failed to join wave files internally.\n\nThe following exception was caught: %1$s</string>
     <string name="use_default_tts_preference">Use default</string>
 
     <!--File-related strings.-->
     <string name="chosen_file_label">File to read text from:</string>
-    <string name="no_file_chosen">*No file chosen*</string>
-    <string name="no_file_chosen2">No file chosen</string>
+    <string name="no_file_chosen">No file chosen</string>
+    <string name="no_file_chosen_dec">*No file chosen*</string>
+    <string name="file_chooser_title">Select a File…</string>
+    <string name="no_file_manager_msg">No File Manager app found.</string>
 
     <!--Menu-related strings.-->
     <string name="menu_about">About</string>

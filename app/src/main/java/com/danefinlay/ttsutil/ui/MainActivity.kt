@@ -20,6 +20,7 @@
 
 package com.danefinlay.ttsutil.ui
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -33,22 +34,14 @@ import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
-import com.danefinlay.ttsutil.APP_NAME
 import com.danefinlay.ttsutil.R
-import com.danefinlay.ttsutil.retrieveFileDisplayName
-import org.jetbrains.anko.ctx
-import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.find
+import org.jetbrains.anko.longToast
 
-class MainActivity : SpeakerActivity(), FileChooser {
+class MainActivity : SpeakerActivity(), ObservableFileChooser {
 
     private lateinit var appBarConfiguration: AppBarConfiguration
-
-    override var chooseFileAction = Intent.ACTION_OPEN_DOCUMENT
-    override var chooseFileCategory = Intent.CATEGORY_OPENABLE
-    override var chooseFileMimeType = "text/*"
-
-    var fileToRead: Uri? = null
+    private var chosenFileObservers = mutableSetOf<ChosenFileObserver>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -69,13 +62,6 @@ class MainActivity : SpeakerActivity(), FileChooser {
                 R.id.nav_read_clipboard, R.id.nav_settings), drawerLayout)
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
-
-        if (savedInstanceState == null) {
-            // Restore fileToRead from shared preferences.
-            val prefs = ctx.getSharedPreferences(ctx.packageName, MODE_PRIVATE)
-            val uriString = prefs.getString(CHOSEN_FILE_URI_KEY, "")
-            fileToRead = Uri.parse(uriString)
-        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -113,20 +99,6 @@ class MainActivity : SpeakerActivity(), FileChooser {
                 super.onSupportNavigateUp()
     }
 
-    override fun onSaveInstanceState(outState: Bundle?) {
-        super.onSaveInstanceState(outState)
-
-        // Save instance state here.
-        outState?.putParcelable("fileToRead", fileToRead)
-    }
-
-    override fun onRestoreInstanceState(savedInstanceState: Bundle?) {
-        super.onRestoreInstanceState(savedInstanceState)
-
-        val uri: Uri? = savedInstanceState?.getParcelable("fileToRead")
-        fileToRead = uri
-    }
-
     override fun onDestroy() {
         super.onDestroy()
 
@@ -137,26 +109,50 @@ class MainActivity : SpeakerActivity(), FileChooser {
         }
     }
 
-    override fun onFileChosen(uri: Uri?) {
-        // Set the shared preference values asynchronously.
-        fileToRead = uri
-        doAsync {
-            val prefs = ctx.getSharedPreferences(ctx.packageName, MODE_PRIVATE)
-            prefs.edit()
-                    .putString(CHOSEN_FILE_URI_KEY, uri?.toString() ?: "")
-                    .putString(CHOSEN_FILE_NAME_KEY,
-                            uri?.retrieveFileDisplayName(ctx) ?: "")
-                    .apply()
+    override fun showFileChooser() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            type = "text/*"
+            addCategory(Intent.CATEGORY_OPENABLE)
+            addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+
+            // TODO Allow processing of multiple text files.
+            putExtra(Intent.EXTRA_ALLOW_MULTIPLE, false)
+        }
+
+        try {
+            val title = getString(R.string.file_chooser_title)
+            startActivityForResult(
+                    Intent.createChooser(intent, title),
+                    FILE_SELECT_CODE)
+        } catch (ex: ActivityNotFoundException) {
+            // Potentially direct the user to the Market with a Dialog.
+            longToast(getString(R.string.no_file_manager_msg))
         }
     }
 
+    override fun addObserver(observer: ChosenFileObserver) {
+        chosenFileObservers.add(observer)
+    }
+
+    override fun deleteObserver(observer: ChosenFileObserver) {
+        chosenFileObservers.remove(observer)
+    }
+
+    override fun notifyObservers(uri: Uri) {
+        chosenFileObservers.forEach { it.onFileChosen(uri) }
+    }
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super<FileChooser>.onActivityResult(requestCode, resultCode, data)
-        super<SpeakerActivity>.onActivityResult(requestCode, resultCode, data)
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == FILE_SELECT_CODE && resultCode == RESULT_OK) {
+            // Get the Uri of the selected file and pass it on.
+            val uri = data?.data
+            if (uri != null) notifyObservers(uri)
+        }
     }
 
     companion object {
-        private const val CHOSEN_FILE_URI_KEY = "$APP_NAME.CHOSEN_FILE_URI_KEY"
-        const val CHOSEN_FILE_NAME_KEY = "$APP_NAME.CHOSEN_FILE_NAME_KEY"
+        private const val FILE_SELECT_CODE = 5
     }
 }

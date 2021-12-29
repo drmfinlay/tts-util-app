@@ -22,124 +22,50 @@ package com.danefinlay.ttsutil.ui
 
 import android.Manifest
 import android.content.Context
-import android.content.Context.MODE_PRIVATE
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.support.v4.app.Fragment
+import android.support.v7.app.AppCompatActivity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
 import android.widget.TextView
 import com.danefinlay.ttsutil.*
-import com.danefinlay.ttsutil.ui.MainActivity.Companion.CHOSEN_FILE_NAME_KEY
-import org.jetbrains.anko.AlertDialogBuilder
-import org.jetbrains.anko.onClick
-import org.jetbrains.anko.runOnUiThread
+import org.jetbrains.anko.*
 import org.jetbrains.anko.support.v4.find
-import org.jetbrains.anko.toast
 import java.io.File
-
 
 typealias PermissionBlock = (granted: Boolean) -> Unit
 
-abstract class FileChooserFragment : Fragment(), FileChooser {
+abstract class FileChooserFragment : Fragment(), ChosenFileObserver {
 
-    override var chooseFileAction = Intent.ACTION_OPEN_DOCUMENT
-    override var chooseFileCategory = Intent.CATEGORY_OPENABLE
-    override var chooseFileMimeType = "text/*"
-
-    protected val myActivity: MainActivity
-        get() = (activity as MainActivity)
-
-    protected val fileToRead: Uri?
-        get() = myActivity.fileToRead
-
-    protected val ctx: Context
-        get() = myActivity
-
+    protected var chosenFileUri: Uri? = null
+    protected var chosenFileDisplayName: String? = null
     private var tempStoragePermissionBlock: PermissionBlock = {}
 
+    protected val speakerActivity: SpeakerActivity?
+        get() = activity as? SpeakerActivity
+
+    protected val ctx: Context
+        get() = activity as Context
+
     protected val speaker: Speaker?
-        get() = myActivity.speaker
+        get() = speakerActivity?.speaker
 
-    private val chosenFilename: TextView
-        get() = find(R.id.chosen_filename)
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super<FileChooser>.onActivityResult(requestCode, resultCode, data)
-        super<Fragment>.onActivityResult(requestCode, resultCode, data)
-    }
-
-    private fun setFileDisplayName() {
-        // Set chosenFilename.text to the file's display name if possible.
-        val uri = fileToRead
-        val noFileChosen = getString(R.string.no_file_chosen)
-        val displayName = if (uri == null || uri.toString() == "") {
-            noFileChosen
-        } else if (!uri.isAccessibleFile(ctx)) {
-            // Fallback on the last display name if the path isn't valid.
-            val prefs = ctx.getSharedPreferences(ctx.packageName, MODE_PRIVATE)
-            prefs.getString(CHOSEN_FILE_NAME_KEY, "") ?: noFileChosen
-        } else {
-            uri.retrieveFileDisplayName(ctx) ?: noFileChosen
-        }
-
-        // Set display name.
-        chosenFilename.text = displayName
-    }
-
-    override fun onResume() {
-        super.onResume()
-
-        // Set the file display name. onResume() can be called after
-        // the user picks a file.
-        setFileDisplayName()
-    }
-
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
-
-        // Set/restore the file display name.
-        setFileDisplayName()
-    }
-
-    override fun onFileChosen(uri: Uri?) { /* FIXME Not called for Fragments. */ }
-
-    // Functions related to choosing files.
-    protected fun buildInvalidFileAlertDialog(): AlertDialogBuilder {
-        return AlertDialogBuilder(ctx).apply {
-            title(R.string.invalid_file_dialog_title)
-            message(R.string.invalid_file_dialog_message)
-            positiveButton(R.string.alert_positive_message) {
-                myActivity.showFileChooser()
-            }
-            negativeButton(R.string.alert_negative_message1)
-        }
-    }
-
-    protected fun buildNoPermissionAlertDialog(): AlertDialogBuilder {
-        return AlertDialogBuilder(ctx).apply {
-            title(R.string.no_storage_permission_title)
-            message(R.string.no_storage_permission_message)
-            positiveButton(R.string.give_permission_message) {
-                // Try asking for storage permission again.
-                withStoragePermission {}
-            }
-            negativeButton(R.string.alert_negative_message1)
-        }
-    }
+    protected val fileChooser: ObservableFileChooser?
+        get() = context as? ObservableFileChooser
 
     fun withStoragePermission(block: PermissionBlock) {
         // Check if we have write permission.
         if (Build.VERSION.SDK_INT >= 23) {
-            val permission = ctx.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            val permission = ctx.checkSelfPermission(
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE)
             if (permission != PackageManager.PERMISSION_GRANTED) {
-                // We don't have permission so prompt the user
+                // We don't have permission, so prompt the user.
                 requestPermissions(
                         PERMISSIONS_STORAGE,
                         REQUEST_EXTERNAL_STORAGE
@@ -160,9 +86,9 @@ abstract class FileChooserFragment : Fragment(), FileChooser {
         }
     }
 
-    override fun onRequestPermissionsResult(
-            requestCode: Int, permissions: Array<out String>,
-            grantResults: IntArray) {
+    override fun onRequestPermissionsResult(requestCode: Int,
+                                            permissions: Array<out String>,
+                                            grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
         if (permissions.contentEquals(PERMISSIONS_STORAGE)) {
@@ -182,7 +108,123 @@ abstract class FileChooserFragment : Fragment(), FileChooser {
         }
     }
 
+    override fun onAttach(context: Context?) {
+        super.onAttach(context)
+
+        // If the context is an ObservableFileChooser, register to it.
+        val fileChooser = context as? ObservableFileChooser
+        fileChooser?.addObserver(this)
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+
+        // If the context is an ObservableFileChooser, unregister from it.
+        val fileChooser = context as? ObservableFileChooser
+        fileChooser?.deleteObserver(this)
+    }
+
+    override fun onActivityCreated(savedInstanceState: Bundle?) {
+        super.onActivityCreated(savedInstanceState)
+
+        // Restore fragment instance state here.
+        // Retrieve the previous chosen file URI and display name, if any.
+        val uri: Uri?
+        if (savedInstanceState != null) {
+            uri = savedInstanceState.getParcelable("chosenFileUri") as? Uri
+            chosenFileDisplayName = savedInstanceState
+                    .getString("chosenFileDisplayName")
+        } else {
+            val prefs = ctx.getSharedPreferences(ctx.packageName,
+                    AppCompatActivity.MODE_PRIVATE)
+            val uriString = prefs.getString(CHOSEN_FILE_URI_KEY, null)
+            uri = if (uriString != null) Uri.parse(uriString) else null
+            chosenFileDisplayName = prefs.getString(CHOSEN_FILE_NAME_KEY, null)
+        }
+
+        // Set chosenFileUri if the Uri is acceptable.
+        if (uri != null) {
+            chosenFileUri = uri
+        }
+
+        // Set the chosen file name text field.
+        setChosenFilenameText(chosenFileDisplayName)
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+
+        // Save fragment instance state here.
+        if (view != null) {
+            outState.putParcelable("chosenFileUri", chosenFileUri)
+            outState.putString("chosenFileDisplayName", chosenFileDisplayName)
+        }
+    }
+
+    private fun setChosenFilenameText(displayName: String?) {
+        val text = if (displayName.isNullOrEmpty()) {
+            getString(R.string.no_file_chosen_dec)
+        } else displayName
+        find<TextView>(R.id.chosen_filename).text = text
+    }
+
+    override fun onFileChosen(uri: Uri) {
+        // Retrieve the display name of the chosen file, if possible.
+        val displayName = if (uri.isAccessibleFile(ctx)) {
+            uri.retrieveFileDisplayName(ctx)
+        } else null
+
+        // Set the chosen filename text field.
+        setChosenFilenameText(displayName)
+
+        // Set property and shared preference values.
+        chosenFileUri = uri
+        chosenFileDisplayName = displayName
+        val prefs = ctx.getSharedPreferences(ctx.packageName,
+                AppCompatActivity.MODE_PRIVATE)
+        prefs.edit()
+                .putString(CHOSEN_FILE_URI_KEY, uri.toString())
+                .putString(CHOSEN_FILE_NAME_KEY, displayName)
+                .apply()  // apply() is asynchronous.
+    }
+
+    protected fun buildInvalidFileAlertDialog(): AlertDialogBuilder {
+        // Use a different title and message based on whether or not a file has been
+        // chosen already.
+        val title =   if (chosenFileUri == null) R.string.no_file_chosen_dialog_title
+                      else R.string.invalid_file_dialog_title
+        val message = if (chosenFileUri == null) R.string.no_file_chosen_dialog_message
+                      else R.string.invalid_file_dialog_message
+
+        // Initialise and return a builder.
+        return AlertDialogBuilder(ctx).apply {
+            title(title)
+            message(message)
+            positiveButton(R.string.alert_positive_message) {
+                fileChooser?.showFileChooser()
+            }
+            negativeButton(R.string.alert_negative_message1)
+        }
+    }
+
+    protected fun buildNoPermissionAlertDialog(block: PermissionBlock):
+            AlertDialogBuilder {
+        return AlertDialogBuilder(ctx).apply {
+            title(R.string.no_storage_permission_title)
+            message(R.string.no_storage_permission_message)
+            positiveButton(R.string.grant_permission_message) {
+                // Try asking for storage permission again.
+                withStoragePermission { havePermission -> block(havePermission) }
+            }
+            negativeButton(R.string.alert_negative_message1)
+        }
+    }
+
     companion object {
+        // Shared pref keys.
+        private const val CHOSEN_FILE_URI_KEY = "$APP_NAME.CHOSEN_FILE_URI_KEY"
+        private const val CHOSEN_FILE_NAME_KEY = "$APP_NAME.CHOSEN_FILE_NAME_KEY"
+
         // Storage Permissions
         private const val REQUEST_EXTERNAL_STORAGE = 6
         private val PERMISSIONS_STORAGE = arrayOf(
@@ -192,15 +234,6 @@ abstract class FileChooserFragment : Fragment(), FileChooser {
 }
 
 class ReadFilesFragment : FileChooserFragment() {
-    private val chooseFileButton: ImageButton
-        get() = find(R.id.choose_file_button)
-
-    private val playFileButton: ImageButton
-        get() = find(R.id.play_file_button)
-
-    private val stopButton: ImageButton
-        get() = find(R.id.stop_button)
-
     override fun onCreateView(
             inflater: LayoutInflater,
             container: ViewGroup?,
@@ -213,41 +246,33 @@ class ReadFilesFragment : FileChooserFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        chooseFileButton.onClick { activity?.showFileChooser() }
-        playFileButton.onClick { onClickReadFile() }
-        stopButton.onClick { speaker?.stopSpeech() }
+        // Set OnClick listeners.
+        find<ImageButton>(R.id.choose_file_button)
+                .onClick { fileChooser?.showFileChooser() }
+        find<ImageButton>(R.id.play_file_button).onClick { onClickReadFile() }
+        find<ImageButton>(R.id.stop_button).onClick { speaker?.stopSpeech() }
     }
 
     private fun onClickReadFile() {
         // Show the speaker not ready message if appropriate.
         if (!speaker.isReady()) {
-            myActivity.showSpeakerNotReadyMessage()
+            speakerActivity?.showSpeakerNotReadyMessage()
             return
         }
 
-        val fileToRead = fileToRead
-        when (fileToRead?.isAccessibleFile(ctx)) {
+        val uri = chosenFileUri
+        when (uri?.isAccessibleFile(ctx)) {
             true -> {
-                val lines = fileToRead.openContentInputStream(ctx)?.reader()?.readLines()
+                // TODO Make this more efficient.
+                val lines = uri.openContentInputStream(ctx)?.reader()?.readLines()
                 speaker?.speak(lines ?: return)
             }
-            false -> buildInvalidFileAlertDialog().show()
-            else -> activity?.toast(R.string.no_file_chosen2)
+            else -> buildInvalidFileAlertDialog().show()
         }
-
     }
 }
 
 class WriteFilesFragment : FileChooserFragment() {
-
-    private val chooseFileButton: ImageButton
-        get() = find(R.id.choose_file_button)
-
-    private val saveButton: ImageButton
-        get() = find(R.id.save_button)
-
-    private val stopButton: ImageButton
-        get() = find(R.id.stop_button)
 
     override fun onCreateView(
             inflater: LayoutInflater,
@@ -260,21 +285,29 @@ class WriteFilesFragment : FileChooserFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        saveButton.onClick { onClickSave() }
-        chooseFileButton.onClick { showFileChooser() }
-        stopButton.onClick { speaker?.stopSpeech() }
+        find<ImageButton>(R.id.save_button).onClick { onClickSave() }
+        find<ImageButton>(R.id.choose_file_button)
+                .onClick { fileChooser?.showFileChooser() }
+        find<ImageButton>(R.id.stop_button).onClick { speaker?.stopSpeech() }
     }
 
-    private fun writeSpeechToFile(uri: Uri?, havePermission: Boolean) {
+    private fun writeSpeechToFile(uri: Uri?, havePermission: Boolean,
+                                  waveFilename: String) {
         if (!havePermission) {
-            // Show a dialog if we don't have read/write storage permission
-            ctx.runOnUiThread { buildNoPermissionAlertDialog().show() }
+            // Show a dialog if we don't have read/write storage permission.
+            // and return here if permission is granted.
+            val permissionBlock = { havePermission2: Boolean ->
+                if (havePermission2) {
+                    writeSpeechToFile(uri, havePermission2, waveFilename)
+                }
+            }
+            buildNoPermissionAlertDialog(permissionBlock).show()
             return
         }
 
         // Validate before continuing.
         if (uri == null || !uri.isAccessibleFile(ctx)) {
-            ctx.runOnUiThread {buildInvalidFileAlertDialog().show()}
+            buildInvalidFileAlertDialog().show()
             return
         }
 
@@ -287,45 +320,39 @@ class WriteFilesFragment : FileChooserFragment() {
         // Save the file in the external storage directory using the filename
         // + '.wav'.
         val dir = Environment.getExternalStorageDirectory()
-        val filename = "${uri.retrieveFileDisplayName(ctx)}.wav"
-        val file = File(dir, filename)
-        val listener = SynthesisEventListener(myActivity.myApplication, filename,
-                ctx, file)
+        val file = File(dir, waveFilename)
+        val listener = SynthesisEventListener(speakerActivity!!.myApplication,
+                waveFilename, ctx, file)
         speaker?.synthesizeToFile(content, listener)
     }
 
     private fun onClickSave() {
-        val uri = fileToRead
-        when (uri?.isAccessibleFile(ctx)) {
-            false -> {
-                buildInvalidFileAlertDialog().show()
-                return
-            }
-            null -> {
-                activity?.toast(R.string.no_file_chosen2)
-                return
-            }
+        val uri = chosenFileUri
+        if (uri?.isAccessibleFile(ctx) != true) {
+            buildInvalidFileAlertDialog().show()
+            return
         }
 
         // Show the speaker not ready message if appropriate.
         if (!speaker.isReady()) {
-            myActivity.showSpeakerNotReadyMessage()
+            speakerActivity?.showSpeakerNotReadyMessage()
             return
         }
 
         // Build and display an appropriate alert dialog.
         val msgPart1 = getString(R.string.write_to_file_alert_message_p1)
         val msgPart2 = getString(R.string.write_to_file_alert_message_p2)
-        val filename = uri?.retrieveFileDisplayName(ctx).toString()
+        val filename = chosenFileDisplayName
+        val waveFilename = "$filename.wav"
         val fullMsg = "$msgPart1 \"$filename\"\n" +
-                "\n$msgPart2 \"$filename.wav\""
+                "\n$msgPart2 \"$waveFilename\""
         AlertDialogBuilder(ctx).apply {
             title(R.string.write_files_fragment_label)
             message(fullMsg)
             positiveButton(R.string.alert_positive_message) {
                 // Ask the user for write permission if necessary.
                 withStoragePermission { havePermission ->
-                    writeSpeechToFile(uri, havePermission)
+                    writeSpeechToFile(uri, havePermission, waveFilename)
                 }
             }
             negativeButton(R.string.alert_negative_message2)
