@@ -92,6 +92,15 @@ fun Uri.retrieveFileDisplayName(ctx: Context): String? {
     return lastPathSegment
 }
 
+fun Uri.getFileSize(ctx: Context): Long? {
+    takeReadUriPermission(ctx)
+
+    ctx.contentResolver.openFileDescriptor(this, "r")?.use {
+        return it.statSize
+    }
+    return null
+}
+
 
 /**
  * Open an input stream on to the content associated with the URI, assuming content
