@@ -25,7 +25,6 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import android.support.v4.app.NotificationCompat
 import com.danefinlay.ttsutil.ui.MainActivity
@@ -38,10 +37,9 @@ private fun getNotificationBuilder(ctx: Context, notificationId: Int):
         NotificationCompat.Builder {
     // Create an Intent and PendingIntent for when the user clicks on the
     // notification. This should just open/re-open MainActivity.
-    val notificationIdUri = Uri.parse("notificationId:$notificationId")
     val onClickIntent = Intent(ctx,
             MainActivity::class.java).apply {
-        data = notificationIdUri
+        putExtra("notificationId", notificationId)
         addFlags(START_ACTIVITY_FLAGS)
     }
     val contentPendingIntent = PendingIntent.getActivity(
@@ -51,7 +49,7 @@ private fun getNotificationBuilder(ctx: Context, notificationId: Int):
     val onDeleteIntent = Intent(ctx,
             SpeakerIntentService::class.java).apply {
         action = ACTION_STOP_SPEAKING
-        data = notificationIdUri
+        putExtra("notificationId", notificationId)
     }
     val onDeletePendingIntent = PendingIntent.getService(ctx,
             0, onDeleteIntent, 0)

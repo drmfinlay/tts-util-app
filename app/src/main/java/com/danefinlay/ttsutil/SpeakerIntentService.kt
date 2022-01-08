@@ -27,6 +27,7 @@ import android.os.Build
 import com.danefinlay.ttsutil.ui.EditReadActivity
 import org.jetbrains.anko.ctx
 import org.jetbrains.anko.longToast
+import org.jetbrains.anko.notificationManager
 import org.jetbrains.anko.runOnUiThread
 
 // IntentService actions.
@@ -52,13 +53,17 @@ class SpeakerIntentService : IntentService("SpeakerIntentService") {
         get() = myApplication.speaker
 
     override fun onHandleIntent(intent: Intent?) {
-        val text = intent?.getStringExtra(EXTRA_TEXT) ?: ""
-        when (intent?.action) {
-            ACTION_READ_TEXT -> handleActionReadText(text)
+        if (intent == null) return
+
+        // Retrieve text to handle, if any.
+        val text = intent.getStringExtra(EXTRA_TEXT) ?: ""
+
+        // Handle actions.
+        when (intent.action) {
             ACTION_EDIT_READ_TEXT -> handleActionEditReadText(text)
             ACTION_READ_CLIPBOARD -> handleActionReadClipboard()
             ACTION_EDIT_READ_CLIPBOARD -> handleActionEditReadClipboard()
-            ACTION_STOP_SPEAKING -> handleActionStopSpeaking()
+            ACTION_STOP_SPEAKING -> handleActionStopSpeaking(intent)
         }
     }
 
@@ -124,8 +129,14 @@ class SpeakerIntentService : IntentService("SpeakerIntentService") {
      * Handle action StopSpeaking in the provided background thread with the provided
      * parameters.
      */
-    private fun handleActionStopSpeaking() {
+    private fun handleActionStopSpeaking(intent: Intent) {
+        // Stop speech synthesis.
         speaker?.stopSpeech()
+
+        // Retrieve the ID of the notification to dismiss, if any.
+        val notificationId = intent.getIntExtra("notificationId", -1)
+        if (notificationId == -1) return
+        myApplication.notificationManager.cancel(notificationId)
     }
 
     companion object {
@@ -194,9 +205,10 @@ class SpeakerIntentService : IntentService("SpeakerIntentService") {
          * @see IntentService
          */
         @JvmStatic
-        fun startActionStopSpeaking(ctx: Context) {
+        fun startActionStopSpeaking(ctx: Context, notificationId: Int) {
             val intent = Intent(ctx, SpeakerIntentService::class.java).apply {
                 action = ACTION_STOP_SPEAKING
+                putExtra("notificationId", notificationId)
             }
             ctx.startService(intent)
         }
