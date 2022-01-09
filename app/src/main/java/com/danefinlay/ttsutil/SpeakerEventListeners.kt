@@ -200,7 +200,7 @@ class SynthesisEventListener(app: ApplicationEx, private val filename: String,
         // Join each utterance's wave file into one wave file. Use the output
         // file passed to this listener.
         val errorMessage = try {
-            joinWaveFiles(inWaveFiles, outFile)
+            joinWaveFiles(inWaveFiles, outFile, deleteFiles = true)
             null
         } catch (error: RuntimeException) {
             when (error) {

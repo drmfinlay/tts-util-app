@@ -379,10 +379,12 @@ class WaveFile(val stream: InputStream) {
  *
  * @param   inFiles             List of wave files.
  * @param   outFile             Output file where the joined wave file will be written.
+ * @param   deleteFiles         Delete each inFile after processing.
  * @exception   IncompatibleWaveFileException   Raised for invalid/incompatible Wave
  * files.
  */
-fun joinWaveFiles(inFiles: List<File>, outFile: File) {
+fun joinWaveFiles(inFiles: List<File>, outFile: File,
+                  deleteFiles: Boolean = false) {
     // Handle special case: empty list.
     if (inFiles.isEmpty()) return
 
@@ -430,12 +432,13 @@ fun joinWaveFiles(inFiles: List<File>, outFile: File) {
 
         // Stream data from each file into the output file.
         // var count = 0f
-        waveFiles.forEach { wf ->
+        inFiles.zip(waveFiles).forEach { (f, wf) ->
             // val progress = (count / totalChunkSize.toFloat() * 100).toInt()
             // print("Progress: $progress%\r")
             wf.readDataChunk { byte ->
                 outStream.write(byte)
             }
+            if (deleteFiles) f.delete()
             // count+=wf.header.dataSubChunk.ckSize.toFloat()
         }
     }
