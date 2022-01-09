@@ -192,6 +192,11 @@ class SynthesisEventListener(app: ApplicationEx, private val filename: String,
             return
         }
 
+        // If the TTS engine has produced impossibly short wave files, filter them
+        // out.  These are typically empty files.
+        val inWaveFiles = inWaveFiles
+                .filterNot { it.length() < WaveFileHeader.MIN_SIZE }
+
         // Join each utterance's wave file into one wave file. Use the output
         // file passed to this listener.
         val errorMessage = try {
