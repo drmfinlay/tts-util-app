@@ -112,6 +112,8 @@
     <string name="speaking_notification_text">Text-to-speech output in progress…</string>
     <string name="synthesis_notification_title">File synthesis in progress</string>
     <string name="synthesis_notification_text">Text-to-speech synthesis in progress…</string>
+    <string name="post_synthesis_notification_title">Post processing in progress</string>
+    <string name="post_synthesis_notification_text">Processing synthesised wave files…</string>
 
     <!--Text-to-speech error message strings.-->
     <string name="synthesis_error_msg_generic">There was an error during text synthesis.</string>

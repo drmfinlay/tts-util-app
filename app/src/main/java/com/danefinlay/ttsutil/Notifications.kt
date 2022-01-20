@@ -33,6 +33,7 @@ import java.lang.RuntimeException
 
 const val SPEAKING_NOTIFICATION_ID = 1
 const val SYNTHESIS_NOTIFICATION_ID = 2
+const val POST_SYNTHESIS_NOTIFICATION = 3
 
 private fun getNotificationBuilder(ctx: Context, notificationId: Int):
         NotificationCompat.Builder {
@@ -106,6 +107,10 @@ fun speakerNotificationBuilder(ctx: Context, notificationId: Int):
             SYNTHESIS_NOTIFICATION_ID -> {
                 titleId = R.string.synthesis_notification_title
                 textId = R.string.synthesis_notification_text
+            }
+            POST_SYNTHESIS_NOTIFICATION -> {
+                titleId = R.string.post_synthesis_notification_title
+                textId = R.string.post_synthesis_notification_text
             }
             else -> {
                 throw RuntimeException("Invalid notification ID $notificationId")
