@@ -154,14 +154,34 @@ class SettingsFragment : PreferenceFragmentCompat() {
             return true
         }
 
-        // Get a list of voices, voice names and display names.
-        // TODO: This doesn't work for multiple voices with the same display name.
-        // This is done because I'm not sure how to implement that nicely.
+        // Get sorted lists of voices and voice names.
         val voicesList = voices.toList().filterNotNull()
                 .sortedBy { it.name }
-                .distinctBy { it.locale.displayName }
         val voiceNames = voicesList.map { it.name }
-        val voiceDisplayNames = voicesList.map { it.locale.displayName }
+
+        // Get a sorted, distinct list of all voice display names.
+        // Count duplicates, reset positive counters to 1 and construct the list of
+        // voice display names, adding a number after each duplicate name.
+        val dupCounts = mutableMapOf<String, Int>()
+        voicesList.forEach {
+            val displayName = it.locale.displayName
+            val count = dupCounts[displayName] ?: -1
+            dupCounts[displayName] = count + 1
+        }
+        dupCounts.forEach {
+            val value = if (it.value > 0) 1 else it.value
+            dupCounts[it.key] = value
+        }
+        val voiceDisplayNames = voicesList.map {
+            val displayName = it.locale.displayName
+            val count = dupCounts[displayName]!!
+            if (count > 0) {
+                dupCounts[displayName] = count + 1
+                "$displayName $count"
+            } else {
+                displayName
+            }
+        }
 
         // Get the previous or default voice.
         val prefs = preferenceManager.sharedPreferences
