@@ -29,6 +29,7 @@ import android.os.Build
 import android.support.v4.app.NotificationCompat
 import com.danefinlay.ttsutil.ui.MainActivity
 import org.jetbrains.anko.notificationManager
+import java.lang.RuntimeException
 
 const val SPEAKING_NOTIFICATION_ID = 1
 const val SYNTHESIS_NOTIFICATION_ID = 2
@@ -94,19 +95,25 @@ fun speakerNotificationBuilder(ctx: Context, notificationId: Int):
         NotificationCompat.Builder {
     val builder = getNotificationBuilder(ctx, notificationId)
     return builder.apply {
-        // Set the title and text depending on the notification ID.
+        // Retrieve the title and text based on the notification ID.
+        val titleId: Int
+        val textId: Int
         when (notificationId) {
             SPEAKING_NOTIFICATION_ID -> {
-                setContentTitle(ctx.getString(R.string.speaking_notification_title))
-                setContentText(ctx.getString(R.string.speaking_notification_text))
+                titleId = R.string.speaking_notification_title
+                textId = R.string.speaking_notification_text
             }
             SYNTHESIS_NOTIFICATION_ID -> {
-                setContentTitle(ctx.getString(R.string.synthesis_notification_title))
-                setContentText(ctx.getString(R.string.synthesis_notification_text))
+                titleId = R.string.synthesis_notification_title
+                textId = R.string.synthesis_notification_text
             }
             else -> {
-
+                throw RuntimeException("Invalid notification ID $notificationId")
             }
         }
+
+        // Set the title and text.
+        setContentTitle(ctx.getString(titleId))
+        setContentText(ctx.getString(textId))
     }
 }
