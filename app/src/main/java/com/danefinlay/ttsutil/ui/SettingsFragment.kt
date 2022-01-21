@@ -20,7 +20,9 @@
 
 package com.danefinlay.ttsutil.ui
 
+import android.content.SharedPreferences
 import android.os.Bundle
+import android.speech.tts.Voice
 import android.support.v4.app.Fragment
 import android.support.v7.app.AlertDialog
 import android.support.v7.preference.Preference
@@ -88,7 +90,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
     private fun displayAlertDialog(title: Int, items: List<String>,
                                    checkedItem: Int,
                                    onClickPositiveListener: (index: Int) -> Unit,
-                                   onClickNeutralListener: () -> Unit) {
+                                   onClickNeutralListener: (() -> Unit)?) {
         val context = ContextThemeWrapper(context, R.style.AlertDialogTheme)
         AlertDialog.Builder(context).apply {
             setTitle(title)
@@ -101,8 +103,10 @@ class SettingsFragment : PreferenceFragmentCompat() {
                     onClickPositiveListener(selection)
                 }
             }
-            setNeutralButton(R.string.use_default_tts_preference) { _, _ ->
-                onClickNeutralListener()
+            if (onClickNeutralListener != null) {
+                setNeutralButton(R.string.use_default_tts_preference) { _, _ ->
+                    onClickNeutralListener()
+                }
             }
             show()
         }
@@ -144,6 +148,43 @@ class SettingsFragment : PreferenceFragmentCompat() {
         return true
     }
 
+    private fun chooseVoiceSubSelection(prefs: SharedPreferences,
+                                        speaker: Speaker,
+                                        preferenceKey: String,
+                                        currentVoice: Voice?,
+                                        voiceSelection: List<Voice>) {
+        // Get a list of display names, adding a number after each non-distinct
+        // name.
+        // TODO Add "(network required)" before the number for voices that require
+        //  network connectivity (isNetworkConnectionRequired).
+        //  This should also be done for the first menu and the string should be
+        //  placed in strings.xml.
+        val displayName = voiceSelection[0].locale.displayName
+        val displayNames = voiceSelection
+                .mapIndexed { i, _ -> "$displayName ${i + 1}" }
+
+        // Define the positive button listener.
+        val onClickPositiveListener = { index: Int ->
+            // Set the selected voice.
+            val selectedVoice = voiceSelection[index]
+            speaker.voice = selectedVoice
+
+            // Set the voice's name in the preferences.
+            prefs.edit().putString(preferenceKey, selectedVoice.name)
+                    .apply()
+        }
+
+        // Set the current index as either the current voice, if present, or the
+        // first voice on the list.
+        val currentVoiceIndex = voiceSelection.indexOf(currentVoice)
+        val currentIndex = if (currentVoiceIndex > 0) currentVoiceIndex else 0
+
+        // Display the dialog.
+        val dialogTitle = R.string.pref_tts_voice_summary
+        displayAlertDialog(dialogTitle, displayNames, currentIndex,
+                onClickPositiveListener, null)
+    }
+
     private fun handleSetTtsVoice(preferenceKey: String,
                                   speaker: Speaker): Boolean {
         // Get the set of available TTS voices.
@@ -154,56 +195,49 @@ class SettingsFragment : PreferenceFragmentCompat() {
             return true
         }
 
-        // Get sorted lists of voices and voice names.
+        // Get a list of voices.
         val voicesList = voices.toList().filterNotNull()
-                .sortedBy { it.name }
-        val voiceNames = voicesList.map { it.name }
 
-        // Get a sorted, distinct list of all voice display names.
-        // Count duplicates, reset positive counters to 1 and construct the list of
-        // voice display names, adding a number after each duplicate name.
-        val dupCounts = mutableMapOf<String, Int>()
-        voicesList.forEach {
-            val displayName = it.locale.displayName
-            val count = dupCounts[displayName] ?: -1
-            dupCounts[displayName] = count + 1
-        }
-        dupCounts.forEach {
-            val value = if (it.value > 0) 1 else it.value
-            dupCounts[it.key] = value
-        }
-        val voiceDisplayNames = voicesList.map {
-            val displayName = it.locale.displayName
-            val count = dupCounts[displayName]!!
-            if (count > 0) {
-                dupCounts[displayName] = count + 1
-                "$displayName $count"
-            } else {
-                displayName
-            }
-        }
-
-        // Get the previous or default voice.
+        // Retrieve the previous voice, falling back on the default.
+        val defaultVoice = speaker.defaultVoice
         val prefs = preferenceManager.sharedPreferences
-        val currentValue = prefs.getString(preferenceKey,
-                speaker.voice?.name ?: speaker.defaultVoice?.name
+        val currentVoiceName = prefs.getString(preferenceKey,
+                speaker.voice?.name ?: defaultVoice?.name
         )
-        val currentIndex = voiceNames.indexOf(currentValue)
+        val currentVoice = voicesList.find { it.name == currentVoiceName }
 
-        // Show a list alert dialog of the available TTS voices.
+        // Show the user a list of voice display names sorted by language.
+        val voicesByDisplayName = voicesList.groupBy { it.locale.displayName }
+        val displayNames = voicesByDisplayName.map { it.value[0].locale }
+                .sortedBy { it.displayLanguage }.map { it.displayName }
+        val currentIndex = displayNames.indexOf(currentVoice?.locale?.displayName)
         val dialogTitle = R.string.pref_tts_voice_summary
-        val onClickPositiveListener = { index: Int ->
-            // Get the Voice from the index of the selected item and
-            // set it to the current voice of the engine.
-            speaker.voice = voicesList[index]
+        val onClickPositiveListener: (Int) -> Unit = { index: Int ->
+            // Retrieve the list of voices for the selected display name and handle
+            // selecting one.
+            val item = displayNames[index]
+            val voiceSelection = voicesByDisplayName[item]!!
 
-            // Set the voice's name in the preferences.
-            prefs.edit().putString(preferenceKey, voiceNames[index])
-                    .apply()
+            // It is noted here that, at least if Google's TTS engine is used, this
+            // may provide greater user choice than the system settings.
+
+            if (voiceSelection.size > 1) {
+                // Display another dialog to the user for selection.
+                chooseVoiceSubSelection(prefs, speaker, preferenceKey, currentVoice,
+                        voiceSelection)
+            } else {
+                // There is no sense in showing another dialog for only one option.
+                // Set the first and only voice in the selection.
+                val selectedVoice = voiceSelection[0]
+                speaker.voice = selectedVoice
+
+                // Set the voice's name in the preferences.
+                prefs.edit().putString(preferenceKey, selectedVoice.name)
+                        .apply()
+            }
         }
         val onClickNeutralListener = {
             // Use the default TTS voice/language.
-            val defaultVoice = speaker.defaultVoice
             if (defaultVoice != null) {
                 speaker.voice = defaultVoice
             } else {
@@ -213,7 +247,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
             // Remove the current voice's name from the preferences.
             prefs.edit().putString(preferenceKey, null).apply()
         }
-        displayAlertDialog(dialogTitle, voiceDisplayNames, currentIndex,
+        displayAlertDialog(dialogTitle, displayNames, currentIndex,
                 onClickPositiveListener, onClickNeutralListener)
         return true
     }
