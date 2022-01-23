@@ -106,7 +106,7 @@ abstract class SpeakerActivity: AppCompatActivity(), TextToSpeech.OnInitListener
         }
 
         // Check if the language is available.
-        val systemLocale = myApplication.currentSystemLocale
+        val systemLocale = currentSystemLocale
         @Suppress("deprecation")
         val language = tts.voiceEx?.locale ?: tts.language ?: systemLocale
         when (tts.isLanguageAvailable(language)) {

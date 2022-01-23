@@ -245,7 +245,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
             if (defaultVoice != null) {
                 speaker.tts.voiceEx = defaultVoice
             } else {
-                speaker.tts.language = myApplication.currentSystemLocale
+                speaker.tts.language = currentSystemLocale
             }
 
             // Remove the current voice's name from the preferences.
