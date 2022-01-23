@@ -28,10 +28,7 @@ import android.support.v7.app.AlertDialog
 import android.support.v7.preference.Preference
 import android.support.v7.preference.PreferenceFragmentCompat
 import android.support.v7.view.ContextThemeWrapper
-import com.danefinlay.ttsutil.ApplicationEx
-import com.danefinlay.ttsutil.R
-import com.danefinlay.ttsutil.Speaker
-import com.danefinlay.ttsutil.isReady
+import com.danefinlay.ttsutil.*
 import org.jetbrains.anko.toast
 
 /**
@@ -174,7 +171,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         val onClickPositive = { index: Int ->
             // Set the selected voice.
             val selectedVoice = voiceSelection[index]
-            speaker.voice = selectedVoice
+            speaker.tts.voiceEx = selectedVoice
 
             // Set the voice's name in the preferences.
             prefs.edit().putString(preferenceKey, selectedVoice.name)
@@ -196,7 +193,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
                                   speaker: Speaker): Boolean {
         // Get the set of available TTS voices.
         // Return early if the engine returned no voices.
-        val voices = speaker.voices
+        val voices = speaker.tts.voicesEx
         if (voices.isEmpty()) {
             context?.toast(R.string.no_tts_voices_msg)
             return true
@@ -206,10 +203,10 @@ class SettingsFragment : PreferenceFragmentCompat() {
         val voicesList = voices.toList().filterNotNull()
 
         // Retrieve the previous voice, falling back on the default.
-        val defaultVoice = speaker.defaultVoice
+        val defaultVoice = speaker.tts.defaultVoiceEx
         val prefs = preferenceManager.sharedPreferences
         val currentVoiceName = prefs.getString(preferenceKey,
-                speaker.voice?.name ?: defaultVoice?.name
+                speaker.tts.voiceEx?.name ?: defaultVoice?.name
         )
         val currentVoice = voicesList.find { it.name == currentVoiceName }
 
@@ -236,7 +233,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 // There is no sense in showing another dialog for only one option.
                 // Set the first and only voice in the selection.
                 val selectedVoice = voiceSelection[0]
-                speaker.voice = selectedVoice
+                speaker.tts.voiceEx = selectedVoice
 
                 // Set the voice's name in the preferences.
                 prefs.edit().putString(preferenceKey, selectedVoice.name)
@@ -246,7 +243,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         val onClickUseDefault = {
             // Use the default TTS voice/language.
             if (defaultVoice != null) {
-                speaker.voice = defaultVoice
+                speaker.tts.voiceEx = defaultVoice
             } else {
                 speaker.tts.language = myApplication.currentSystemLocale
             }
