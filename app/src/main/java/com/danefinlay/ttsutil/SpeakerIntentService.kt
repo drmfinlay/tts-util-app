@@ -140,6 +140,19 @@ class SpeakerIntentService : IntentService("SpeakerIntentService") {
     }
 
     companion object {
+        private inline fun startAction(ctx: Context, actionString: String,
+                                       block: Intent.() -> Unit) {
+            val intent = Intent(ctx, SpeakerIntentService::class.java)
+            intent.action = actionString
+            intent.block()
+            ctx.startService(intent)
+        }
+
+        private fun startTextAction(ctx: Context, actionString: String,
+                                    text: String?) {
+            startAction(ctx, actionString) { putExtra(EXTRA_TEXT, text) }
+        }
+
         /**
          * Starts this service to perform action ReadText. If the service is already
          * performing a task this action will be queued.
@@ -147,13 +160,8 @@ class SpeakerIntentService : IntentService("SpeakerIntentService") {
          * @see IntentService
          */
         @JvmStatic
-        fun startActionReadText(ctx: Context, text: String?) {
-            val intent = Intent(ctx, SpeakerIntentService::class.java).apply {
-                action = ACTION_READ_TEXT
-                putExtra(EXTRA_TEXT, text)
-            }
-            ctx.startService(intent)
-        }
+        fun startActionReadText(ctx: Context, text: String?) =
+                startTextAction(ctx, ACTION_READ_TEXT, text)
 
         /**
          * Starts this service to perform action EditReadText. If the service is
@@ -162,13 +170,8 @@ class SpeakerIntentService : IntentService("SpeakerIntentService") {
          * @see IntentService
          */
         @JvmStatic
-        fun startActionEditReadText(ctx: Context, text: String) {
-            val intent = Intent(ctx, SpeakerIntentService::class.java).apply {
-                action = ACTION_EDIT_READ_TEXT
-                putExtra(EXTRA_TEXT, text)
-            }
-            ctx.startService(intent)
-        }
+        fun startActionEditReadText(ctx: Context, text: String) =
+                startTextAction(ctx, ACTION_EDIT_READ_TEXT, text)
 
         /**
          * Starts this service to perform action ReadClipboard. If the service is
@@ -177,12 +180,8 @@ class SpeakerIntentService : IntentService("SpeakerIntentService") {
          * @see IntentService
          */
         @JvmStatic
-        fun startActionReadClipboard(ctx: Context) {
-            val intent = Intent(ctx, SpeakerIntentService::class.java).apply {
-                action = ACTION_READ_CLIPBOARD
-            }
-            ctx.startService(intent)
-        }
+        fun startActionReadClipboard(ctx: Context) =
+                startAction(ctx, ACTION_READ_CLIPBOARD) {}
 
         /**
          * Starts this service to perform action EditReadClipboard. If the service
@@ -191,12 +190,8 @@ class SpeakerIntentService : IntentService("SpeakerIntentService") {
          * @see IntentService
          */
         @JvmStatic
-        fun startActionEditReadClipboard(ctx: Context) {
-            val intent = Intent(ctx, SpeakerIntentService::class.java).apply {
-                action = ACTION_EDIT_READ_CLIPBOARD
-            }
-            ctx.startService(intent)
-        }
+        fun startActionEditReadClipboard(ctx: Context) =
+                startAction(ctx, ACTION_EDIT_READ_CLIPBOARD) {}
 
         /**
          * Starts this service to perform action StopSpeaking. If the service is
@@ -205,12 +200,9 @@ class SpeakerIntentService : IntentService("SpeakerIntentService") {
          * @see IntentService
          */
         @JvmStatic
-        fun startActionStopSpeaking(ctx: Context, notificationId: Int) {
-            val intent = Intent(ctx, SpeakerIntentService::class.java).apply {
-                action = ACTION_STOP_SPEAKING
-                putExtra("notificationId", notificationId)
-            }
-            ctx.startService(intent)
-        }
+        fun startActionStopSpeaking(ctx: Context, notificationId: Int) =
+                startAction(ctx, ACTION_STOP_SPEAKING) {
+                    putExtra("notificationId", notificationId)
+                }
     }
 }
