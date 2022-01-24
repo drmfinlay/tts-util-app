@@ -21,6 +21,8 @@
 package com.danefinlay.ttsutil
 
 import android.app.Application
+import android.content.Context
+import android.content.Intent
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
@@ -108,6 +110,14 @@ class ApplicationEx : Application() {
             speaker = Speaker(this, true, initListener,
                     engineName)
         }
+    }
+
+    fun openSystemTTSSettings(ctx: Context) {
+        // Got this from: https://stackoverflow.com/a/8688354
+        val intent = Intent()
+        intent.action = "com.android.settings.TTS_SETTINGS"
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        ctx.startActivity(intent)
     }
 
     /**

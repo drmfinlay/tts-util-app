@@ -79,7 +79,7 @@ class MainActivity : SpeakerActivity(), ObservableFileChooser {
             }
 
             R.id.menu_tts_settings -> {
-                openSystemTTSSettings()
+                myApplication.openSystemTTSSettings(this)
                 true
             }
 

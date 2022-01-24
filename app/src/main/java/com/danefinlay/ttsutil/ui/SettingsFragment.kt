@@ -65,7 +65,8 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
         // Handle opening the system settings.
         if (key == "pref_tts_system_settings") {
-            myActivity.openSystemTTSSettings()
+            val ctx = requireContext()
+            myApplication.openSystemTTSSettings(ctx)
             return true
         }
 

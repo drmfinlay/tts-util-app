@@ -159,14 +159,6 @@ abstract class SpeakerActivity: AppCompatActivity(), TextToSpeech.OnInitListener
         myApplication.showSpeakerNotReadyMessage()
     }
 
-    fun openSystemTTSSettings() {
-        // Got this from: https://stackoverflow.com/a/8688354
-        val intent = Intent()
-        intent.action = "com.android.settings.TTS_SETTINGS"
-        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        startActivity(intent)
-    }
-
     private fun showNoTTSDataDialog() {
         AlertDialogBuilder(this).apply {
             title(R.string.no_tts_data_alert_title)
