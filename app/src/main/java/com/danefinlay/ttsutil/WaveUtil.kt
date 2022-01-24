@@ -380,15 +380,21 @@ class WaveFile(val stream: InputStream) {
  * @param   inFiles             List of wave files.
  * @param   outFile             Output file where the joined wave file will be written.
  * @param   deleteFiles         Delete each inFile after processing.
- * @param   progressListener    Event function to observe progress out of 100%.
+ * @param   progressObserver    Callback function for observing progress out of 100%.
  * @exception   IncompatibleWaveFileException   Raised for invalid/incompatible Wave
  * files.
  */
 fun joinWaveFiles(inFiles: List<File>, outFile: File,
                   deleteFiles: Boolean = false,
-                  progressListener: ((progress: Int) -> Unit)? = null) {
+                  progressObserver: ((progress: Int) -> Unit)? = null) {
+    // Notify the observer that work has begun.
+    progressObserver?.invoke(0)
+
     // Handle special case: empty list.
-    if (inFiles.isEmpty()) return
+    if (inFiles.isEmpty()) {
+        progressObserver?.invoke(100)
+        return
+    }
 
     // Read each file, verifying that all files are compatible.
     // Data chunks are not read in yet.
@@ -412,7 +418,11 @@ fun joinWaveFiles(inFiles: List<File>, outFile: File,
         acc + wf.header.dataSubChunk.ckSize
     }
     val header = wf1.header
-    val totalChunkSize = 12 + header.fmtSubChunk.ckSize + 8 + dataSubChunkSize
+    val fmtSubChunkSize = header.fmtSubChunk.ckSize
+    val factSubChunkSize = header.factSubChunk?.ckSize ?: 0
+    val totalChunkSize = 4 + (8 + fmtSubChunkSize) +
+            (if (factSubChunkSize > 0) 8 + factSubChunkSize else 0) +
+            (8 + dataSubChunkSize)
 
     // Open the output file for writing.
     FileOutputStream(outFile).buffered().use { outStream ->
@@ -432,16 +442,22 @@ fun joinWaveFiles(inFiles: List<File>, outFile: File,
         // Write the data chunk header.
         outStream.write(header.dataSubChunk.writeToArray(dataSubChunkSize))
 
+        // Notify the observer of the progress so far.
+        var count = (totalChunkSize - dataSubChunkSize).toFloat()
+        progressObserver?.invoke((count / totalChunkSize * 100).toInt())
+
         // Stream data from each file into the output file.
-        var count = 0f
         inFiles.zip(waveFiles).forEach { (f, wf) ->
-            val progress = (count / totalChunkSize.toFloat() * 100).toInt()
-            progressListener?.invoke(progress)
             wf.readDataChunk { byte ->
                 outStream.write(byte)
             }
+
+            // Delete the input file, if necessary.
             if (deleteFiles) f.delete()
-            count+=wf.header.dataSubChunk.ckSize.toFloat()
+
+            // Notify the observer after each file is written, if necessary.
+            count += wf.header.dataSubChunk.ckSize
+            progressObserver?.invoke((count / totalChunkSize * 100).toInt())
         }
     }
 }
