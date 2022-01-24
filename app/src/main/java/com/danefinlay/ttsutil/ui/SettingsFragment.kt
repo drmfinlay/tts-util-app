@@ -22,6 +22,7 @@ package com.danefinlay.ttsutil.ui
 
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.speech.tts.TextToSpeech
 import android.speech.tts.Voice
 import android.support.v4.app.Fragment
 import android.support.v7.app.AlertDialog
@@ -42,9 +43,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
     private val myApplication: ApplicationEx
         get() = myActivity.myApplication
 
-    private val speaker: Speaker?
-        get() = myActivity.speaker
-
     override fun onCreatePreferences(savedInstanceState: Bundle?,
                                      rootKey: String?) {
         // Load the preferences from an XML resource.
@@ -58,7 +56,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         return super.onPreferenceTreeClick(preference)
     }
 
-    private fun reinitialiseSpeaker(preferredEngine: String?) {
+    private fun reinitialiseTTS(preferredEngine: String?) {
         myApplication.reinitialiseSpeaker(myActivity, preferredEngine)
     }
 
@@ -71,19 +69,20 @@ class SettingsFragment : PreferenceFragmentCompat() {
             return true
         }
 
-        val speaker = speaker
+        val speaker = myApplication.speaker
         if (speaker == null || !speaker.isReady()) {
             // Show the speaker not ready message.
-            myActivity.showSpeakerNotReadyMessage()
+            myApplication.showSpeakerNotReadyMessage()
             return true
         }
 
-        // Handle preferences using the Speaker.
+        // Handle setting preferences.
+        val tts = speaker.tts
         return when (key) {
-            "pref_tts_engine" -> handleSetTtsEngine(key, speaker)
-            "pref_tts_voice" -> handleSetTtsVoice(key, speaker)
-            "pref_tts_pitch" -> handleSetTtsPitch(key, speaker)
-            "pref_tts_speech_rate" -> handleSetTtsSpeechRate(key, speaker)
+            "pref_tts_engine" -> handleSetTtsEngine(key, tts)
+            "pref_tts_voice" -> handleSetTtsVoice(key, tts)
+            "pref_tts_pitch" -> handleSetTtsPitch(key, tts)
+            "pref_tts_speech_rate" -> handleSetTtsSpeechRate(key, tts)
             else -> false  // not a TTS engine preference.
         }
     }
@@ -114,9 +113,8 @@ class SettingsFragment : PreferenceFragmentCompat() {
     }
 
     private fun handleSetTtsEngine(preferenceKey: String,
-                                   speaker: Speaker): Boolean {
+                                   tts: TextToSpeech): Boolean {
         // Get a list of the available TTS engines.
-        val tts = speaker.tts
         val engines = tts.engines?.toList()?.sortedBy { it.label } ?: return true
         val engineNames = engines.map { it.label }
         val enginePackages = engines.map { it.name }
@@ -132,7 +130,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
             // Get the package name from the index of the selected item and
             // use it to set the current engine.
             val packageName = engines.map { it.name }[index]
-            reinitialiseSpeaker(packageName)
+            reinitialiseTTS(packageName)
 
             // Set the engine's name in the preferences.
             prefs.edit().putString(preferenceKey, packageName).apply()
@@ -142,7 +140,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
             prefs.edit().remove(preferenceKey).apply()
 
             // Set the default engine by reinitialising.
-            reinitialiseSpeaker(null)
+            reinitialiseTTS(null)
         }
 
         // Build and show the dialog.
@@ -153,7 +151,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
     }
 
     private fun chooseVoiceSubSelection(prefs: SharedPreferences,
-                                        speaker: Speaker,
+                                        tts: TextToSpeech,
                                         preferenceKey: String,
                                         currentVoice: Voice?,
                                         voiceSelection: List<Voice>) {
@@ -171,7 +169,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         val onClickPositive = { index: Int ->
             // Set the selected voice.
             val selectedVoice = voiceSelection[index]
-            speaker.tts.voiceEx = selectedVoice
+            tts.voiceEx = selectedVoice
 
             // Set the voice's name in the preferences.
             prefs.edit().putString(preferenceKey, selectedVoice.name)
@@ -190,10 +188,10 @@ class SettingsFragment : PreferenceFragmentCompat() {
     }
 
     private fun handleSetTtsVoice(preferenceKey: String,
-                                  speaker: Speaker): Boolean {
+                                  tts: TextToSpeech): Boolean {
         // Get the set of available TTS voices.
         // Return early if the engine returned no voices.
-        val voices = speaker.tts.voicesEx
+        val voices = tts.voicesEx
         if (voices.isEmpty()) {
             context?.toast(R.string.no_tts_voices_msg)
             return true
@@ -203,10 +201,10 @@ class SettingsFragment : PreferenceFragmentCompat() {
         val voicesList = voices.toList().filterNotNull()
 
         // Retrieve the previous voice, falling back on the default.
-        val defaultVoice = speaker.tts.defaultVoiceEx
+        val defaultVoice = tts.defaultVoiceEx
         val prefs = preferenceManager.sharedPreferences
         val currentVoiceName = prefs.getString(preferenceKey,
-                speaker.tts.voiceEx?.name ?: defaultVoice?.name
+                tts.voiceEx?.name ?: defaultVoice?.name
         )
         val currentVoice = voicesList.find { it.name == currentVoiceName }
 
@@ -227,13 +225,13 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
             if (voiceSelection.size > 1) {
                 // Display another dialog to the user for selection.
-                chooseVoiceSubSelection(prefs, speaker, preferenceKey, currentVoice,
+                chooseVoiceSubSelection(prefs, tts, preferenceKey, currentVoice,
                         voiceSelection)
             } else {
                 // There is no sense in showing another dialog for only one option.
                 // Set the first and only voice in the selection.
                 val selectedVoice = voiceSelection[0]
-                speaker.tts.voiceEx = selectedVoice
+                tts.voiceEx = selectedVoice
 
                 // Set the voice's name in the preferences.
                 prefs.edit().putString(preferenceKey, selectedVoice.name)
@@ -243,9 +241,9 @@ class SettingsFragment : PreferenceFragmentCompat() {
         val onClickUseDefault = {
             // Use the default TTS voice/language.
             if (defaultVoice != null) {
-                speaker.tts.voiceEx = defaultVoice
+                tts.voiceEx = defaultVoice
             } else {
-                speaker.tts.language = currentSystemLocale
+                tts.language = currentSystemLocale
             }
 
             // Remove the current voice's name from the preferences.
@@ -260,7 +258,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
     }
 
     private fun handleSetTtsPitch(preferenceKey: String,
-                                  speaker: Speaker): Boolean {
+                                  tts: TextToSpeech): Boolean {
         // Define a list of pitch values and their string representations.
         val pitches = listOf(0.25f, 0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f)
         val pitchStrings = pitches.map { it.toString() }
@@ -276,7 +274,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
             // Get the pitch from the index of the selected item and
             // use it to set the current voice pitch.
             val pitch = pitches[index]
-            speaker.tts.setPitch(pitch)
+            tts.setPitch(pitch)
 
             // Set the pitch in the preferences.
             prefs.edit().putFloat(preferenceKey, pitch).apply()
@@ -287,7 +285,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
             // Reinitialise the TTS engine so it uses the pitch as set in the system
             // TTS settings.
-            reinitialiseSpeaker(null)
+            reinitialiseTTS(null)
         }
 
         // Build and show the dialog.
@@ -298,7 +296,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
     }
 
     private fun handleSetTtsSpeechRate(preferenceKey: String,
-                                       speaker: Speaker): Boolean {
+                                       tts: TextToSpeech): Boolean {
         // Define a list of speech rate values and their string representations.
         val speechRates = listOf(0.25f, 0.5f, 0.75f, 1.0f, 1.5f, 2.0f, 2.5f, 3.0f,
                 4.0f, 5.0f)
@@ -315,7 +313,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
             // Get the speech rate from the index of the selected item and
             // use it to set the current speech rate.
             val speechRate = speechRates[index]
-            speaker.tts.setSpeechRate(speechRate)
+            tts.setSpeechRate(speechRate)
 
             // Set the speech rate in the preferences.
             prefs.edit().putFloat(preferenceKey, speechRate).apply()
@@ -326,7 +324,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
             // Reinitialise the TTS engine so it uses the speech rate as set in the
             // system TTS settings.
-            reinitialiseSpeaker(null)
+            reinitialiseTTS(null)
         }
 
         // Build and show the dialog.
