@@ -44,8 +44,7 @@
         app:layout_constraintTop_toBottomOf="@id/fragment_description"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:paddingTop="10dp"
-        android:paddingBottom="10dp">
+        android:layout_marginTop="10dp">
 
         <TextView
             android:id="@+id/chosen_file_label"
@@ -70,33 +69,44 @@
 
     </android.support.constraint.ConstraintLayout>
 
-    <ImageButton
-        android:id="@+id/choose_file_button"
-        android:layout_width="wrap_content"
+    <android.support.constraint.ConstraintLayout
+        android:id="@+id/button_container"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:src="@drawable/ic_outline_file_open_24"
-        android:contentDescription="@string/choose_file_button"
+        app:layout_constraintHorizontal_chainStyle="packed"
         app:layout_constraintHorizontal_bias="0.5"
-        android:layout_marginStart="24dp"
-        app:layout_constraintStart_toEndOf="@+id/stop_button"
-        app:layout_constraintTop_toBottomOf="@id/chosen_file_container" />
-
-    <ImageButton
-        android:id="@+id/save_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:src="@drawable/ic_outline_save_24"
-        android:contentDescription="@string/save_button"
-        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintTop_toBottomOf="@id/chosen_file_container"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@id/choose_file_button" />
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="10dp">
 
-    <ImageButton
-        android:id="@+id/stop_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:src="@drawable/ic_outline_stop_circle_24"
-        android:contentDescription="@string/stop_button"
-        app:layout_constraintStart_toEndOf="@id/save_button"
-        app:layout_constraintTop_toTopOf="@id/choose_file_button"/>
+        <ImageButton
+            android:id="@+id/save_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_outline_save_24"
+            android:contentDescription="@string/save_button"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"/>
+
+        <ImageButton
+            android:id="@+id/stop_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_outline_stop_circle_24"
+            android:contentDescription="@string/stop_button"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toEndOf="@id/save_button"/>
+
+        <ImageButton
+            android:id="@+id/choose_file_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:src="@drawable/ic_outline_file_open_24"
+            android:contentDescription="@string/choose_file_button"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/stop_button"/>
+
+    </android.support.constraint.ConstraintLayout>
 </android.support.constraint.ConstraintLayout>

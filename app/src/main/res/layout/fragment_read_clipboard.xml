@@ -45,8 +45,7 @@
         app:layout_constraintTop_toBottomOf="@id/fragment_description"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="20dp"
-        android:layout_marginBottom="20dp" >
+        android:layout_marginTop="10dp" >
 
         <ImageButton
             android:id="@+id/play_button"
@@ -55,8 +54,7 @@
             android:src="@drawable/ic_baseline_play_circle_outline_24"
             android:contentDescription="@string/play_button"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/stop_button"/>
+            app:layout_constraintStart_toStartOf="parent"/>
 
         <ImageButton
             android:id="@+id/stop_button"
@@ -64,8 +62,8 @@
             android:layout_height="wrap_content"
             android:src="@drawable/ic_outline_stop_circle_24"
             android:contentDescription="@string/stop_button"
-            app:layout_constraintStart_toEndOf="@id/play_button"
-            app:layout_constraintTop_toTopOf="parent"/>
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toEndOf="@id/play_button"/>
 
         <ImageButton
             android:id="@+id/paste_button"
@@ -74,8 +72,8 @@
             android:src="@drawable/ic_content_paste"
             android:contentDescription="@string/paste_button"
             android:layout_marginStart="24dp"
-            app:layout_constraintStart_toEndOf="@id/stop_button"
-            app:layout_constraintTop_toTopOf="parent"/>
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toEndOf="@id/stop_button"/>
 
     </android.support.constraint.ConstraintLayout>
 
@@ -85,7 +83,7 @@
         android:layout_height="wrap_content"
         android:hint="@string/tts_input_label"
         app:layout_constraintTop_toBottomOf="@id/button_container"
-        android:paddingTop="10dp"
+        android:layout_marginTop="10dp"
         android:layout_centerHorizontal="true">
 
         <!-- Dummy item to prevent EditText from receiving focus on Fragment start -->
