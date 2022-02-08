@@ -22,7 +22,6 @@ package com.danefinlay.ttsutil.ui
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.support.design.widget.NavigationView
 import android.support.v4.widget.DrawerLayout
@@ -38,10 +37,10 @@ import com.danefinlay.ttsutil.R
 import org.jetbrains.anko.find
 import org.jetbrains.anko.longToast
 
-class MainActivity : SpeakerActivity(), ObservableFileChooser {
+class MainActivity : SpeakerActivity(), ActivityInterface {
 
     private lateinit var appBarConfiguration: AppBarConfiguration
-    private var chosenFileObservers = mutableSetOf<ChosenFileObserver>()
+    private val attachedFragments = mutableSetOf<FragmentInterface>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -131,16 +130,16 @@ class MainActivity : SpeakerActivity(), ObservableFileChooser {
         }
     }
 
-    override fun addObserver(observer: ChosenFileObserver) {
-        chosenFileObservers.add(observer)
+    override fun attachFragment(fragment: FragmentInterface) {
+        attachedFragments.add(fragment)
     }
 
-    override fun deleteObserver(observer: ChosenFileObserver) {
-        chosenFileObservers.remove(observer)
+    override fun detachFragment(fragment: FragmentInterface) {
+        attachedFragments.remove(fragment)
     }
 
-    override fun notifyObservers(uri: Uri) {
-        chosenFileObservers.forEach { it.onFileChosen(uri) }
+    override fun notifyFragments(event: ActivityEvent) {
+        attachedFragments.forEach { it.onActivityEvent(event) }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -148,7 +147,10 @@ class MainActivity : SpeakerActivity(), ObservableFileChooser {
         if (requestCode == FILE_SELECT_CODE && resultCode == RESULT_OK) {
             // Get the Uri of the selected file and pass it on.
             val uri = data?.data
-            if (uri != null) notifyObservers(uri)
+            if (uri != null) {
+                val event = ActivityEvent.FileChosenEvent(uri)
+                notifyFragments(event)
+            }
         }
     }
 

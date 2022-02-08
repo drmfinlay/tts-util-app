@@ -22,37 +22,49 @@ package com.danefinlay.ttsutil.ui
 
 import android.net.Uri
 
+// TODO Adjust our fragments to inherit from a class that registers and unregisters
+//  in the onAttach() and onDetach() callbacks.
+
 /**
- * Interface for classes to observe a chosen file event.
+ * Interface between fragments and their activity.
  */
-interface ChosenFileObserver {
+interface FragmentInterface {
     /**
-     * This method is called whenever a file is chosen.
+     * This method is called for activity events.
      */
-    fun onFileChosen(uri: Uri)
+    fun onActivityEvent(event: ActivityEvent)
+}
+
+/**
+ * Activity event classes.
+ */
+sealed class ActivityEvent {
+    class FileChosenEvent(val uri: Uri) : ActivityEvent()
 }
 
 /**
  * Interface for classes that prompt the user to pick a file for some purpose.
  */
-interface ObservableFileChooser {
+interface ActivityInterface {
     /**
      * Show a screen where the user can choose a file.
      */
     fun showFileChooser()
 
     /**
-     * Adds an observer to the set of observers to notify of chosen file events.
+     * Attach a fragment (interface).
+     *
+     * This registers the fragment for events.
      */
-    fun addObserver(observer: ChosenFileObserver)
+    fun attachFragment(fragment: FragmentInterface)
 
     /**
-     * Adds an observer to the set of observers to notify of chosen file events.
+     * Detach a fragment (interface), if it is attached.
      */
-    fun deleteObserver(observer: ChosenFileObserver)
+    fun detachFragment(fragment: FragmentInterface)
 
     /**
-     * Notify all observers of a chosen file event.
+     * Notify attached fragments of an event.
      */
-    fun notifyObservers(uri: Uri)
+    fun notifyFragments(event: ActivityEvent)
 }

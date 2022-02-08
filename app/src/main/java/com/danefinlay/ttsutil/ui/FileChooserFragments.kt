@@ -41,7 +41,7 @@ import java.io.File
 
 typealias PermissionBlock = (granted: Boolean) -> Unit
 
-abstract class FileChooserFragment : Fragment(), ChosenFileObserver {
+abstract class FileChooserFragment : Fragment(), FragmentInterface {
 
     protected var chosenFileUri: Uri? = null
     protected var chosenFileDisplayName: String? = null
@@ -56,8 +56,8 @@ abstract class FileChooserFragment : Fragment(), ChosenFileObserver {
     protected val speaker: Speaker?
         get() = speakerActivity?.speaker
 
-    protected val fileChooser: ObservableFileChooser?
-        get() = context as? ObservableFileChooser
+    protected val activityInterface: ActivityInterface?
+        get() = context as? ActivityInterface
 
     fun withStoragePermission(block: PermissionBlock) {
         // Check if we have write permission.
@@ -111,17 +111,17 @@ abstract class FileChooserFragment : Fragment(), ChosenFileObserver {
     override fun onAttach(context: Context?) {
         super.onAttach(context)
 
-        // If the context is an ObservableFileChooser, register to it.
-        val fileChooser = context as? ObservableFileChooser
-        fileChooser?.addObserver(this)
+        // Attach to the activity interface, if possible.
+        val activityInterface = context as? ActivityInterface
+        activityInterface?.attachFragment(this)
     }
 
     override fun onDetach() {
         super.onDetach()
 
-        // If the context is an ObservableFileChooser, unregister from it.
-        val fileChooser = context as? ObservableFileChooser
-        fileChooser?.deleteObserver(this)
+        // Detach to the activity interface, if necessary.
+        val activityInterface = context as? ActivityInterface
+        activityInterface?.detachFragment(this)
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
@@ -168,7 +168,13 @@ abstract class FileChooserFragment : Fragment(), ChosenFileObserver {
         find<TextView>(R.id.chosen_filename).text = text
     }
 
-    override fun onFileChosen(uri: Uri) {
+    override fun onActivityEvent(event: ActivityEvent) {
+        when (event) {
+            is ActivityEvent.FileChosenEvent -> onFileChosen(event.uri)
+        }
+    }
+
+    private fun onFileChosen(uri: Uri) {
         // Retrieve the display name of the chosen file, if possible.
         val displayName = if (uri.isAccessibleFile(ctx)) {
             uri.retrieveFileDisplayName(ctx)
@@ -201,7 +207,7 @@ abstract class FileChooserFragment : Fragment(), ChosenFileObserver {
             title(title)
             message(message)
             positiveButton(R.string.alert_positive_message) {
-                fileChooser?.showFileChooser()
+                activityInterface?.showFileChooser()
             }
             negativeButton(R.string.alert_negative_message1)
         }
@@ -248,7 +254,7 @@ class ReadFilesFragment : FileChooserFragment() {
 
         // Set OnClick listeners.
         find<ImageButton>(R.id.choose_file_button)
-                .onClick { fileChooser?.showFileChooser() }
+                .onClick { activityInterface?.showFileChooser() }
         find<ImageButton>(R.id.play_file_button).onClick { onClickReadFile() }
         find<ImageButton>(R.id.stop_button).onClick { speaker?.stopSpeech() }
     }
@@ -287,7 +293,7 @@ class WriteFilesFragment : FileChooserFragment() {
         super.onViewCreated(view, savedInstanceState)
         find<ImageButton>(R.id.save_button).onClick { onClickSave() }
         find<ImageButton>(R.id.choose_file_button)
-                .onClick { fileChooser?.showFileChooser() }
+                .onClick { activityInterface?.showFileChooser() }
         find<ImageButton>(R.id.stop_button).onClick { speaker?.stopSpeech() }
     }
 
