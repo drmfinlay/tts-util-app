@@ -38,6 +38,14 @@
     <string name="edit_read_activity_desc">Edit the text below and have it read with text-to-speech.</string>
     <string name="about_activity_label">TTS Util</string>
 
+    <!--Status text field strings.-->
+    <string name="status_text_field">Status: %1$s</string>
+    <string name="status_text_idle">Idle</string>
+    <string name="status_text_reading_text">Reading text: %1$d\%</string>
+    <string name="status_text_reading_file">Reading file: %1$d\%</string>
+    <string name="status_text_writing_file">Writing file: %1$d\%</string>
+    <string name="status_text_processing_file">Processing file: %1$d\%</string>
+
     <!--Button strings.-->
     <string name="play_button">Play text</string>
     <string name="stop_button">Stop</string>
