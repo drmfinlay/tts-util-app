@@ -120,7 +120,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         val engineNames = engines.map { it.label }
         val enginePackages = engines.map { it.name }
 
-        // Get the previous or default voice.
+        // Get the previous or default engine.
         val prefs = preferenceManager.sharedPreferences
         val currentValue = prefs.getString(preferenceKey, tts.defaultEngine)
         val currentIndex = enginePackages.indexOf(currentValue)
@@ -201,15 +201,16 @@ class SettingsFragment : PreferenceFragmentCompat() {
         // Get a list of voices.
         val voicesList = voices.toList().filterNotNull()
 
-        // Retrieve the previous voice, falling back on the default.
+        // Retrieve the previous voice, falling back on the current or default.
         val defaultVoice = tts.defaultVoiceEx
+        var currentVoice: Voice? = tts.voiceEx ?: defaultVoice
         val prefs = preferenceManager.sharedPreferences
-        val currentVoiceName = prefs.getString(preferenceKey,
-                tts.voiceEx?.name ?: defaultVoice?.name
-        )
-        val currentVoice = voicesList.find { it.name == currentVoiceName }
+        val prevVoiceName = prefs.getString(preferenceKey, currentVoice?.name)
+        val prevVoice = voicesList.find { it.name == prevVoiceName }
+        if (prevVoice != null) currentVoice = prevVoice
 
-        // Show the user a list of voice display names sorted by language.
+        // Get a list of voice display names sorted by language for the user to
+        // select from.
         val voicesByDisplayName = voicesList.groupBy { it.locale.displayName }
         val displayNames = voicesByDisplayName.map { it.value[0].locale }
                 .sortedBy { it.displayLanguage }.map { it.displayName }

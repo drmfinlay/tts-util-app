@@ -64,6 +64,7 @@ class SpeakerIntentService : IntentService("SpeakerIntentService") {
             ACTION_READ_CLIPBOARD -> handleActionReadClipboard()
             ACTION_EDIT_READ_CLIPBOARD -> handleActionEditReadClipboard()
             ACTION_STOP_SPEAKING -> handleActionStopSpeaking(intent)
+            ACTION_READ_TEXT -> handleActionReadText(text)
         }
     }
 

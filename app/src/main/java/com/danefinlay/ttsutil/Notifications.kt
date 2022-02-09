@@ -39,8 +39,7 @@ private fun getNotificationBuilder(ctx: Context, notificationId: Int):
         NotificationCompat.Builder {
     // Create an Intent and PendingIntent for when the user clicks on the
     // notification. This should just open/re-open MainActivity.
-    val onClickIntent = Intent(ctx,
-            MainActivity::class.java).apply {
+    val onClickIntent = Intent(ctx, MainActivity::class.java).apply {
         putExtra("notificationId", notificationId)
         addFlags(START_ACTIVITY_FLAGS)
     }

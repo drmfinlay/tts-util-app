@@ -129,17 +129,18 @@ abstract class FileChooserFragment : Fragment(), FragmentInterface {
 
         // Restore fragment instance state here.
         // Retrieve the previous chosen file URI and display name, if any.
+        val uriKey = CHOSEN_FILE_URI_KEY
+        val displayNameKey = CHOSEN_FILE_NAME_KEY
         val uri: Uri?
         if (savedInstanceState != null) {
-            uri = savedInstanceState.getParcelable("chosenFileUri") as? Uri
-            chosenFileDisplayName = savedInstanceState
-                    .getString("chosenFileDisplayName")
+            uri = savedInstanceState.getParcelable(uriKey) as? Uri
+            chosenFileDisplayName = savedInstanceState.getString(displayNameKey)
         } else {
             val prefs = ctx.getSharedPreferences(ctx.packageName,
                     AppCompatActivity.MODE_PRIVATE)
-            val uriString = prefs.getString(CHOSEN_FILE_URI_KEY, null)
+            val uriString = prefs.getString(uriKey, null)
             uri = if (uriString != null) Uri.parse(uriString) else null
-            chosenFileDisplayName = prefs.getString(CHOSEN_FILE_NAME_KEY, null)
+            chosenFileDisplayName = prefs.getString(displayNameKey, null)
         }
 
         // Set chosenFileUri if the Uri is acceptable.
@@ -156,8 +157,8 @@ abstract class FileChooserFragment : Fragment(), FragmentInterface {
 
         // Save fragment instance state here.
         if (view != null) {
-            outState.putParcelable("chosenFileUri", chosenFileUri)
-            outState.putString("chosenFileDisplayName", chosenFileDisplayName)
+            outState.putParcelable(CHOSEN_FILE_URI_KEY, chosenFileUri)
+            outState.putString(CHOSEN_FILE_NAME_KEY, chosenFileDisplayName)
         }
     }
 
@@ -234,12 +235,14 @@ abstract class FileChooserFragment : Fragment(), FragmentInterface {
         // Storage Permissions
         private const val REQUEST_EXTERNAL_STORAGE = 6
         private val PERMISSIONS_STORAGE = arrayOf(
-                Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE
+                Manifest.permission.READ_EXTERNAL_STORAGE,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE
         )
     }
 }
 
 class ReadFilesFragment : FileChooserFragment() {
+
     override fun onCreateView(
             inflater: LayoutInflater,
             container: ViewGroup?,

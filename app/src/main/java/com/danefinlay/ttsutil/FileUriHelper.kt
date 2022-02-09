@@ -23,6 +23,7 @@ package com.danefinlay.ttsutil
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.provider.MediaStore
 import java.io.InputStream
 import java.io.OutputStream
 
@@ -78,7 +79,7 @@ fun Uri.retrieveFileDisplayName(ctx: Context): String? {
 
     // Retrieve the display name, falling back on the URI's last path segment, if
     // there is one.
-    val columnName = "_display_name"
+    val columnName = MediaStore.MediaColumns.DISPLAY_NAME
     val cursor = ctx.contentResolver.query(this, arrayOf(columnName),
             null, null, null)
     cursor?.use {
