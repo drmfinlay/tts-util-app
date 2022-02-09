@@ -37,11 +37,8 @@ import org.jetbrains.anko.toast
  */
 class SettingsFragment : PreferenceFragmentCompat() {
 
-    private val myActivity: SpeakerActivity
-        get() = (activity as SpeakerActivity)
-
-    private val myApplication: ApplicationEx
-        get() = myActivity.myApplication
+    private val Fragment.myApplication: ApplicationEx
+        get() = requireContext().applicationContext as ApplicationEx
 
     override fun onCreatePreferences(savedInstanceState: Bundle?,
                                      rootKey: String?) {
@@ -57,28 +54,28 @@ class SettingsFragment : PreferenceFragmentCompat() {
     }
 
     private fun reinitialiseTTS(preferredEngine: String?) {
-        myApplication.reinitialiseSpeaker(myActivity, preferredEngine)
+        val listener = activity as TextToSpeech.OnInitListener
+        myApplication.reinitialiseSpeaker(listener, preferredEngine)
     }
 
     private fun handleTtsEnginePrefs(preference: Preference?): Boolean {
         val key = preference?.key
 
         // Handle opening the system settings.
+        val ctx = requireContext()
         if (key == "pref_tts_system_settings") {
-            val ctx = requireContext()
             myApplication.openSystemTTSSettings(ctx)
             return true
         }
 
-        val speaker = myApplication.speaker
-        if (speaker == null || !speaker.isReady()) {
-            // Show the speaker not ready message.
-            myApplication.showSpeakerNotReadyMessage()
+        val app = myApplication
+        val tts = app.mTTS
+        if (tts == null || !myApplication.ttsReady) {
+            myApplication.displayTTSNotReadyMessage(ctx)
             return true
         }
 
         // Handle setting preferences.
-        val tts = speaker.tts
         return when (key) {
             "pref_tts_engine" -> handleSetTtsEngine(key, tts)
             "pref_tts_voice" -> handleSetTtsVoice(key, tts)

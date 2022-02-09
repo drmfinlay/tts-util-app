@@ -31,12 +31,32 @@ import com.danefinlay.ttsutil.ui.MainActivity
 import org.jetbrains.anko.notificationManager
 import java.lang.RuntimeException
 
-const val SPEAKING_NOTIFICATION_ID = 1
-const val SYNTHESIS_NOTIFICATION_ID = 2
-const val POST_SYNTHESIS_NOTIFICATION = 3
+val notificationTasks = listOf(TASK_ID_READ_TEXT, TASK_ID_WRITE_FILE,
+        TASK_ID_PROCESS_FILE)
 
-private fun getNotificationBuilder(ctx: Context, notificationId: Int):
+fun getNotificationBuilder(ctx: Context, notificationId: Int):
         NotificationCompat.Builder {
+    // Retrieve the title and text based on the notification ID.
+    val titleId: Int
+    val textId: Int
+    when (notificationId) {
+        TASK_ID_READ_TEXT -> {
+            titleId = R.string.speaking_notification_title
+            textId = R.string.speaking_notification_text
+        }
+        TASK_ID_WRITE_FILE -> {
+            titleId = R.string.synthesis_notification_title
+            textId = R.string.synthesis_notification_text
+        }
+        TASK_ID_PROCESS_FILE -> {
+            titleId = R.string.post_synthesis_notification_title
+            textId = R.string.post_synthesis_notification_text
+        }
+        else -> {
+            throw RuntimeException("Invalid notification ID $notificationId")
+        }
+    }
+
     // Create an Intent and PendingIntent for when the user clicks on the
     // notification. This should just open/re-open MainActivity.
     val onClickIntent = Intent(ctx, MainActivity::class.java).apply {
@@ -75,6 +95,10 @@ private fun getNotificationBuilder(ctx: Context, notificationId: Int):
         // Set the icon for the notification
         setSmallIcon(android.R.drawable.ic_btn_speak_now)
 
+        // Set the title and text.
+        setContentTitle(ctx.getString(titleId))
+        setContentText(ctx.getString(textId))
+
         // Set pending intents.
         setContentIntent(contentPendingIntent)
         setDeleteIntent(onDeletePendingIntent)
@@ -87,37 +111,5 @@ private fun getNotificationBuilder(ctx: Context, notificationId: Int):
         addAction(android.R.drawable.ic_delete,
                 ctx.getString(R.string.stop_button),
                 onDeletePendingIntent)
-    }
-}
-
-
-fun speakerNotificationBuilder(ctx: Context, notificationId: Int):
-        NotificationCompat.Builder {
-    val builder = getNotificationBuilder(ctx, notificationId)
-    return builder.apply {
-        // Retrieve the title and text based on the notification ID.
-        val titleId: Int
-        val textId: Int
-        when (notificationId) {
-            SPEAKING_NOTIFICATION_ID -> {
-                titleId = R.string.speaking_notification_title
-                textId = R.string.speaking_notification_text
-            }
-            SYNTHESIS_NOTIFICATION_ID -> {
-                titleId = R.string.synthesis_notification_title
-                textId = R.string.synthesis_notification_text
-            }
-            POST_SYNTHESIS_NOTIFICATION -> {
-                titleId = R.string.post_synthesis_notification_title
-                textId = R.string.post_synthesis_notification_text
-            }
-            else -> {
-                throw RuntimeException("Invalid notification ID $notificationId")
-            }
-        }
-
-        // Set the title and text.
-        setContentTitle(ctx.getString(titleId))
-        setContentText(ctx.getString(textId))
     }
 }

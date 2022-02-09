@@ -53,4 +53,9 @@ class EditReadActivity : SpeakerActivity() {
 
         return super.onOptionsItemSelected(item)
     }
+
+    override fun handleActivityEvent(event: ActivityEvent) {
+        val fragments = supportFragmentManager.fragments
+        handleActivityEvent(event, fragments)
+    }
 }

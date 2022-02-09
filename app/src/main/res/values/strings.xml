@@ -81,11 +81,9 @@
     <string name="alert_positive_message">Okay</string>
     <string name="alert_negative_message1">No thanks</string>
     <string name="alert_negative_message2">Never mind</string>
-    <string name="no_tts_data_alert_title">No usable TTS engine</string>
-    <string name="no_tts_data_alert_message">"The app could not detect a working text-to-speech engine on this device.\nShould I try to install one?"</string>
-    <string name="failed_to_get_tts_data_title">Failed to get TTS data</string>
-    <string name="failed_to_get_tts_data_msg">Your device was unable to download the text-to-speech data. Perhaps your device has no network access? It is also possible that there is no data available for your selected language.\n\nTry looking in your device\'s settings for \"Text-to-speech output\". You should be able to change your selected language or use a different text-to-speech engine.</string>
-    <string name="speaker_not_ready_message">Text-to-speech isn\'t ready. Try again in a moment.</string>
+    <string name="no_tts_data_alert_title">Missing language TTS data</string>
+    <string name="no_tts_data_alert_message">"Data for the language %1$s is missing.  Would you like to open the %2$s settings screen to download it?"</string>
+    <string name="tts_not_ready_message">Text-to-speech isn\'t ready. Try again in a moment.</string>
     <string name="no_engine_available_message">No text-to-speech engine is available.</string>
     <string name="invalid_file_dialog_title">File not found</string>
     <string name="invalid_file_dialog_message">The chosen file could not be found. Maybe it has been deleted or renamed?\n\nChoose another?</string>
@@ -93,12 +91,12 @@
     <string name="no_file_chosen_dialog_message">No file has been chosen. Would you like to choose one?</string>
     <string name="write_to_file_alert_message_p1">The current file is:</string>
     <string name="write_to_file_alert_message_p2">The content of that file will be synthesised and written to:</string>
-    <string name="write_to_file_alert_message_success">The file was successfully synthesised as: </string>
+    <string name="write_to_file_message_success">The file was successfully synthesised as: "%1$s".</string>
+    <string name="write_to_file_message_failure">Failed to create wave file "%1$s".</string>
     <string name="no_storage_permission_title">No write storage permission</string>
     <string name="no_storage_permission_message">Permission to write to storage was not granted.  The app needs write access in order to save the wave file to storage. \n\nWould you like to grant permission?</string>
     <string name="grant_permission_message">Grant permission</string>
-    <string name="incompatible_wave_file_error_msg">Error: the selected text-to-speech engine provided wave files that couldn\'t be joined together. Because of this, the app cannot produce wave files for selected text files longer than 4000 characters. Please try again using a shorter text file.</string>
-    <string name="generic_wave_file_error_msg">Error: failed to join wave files internally.\n\nThe following exception was caught: %1$s</string>
+    <string name="wave_file_error_msg">Failed to create wave file.</string>
     <string name="use_default_tts_preference">Use default</string>
 
     <!--File-related strings.-->
@@ -134,8 +132,8 @@
     <string name="synthesis_error_msg_voice_data">Text-to-speech failed because voice data was not installed.</string>
     <string name="file_synthesis_interrupted_msg">File synthesis was interrupted.</string>
     <string name="tts_initialisation_failure_msg">Text-to-speech engine failed to initialise.</string>
-    <string name="tts_language_not_available_msg1">Selected speaker language is not available, using default instead.</string>
-    <string name="tts_language_not_available_msg2">Neither the selected nor the system speaker languages are available.</string>
+    <string name="using_general_tts_language_msg">Selected language is not available, using %1$s.</string>
+    <string name="no_tts_language_available_msg">Neither the selected nor the system speaker languages are available.</string>
 
     <!--Preferences/settings.-->
     <string name="pref_tts_engine_category">App Text-to-speech (TTS) Settings</string>

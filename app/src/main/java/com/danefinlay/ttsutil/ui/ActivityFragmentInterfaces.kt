@@ -22,8 +22,14 @@ package com.danefinlay.ttsutil.ui
 
 import android.net.Uri
 
-// TODO Adjust our fragments to inherit from a class that registers and unregisters
-//  in the onAttach() and onDetach() callbacks.
+/**
+ * Activity event classes.
+ */
+sealed class ActivityEvent {
+    class FileChosenEvent(val uri: Uri) : ActivityEvent()
+    class StatusUpdateEvent(val progress: Int,
+                            val taskId: Int) : ActivityEvent()
+}
 
 /**
  * Interface between fragments and their activity.
@@ -32,14 +38,7 @@ interface FragmentInterface {
     /**
      * This method is called for activity events.
      */
-    fun onActivityEvent(event: ActivityEvent)
-}
-
-/**
- * Activity event classes.
- */
-sealed class ActivityEvent {
-    class FileChosenEvent(val uri: Uri) : ActivityEvent()
+    fun handleActivityEvent(event: ActivityEvent)
 }
 
 /**
@@ -52,19 +51,14 @@ interface ActivityInterface {
     fun showFileChooser()
 
     /**
-     * Attach a fragment (interface).
+     * Use attached fragments to handle an event.
+     */
+    fun handleActivityEvent(event: ActivityEvent)
+
+    /**
+     * Get the most recent status update event.
      *
-     * This registers the fragment for events.
+     * TASK_ID_IDLE is used if there have been no updates yet.
      */
-    fun attachFragment(fragment: FragmentInterface)
-
-    /**
-     * Detach a fragment (interface), if it is attached.
-     */
-    fun detachFragment(fragment: FragmentInterface)
-
-    /**
-     * Notify attached fragments of an event.
-     */
-    fun notifyFragments(event: ActivityEvent)
+    fun getLastStatusUpdate(): ActivityEvent.StatusUpdateEvent
 }

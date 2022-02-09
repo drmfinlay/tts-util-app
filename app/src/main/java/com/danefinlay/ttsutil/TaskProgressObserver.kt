@@ -20,26 +20,7 @@
 
 package com.danefinlay.ttsutil
 
-import android.content.res.Resources
-import android.os.Build
-import java.util.*
+interface TaskProgressObserver {
+    fun notifyProgress(progress: Int, taskId: Int)
+}
 
-/**
- * Return the system's current locale.
- *
- * This will be a Locale object representing the user's preferred language as
- * set in the system settings.
- */
-val currentSystemLocale: Locale?
-    get() {
-        val systemConfig = Resources.getSystem().configuration
-        val systemLocale = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            systemConfig?.locales?.get(0)
-        } else {
-            @Suppress("deprecation")
-            systemConfig?.locale
-        }
-
-        // Return the system locale.
-        return systemLocale
-    }

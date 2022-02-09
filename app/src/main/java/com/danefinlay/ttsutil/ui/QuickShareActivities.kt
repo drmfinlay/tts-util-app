@@ -24,7 +24,6 @@ import android.content.Intent
 import android.os.Bundle
 import com.danefinlay.ttsutil.ACTION_READ_CLIPBOARD
 import com.danefinlay.ttsutil.SpeakerIntentService
-import com.danefinlay.ttsutil.isReady
 
 /**
  * Activity to quickly read text from an input source.
@@ -35,12 +34,14 @@ abstract class QuickShareActivity : SpeakerActivity() {
     abstract fun startServiceAction()
 
     private fun initialize() {
-        // Start the appropriate service action if the Speaker is ready. Otherwise,
-        // show the speaker not ready message.
-        if (speaker.isReady()) startServiceAction()
-        else showSpeakerNotReadyMessage()
+        if (!myApplication.ttsReady) {
+            myApplication.displayTTSNotReadyMessage(this)
+            return
+        }
 
-        // Finish the activity.
+        // TTS is ready.  Start the appropriate service action and finish the
+        // activity.
+        startServiceAction()
         finish()
     }
 
@@ -54,22 +55,7 @@ abstract class QuickShareActivity : SpeakerActivity() {
         initialize()
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        initialize()
-    }
-
-    override fun onDoNotInstallTTSData() {
-        // Finish the quick share activity if the user doesn't want TTS data
-        // installed.
-        finish()
-    }
-
-    override fun onTTSInstallFailureDialogExit() {
-        // Finish the quick share activity after informing the user that installing
-        // TTS data failed.
-        finish()
-    }
+    override fun handleActivityEvent(event: ActivityEvent) {}
 }
 
 class ReadClipboardActivity : QuickShareActivity() {

@@ -21,6 +21,7 @@
 package com.danefinlay.ttsutil
 
 import android.speech.tts.TextToSpeech
+import android.speech.tts.TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED
 import android.speech.tts.Voice
 import java.util.*
 
@@ -103,3 +104,59 @@ val TextToSpeech.voicesEx: MutableSet<Voice?>
             return mutableSetOf()
         }
     }
+
+/**
+ * Read-only extension property for getting the TTS locale.
+ *
+ * @see currentLocale
+ */
+val TextToSpeech.currentLocale: Locale?
+    get() {
+        @Suppress("deprecation")
+        return voiceEx?.locale ?: language
+    }
+
+/**
+ * Count available voices matching a given locale.
+ *
+ * The [locale] of a [Voice] is considered a match if its *language* and *country*
+ * fields are the same.
+ */
+fun TextToSpeech.countAvailableVoices(locale: Locale): Int {
+    // Find the number of matching voices by folding the list of voices.
+    val voicesList = voicesEx.toList().filterNotNull()
+    return voicesList.fold(0) { acc, voice ->
+        val vLocale = voice.locale
+        val match = locale.language == vLocale.language &&
+                locale.country == vLocale.country
+        val dataInstalled = KEY_FEATURE_NOT_INSTALLED !in voice.features
+        acc + if (match && dataInstalled) 1 else 0
+    }
+}
+
+/**
+ * Find an acceptable TTS language based on a given locale.
+ *
+ * Note: LANG_MISSING_DATA is considered acceptable, but not available.
+ */
+fun TextToSpeech.findAcceptableTTSLanguage(locale: Locale): Locale? {
+    return when (isLanguageAvailable(locale)) {
+        TextToSpeech.LANG_MISSING_DATA,
+        TextToSpeech.LANG_COUNTRY_VAR_AVAILABLE -> {
+            // This locale is acceptable.
+            locale
+        }
+        TextToSpeech.LANG_COUNTRY_AVAILABLE -> {
+            // Use the country language if the variant is unavailable.
+            Locale(locale.language, locale.country)
+        }
+        TextToSpeech.LANG_AVAILABLE -> {
+            // Use the general language if the country is unavailable.
+            Locale(locale.language)
+        }
+        TextToSpeech.LANG_NOT_SUPPORTED -> {
+            null
+        }
+        else -> null
+    }
+}

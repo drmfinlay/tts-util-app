@@ -24,18 +24,19 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
+import android.speech.tts.TextToSpeech.QUEUE_ADD
 import android.support.design.widget.TextInputLayout
-import android.support.v4.app.Fragment
 import android.support.v7.preference.PreferenceManager
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
+import android.widget.TextView
 import com.danefinlay.ttsutil.*
 import org.jetbrains.anko.*
 import org.jetbrains.anko.support.v4.find
 
-abstract class ReadTextFragmentBase : Fragment() {
+abstract class ReadTextFragmentBase : MyFragment() {
 
     private val inputLayout: TextInputLayout
         get() = find(R.id.input_layout)
@@ -52,27 +53,18 @@ abstract class ReadTextFragmentBase : Fragment() {
             return inputLayout.editText?.text?.toString()
         }
 
-    private val myActivity: SpeakerActivity
-        get() = activity as SpeakerActivity
-
-    private val speaker: Speaker?
-        get() = myActivity.speaker
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
         // Set OnClick listener for the start/stop speaking buttons.
-        find<ImageButton>(R.id.play_button).onClick {
-            if (speaker.isReady()) {
-                speakFromInputLayout()
-            } else {
-                // Show the speaker not ready message.
-                myActivity.showSpeakerNotReadyMessage()
-            }
-        }
+        find<ImageButton>(R.id.play_button).onClick { onClickPlay() }
         find<ImageButton>(R.id.stop_button).onClick {
-            speaker?.stopSpeech()
+            myApplication.stopSpeech()
         }
+
+        // Set status field.
+        val event = activityInterface?.getLastStatusUpdate() ?: return
+        onStatusUpdate(event)
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
@@ -92,16 +84,23 @@ abstract class ReadTextFragmentBase : Fragment() {
         }
     }
 
-    private fun speakFromInputLayout() {
-        val content = inputLayoutContent ?: ""
-        if (content.isBlank()) {
-            context?.toast(R.string.cannot_speak_empty_text_msg)
-            speaker?.speak(inputLayout.hint?.toString())
-            return
+    private fun onClickPlay() {
+        // Retrieve input field text.  If blank, use the hint text
+        // and display an alert message.
+        var text = inputLayoutContent ?: ""
+        if (text.isBlank()) {
+            ctx.toast(R.string.cannot_speak_empty_text_msg)
+            text = inputLayout.hint?.toString() ?: return
         }
 
-        // Speak text.
-        speaker?.speak(content)
+        // Speak *text*, displaying the appropriate alert on failure.
+        when (myApplication.speak(text, QUEUE_ADD)) {
+             TTS_NOT_READY -> myApplication.displayTTSNotReadyMessage(ctx)
+        }
+    }
+
+    override fun updateStatusField(text: String) {
+        find<TextView>(R.id.status_text_field).text = text
     }
 }
 

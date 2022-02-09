@@ -25,4 +25,14 @@ import android.content.Intent
 const val APP_NAME = "com.danefinlay.ttsutil"
 const val START_ACTIVITY_FLAGS = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
 const val TAG = "TTSUtil"
-const val FILE_URI = "$APP_NAME.FILE_URI"
+
+// TTS operation result flags.
+const val SUCCESS = 0
+const val TTS_NOT_READY = -1
+const val INVALID_FILE_URI = -2
+
+// Task identifiers.
+const val TASK_ID_IDLE = 0
+const val TASK_ID_READ_TEXT = 1
+const val TASK_ID_WRITE_FILE = 2
+const val TASK_ID_PROCESS_FILE = 3

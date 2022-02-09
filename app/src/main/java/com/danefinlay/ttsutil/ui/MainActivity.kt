@@ -20,7 +20,6 @@
 
 package com.danefinlay.ttsutil.ui
 
-import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.os.Bundle
 import android.support.design.widget.NavigationView
@@ -35,12 +34,10 @@ import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.danefinlay.ttsutil.R
 import org.jetbrains.anko.find
-import org.jetbrains.anko.longToast
 
-class MainActivity : SpeakerActivity(), ActivityInterface {
+class MainActivity : SpeakerActivity() {
 
     private lateinit var appBarConfiguration: AppBarConfiguration
-    private val attachedFragments = mutableSetOf<FragmentInterface>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -98,6 +95,18 @@ class MainActivity : SpeakerActivity(), ActivityInterface {
                 super.onSupportNavigateUp()
     }
 
+    override fun handleActivityEvent(event: ActivityEvent) {
+        // If this is a status update event, save it.
+        if (event is ActivityEvent.StatusUpdateEvent) {
+            mLastStatusUpdate = event
+        }
+
+        val fragmentId = R.id.nav_host_fragment
+        val navHostFragment = supportFragmentManager.findFragmentById(fragmentId)
+        val fragments = navHostFragment?.childFragmentManager?.fragments
+        if (fragments != null) handleActivityEvent(event, fragments)
+    }
+
     override fun onDestroy() {
         super.onDestroy()
 
@@ -108,55 +117,5 @@ class MainActivity : SpeakerActivity(), ActivityInterface {
             myApplication.freeSpeaker()
             myApplication.cleanupFiles()
         }
-    }
-
-    override fun showFileChooser() {
-        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-            type = "text/*"
-            addCategory(Intent.CATEGORY_OPENABLE)
-            addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-
-            // TODO Allow processing of multiple text files.
-            putExtra(Intent.EXTRA_ALLOW_MULTIPLE, false)
-        }
-
-        try {
-            val title = getString(R.string.file_chooser_title)
-            startActivityForResult(
-                    Intent.createChooser(intent, title),
-                    FILE_SELECT_CODE)
-        } catch (ex: ActivityNotFoundException) {
-            // Potentially direct the user to the Market with a Dialog.
-            longToast(getString(R.string.no_file_manager_msg))
-        }
-    }
-
-    override fun attachFragment(fragment: FragmentInterface) {
-        attachedFragments.add(fragment)
-    }
-
-    override fun detachFragment(fragment: FragmentInterface) {
-        attachedFragments.remove(fragment)
-    }
-
-    override fun notifyFragments(event: ActivityEvent) {
-        attachedFragments.forEach { it.onActivityEvent(event) }
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == FILE_SELECT_CODE && resultCode == RESULT_OK) {
-            // Get the Uri of the selected file and pass it on.
-            val uri = data?.data
-            if (uri != null) {
-                val event = ActivityEvent.FileChosenEvent(uri)
-                notifyFragments(event)
-            }
-        }
-    }
-
-    companion object {
-        private const val FILE_SELECT_CODE = 5
     }
 }

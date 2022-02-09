@@ -27,19 +27,36 @@ import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.media.AudioManager.OnAudioFocusChangeListener
+import android.net.Uri
 import android.os.Build
 import android.speech.tts.TextToSpeech
+import android.speech.tts.TextToSpeech.OnInitListener
+import android.support.v4.app.NotificationCompat
 import android.support.v7.preference.PreferenceManager
-import org.jetbrains.anko.audioManager
-import org.jetbrains.anko.longToast
-import org.jetbrains.anko.notificationManager
+import org.jetbrains.anko.*
+import java.io.ByteArrayInputStream
+import java.io.File
+import java.io.InputStream
+import java.util.*
 
-class ApplicationEx : Application() {
+class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
 
-    var speaker: Speaker? = null
+    var mTTS: TextToSpeech? = null
         private set
 
-    var errorMessageId: Int? = null
+    private var utteranceProgressListener: MyUtteranceProgressListener? = null
+    private var lastUtteranceWasFileSynthesis: Boolean = false
+    private var errorMessage: String? = null
+    private val progressObservers = mutableSetOf<TaskProgressObserver>()
+    private var notificationBuilder: NotificationCompat.Builder? = null
+
+    /**
+     * Whether the TTS is ready to synthesize text into speech.
+     *
+     * This should be changed by the OnInitListener.
+     * */
+    var ttsReady = false
+        private set
 
     private val audioFocusGain = AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
     private val audioFocusRequest: AudioFocusRequest by lazy {
@@ -64,8 +81,7 @@ class ApplicationEx : Application() {
             AudioManager.AUDIOFOCUS_LOSS,
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT,
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
-                // Stop speaking.
-                speaker?.stopSpeech()
+                stopSpeech()
             }
         }
     }
@@ -109,19 +125,145 @@ class ApplicationEx : Application() {
         }
     }
 
-    fun startSpeaker(initListener: TextToSpeech.OnInitListener,
-                     preferredEngine: String?) {
-        if (speaker == null) {
+    fun setupTTS(initListener: OnInitListener, preferredEngine: String?) {
+        if (mTTS == null) {
             // Try to get the preferred engine package from shared preferences if
             // it is null.
             val engineName = preferredEngine ?:
             PreferenceManager.getDefaultSharedPreferences(this)
                     .getString("pref_tts_engine", null)
 
-            // Initialise the Speaker object.
-            speaker = Speaker(this, true, initListener,
-                    engineName)
+            // Initialize the TTS object.  Wrap the given OnInitListener.
+            val wrappedListener = OnInitListener { status ->
+                this.onInit(status)
+                initListener.onInit(status)
+            }
+
+            mTTS = TextToSpeech(this, wrappedListener, engineName)
         }
+    }
+
+    private fun setTTSLanguage(tts: TextToSpeech): Boolean {
+        // Find an acceptable TTS language.
+        val startLocale = tts.currentLocale
+        var locale: Locale? = null
+        if (startLocale != null) {
+            locale = tts.findAcceptableTTSLanguage(startLocale)
+        }
+
+        // Attempt to fallback on the system language, if necessary.
+        // If this is also unacceptable, try the JVM default.
+        if (locale == null) {
+            val sysLocale = currentSystemLocale
+            if (sysLocale != null) {
+                locale = tts.findAcceptableTTSLanguage(sysLocale)
+            }
+        }
+        if (locale == null) {
+            locale = tts.findAcceptableTTSLanguage(Locale.getDefault())
+        }
+
+        // Set and display a warning message, if necessary.
+        val success = locale != null
+        var message: String? = null
+        if (locale == null) {
+            // Neither the selected nor the default languages are
+            // available.
+            message = getString(R.string.no_tts_language_available_msg)
+        } else if (startLocale == null || startLocale.language != locale.language ||
+                startLocale.country != locale.country) {
+            // A language is available, but it is one that the user might not be
+            // expecting.
+            message= getString(R.string.using_general_tts_language_msg,
+                    locale.displayName)
+        }
+        if (message != null)  runOnUiThread { longToast(message) }
+
+        // Save the message if failure is indicated.
+        if (!success) errorMessage = message
+
+        // Set the language if it is available.
+        if (success) tts.language = locale
+        return success
+    }
+
+    override fun onInit(status: Int) {
+        // Handle errors.
+        val tts = mTTS
+        errorMessage = null
+        if (status == TextToSpeech.ERROR || tts == null) {
+            // Check the number of available TTS engines and set an appropriate
+            // error message.
+            val engines = tts?.engines ?: listOf()
+            val messageId = if (engines.isEmpty()) {
+                // No usable TTS engines.
+                R.string.no_engine_available_message
+            } else {
+                // General TTS initialisation failure.
+                R.string.tts_initialisation_failure_msg
+            }
+            runOnUiThread { longToast(messageId) }
+            // Save the error message ID for later use, free TTS and return.
+            errorMessage = getString(messageId)
+            freeSpeaker()
+            return
+        }
+
+        // Handle setting the appropriate language.
+        if (!setTTSLanguage(tts)) return
+
+        // Success: TTS is ready.
+        ttsReady = true
+
+        // Set the preferred voice if one has been set in the preferences.
+        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+        val voiceName = prefs.getString("pref_tts_voice", null)
+        if (voiceName != null) {
+            val voices = tts.voicesEx.toList().filterNotNull()
+            if (voices.isNotEmpty()) {
+                val voiceNames = voices.map { it.name }
+                val voiceIndex = voiceNames.indexOf(voiceName)
+                tts.voiceEx = if (voiceIndex == -1) {
+                    tts.voiceEx ?: tts.defaultVoiceEx
+                } else voices[voiceIndex]
+            }
+        }
+
+        // Set the preferred pitch if one has been set in the preferences.
+        val preferredPitch = prefs.getFloat("pref_tts_pitch", -1.0f)
+        if (preferredPitch > 0) {
+            tts.setPitch(preferredPitch)
+        }
+
+        // Set the preferred speech rate if one has been set in the preferences.
+        val preferredSpeechRate = prefs.getFloat("pref_tts_speech_rate", -1.0f)
+        if (preferredSpeechRate > 0) {
+            tts.setSpeechRate(preferredSpeechRate)
+        }
+    }
+
+    fun clearUtteranceProgressListener() {
+        mTTS?.setOnUtteranceProgressListener(null)
+        utteranceProgressListener = null
+    }
+
+    fun stopSpeech(): Boolean {
+        // If the TTS engine is speaking, stop speech synthesis and return the
+        // success.
+        val tts = mTTS ?: return true
+        if (tts.isSpeaking) return tts.stop() == 0
+
+        // If utteranceProgressListener is set, it means that it did not finish
+        // correctly, perhaps because the TTS engine application or the service was
+        // restarted.  The listener's finish() method is called here as a remedy.
+        utteranceProgressListener?.finish(false)
+
+        // Notify progress observers.
+        // Since this stops TTS operations, the following notifyProgress() call
+        // will, if a TTS operation is in progress, be closely followed by another
+        // call with parameters (-1, TASK_ID_X).
+        notifyProgress(100, TASK_ID_IDLE)
+        return true
     }
 
     fun openSystemTTSSettings(ctx: Context) {
@@ -132,29 +274,148 @@ class ApplicationEx : Application() {
         ctx.startActivity(intent)
     }
 
-    /**
-     * Show the speaker error message (if set) or the default speaker not ready
-     * message.
-     */
-    fun showSpeakerNotReadyMessage() {
-        val defaultMessageId = R.string.speaker_not_ready_message
-        val errorMessageId = errorMessageId
-        longToast(errorMessageId ?: defaultMessageId)
+    fun displayTTSNotReadyMessage(ctx: Context) {
+        val defaultMessage = getString(R.string.tts_not_ready_message)
+        val errorMessage = errorMessage
+        val notReadyMessage = errorMessage ?: defaultMessage
+        ctx.runOnUiThread { longToast(notReadyMessage) }
     }
 
     fun freeSpeaker() {
-        speaker?.free()
-        speaker = null
+        stopSpeech()
+        mTTS?.shutdown()
+        mTTS = null
+        utteranceProgressListener = null
 
         // Cancel any TTS notifications present.
-        notificationManager.cancel(SPEAKING_NOTIFICATION_ID)
-        notificationManager.cancel(SYNTHESIS_NOTIFICATION_ID)
+        notificationTasks.forEach {notificationManager.cancel(it) }
     }
 
-    fun reinitialiseSpeaker(initListener: TextToSpeech.OnInitListener,
+    fun reinitialiseSpeaker(initListener: OnInitListener,
                             preferredEngine: String?) {
         freeSpeaker()
-        startSpeaker(initListener, preferredEngine)
+        setupTTS(initListener, preferredEngine)
+    }
+
+    fun addProgressObserver(observer: TaskProgressObserver) {
+        progressObservers.add(observer)
+    }
+
+    fun deleteProgressObserver(observer: TaskProgressObserver) {
+        progressObservers.remove(observer)
+    }
+
+    private fun postNotification(progress: Int, taskId: Int) {
+        // Initialize the notification builder using the given task ID.
+        var builder: NotificationCompat.Builder? = notificationBuilder
+        if (builder == null) {
+            builder = getNotificationBuilder(this, taskId)
+            notificationBuilder = builder
+        }
+
+        // Build (or re-build) the notification with the specified progress if the
+        // task has not yet been completed.
+        if (progress in 0..99) {
+            val notification = builder
+                    .setProgress(100, progress, false)
+                    .build()
+            notificationManager.notify(taskId, notification)
+        }
+
+        // Clean up if the task is complete (progress=100) or if an error occurred
+        // (progress<0).
+        else {
+            notificationManager.cancel(taskId)
+            notificationBuilder = null
+        }
+    }
+
+    override fun notifyProgress(progress: Int, taskId: Int) {
+        // Post a notification, if necessary.
+        // TODO Make use of activity lifecycle callbacks to disable notifications
+        //  when the activity is active.
+        if (taskId in notificationTasks) postNotification(progress, taskId)
+
+        // Notify other observers.
+        progressObservers.forEach { it.notifyProgress(progress, taskId) }
+    }
+
+    fun speak(inStream: InputStream, size: Long, queueMode: Int): Int {
+        val tts = mTTS
+
+        // If TTS is not yet ready, return early.
+        if (!ttsReady || tts == null) return TTS_NOT_READY
+
+        // Stop possible file synthesis before speaking.
+        if (lastUtteranceWasFileSynthesis && tts.isSpeaking) stopSpeech()
+
+        // Initialize an event listener and tell it to begin reading.
+        val listener = SpeakingEventListener(this, tts, inStream, size, queueMode,
+                this)
+        utteranceProgressListener = listener
+        listener.begin()
+        return SUCCESS
+    }
+
+    fun synthesizeToFile(inputStream: InputStream, size: Long, outFile: File): Int {
+        val tts = mTTS
+        // If TTS is not yet ready, return early.
+        if (!ttsReady || tts == null) return TTS_NOT_READY
+
+        // Initialize an event listener and tell it to begin synthesis.
+        val listener = SynthesisEventListener(this, tts, inputStream, size, outFile,
+                this)
+        utteranceProgressListener = listener
+        listener.begin()
+
+        // Set an internal variable for keeping track of file synthesis.
+        // This is because we allow user interactions to enqueue speech events, but
+        // not file synthesis events since it would lead to awkward silence.
+        lastUtteranceWasFileSynthesis = true
+        return SUCCESS
+    }
+
+    fun speak(text: String, queueMode: Int): Int {
+        // Get an input stream from the text.  This is done because
+        val inStream = ByteArrayInputStream(text.toByteArray())
+        val size = text.length.toLong()
+        return speak(inStream, size, queueMode)
+    }
+
+    fun synthesizeToFile(text: String, outFile: File): Int {
+        val inStream = ByteArrayInputStream(text.toByteArray())
+        return synthesizeToFile(inStream, text.length.toLong(), outFile)
+    }
+
+    private inline fun useUri(
+            uri: Uri?,
+            block: (inStream: InputStream, size: Long) -> Int): Int {
+        // Open an input stream on and retrieve the size of the URI's content,
+        // if possible, and invoke the given function.
+        if (uri?.isAccessibleFile(this) == true) {
+            val inStream = uri.openContentInputStream(this)
+            val fileSize = uri.getFileSize(this)
+            if (inStream != null && fileSize != null) {
+                return block(inStream, fileSize)
+            }
+        }
+
+        // The given URI was invalid.
+        return INVALID_FILE_URI
+    }
+
+    fun speak(uri: Uri?, queueMode: Int): Int {
+        // Speak the URI content, if possible.
+        return useUri(uri) {
+            inStream, size -> speak(inStream, size, queueMode)
+        }
+    }
+
+    fun synthesizeToFile(uri: Uri?, outFile: File): Int {
+        // Synthesize speech from the URI content, if possible.
+        return useUri(uri) { inStream, size ->
+            synthesizeToFile(inStream, size, outFile)
+        }
     }
 
     override fun onLowMemory() {

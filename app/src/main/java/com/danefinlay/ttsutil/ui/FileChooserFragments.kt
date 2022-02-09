@@ -21,13 +21,12 @@
 package com.danefinlay.ttsutil.ui
 
 import android.Manifest
-import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
-import android.support.v4.app.Fragment
+import android.speech.tts.TextToSpeech.QUEUE_ADD
 import android.support.v7.app.AppCompatActivity
 import android.view.LayoutInflater
 import android.view.View
@@ -41,23 +40,11 @@ import java.io.File
 
 typealias PermissionBlock = (granted: Boolean) -> Unit
 
-abstract class FileChooserFragment : Fragment(), FragmentInterface {
+abstract class FileChooserFragment : MyFragment() {
 
     protected var chosenFileUri: Uri? = null
     protected var chosenFileDisplayName: String? = null
     private var tempStoragePermissionBlock: PermissionBlock = {}
-
-    protected val speakerActivity: SpeakerActivity?
-        get() = activity as? SpeakerActivity
-
-    protected val ctx: Context
-        get() = activity as Context
-
-    protected val speaker: Speaker?
-        get() = speakerActivity?.speaker
-
-    protected val activityInterface: ActivityInterface?
-        get() = context as? ActivityInterface
 
     fun withStoragePermission(block: PermissionBlock) {
         // Check if we have write permission.
@@ -108,22 +95,6 @@ abstract class FileChooserFragment : Fragment(), FragmentInterface {
         }
     }
 
-    override fun onAttach(context: Context?) {
-        super.onAttach(context)
-
-        // Attach to the activity interface, if possible.
-        val activityInterface = context as? ActivityInterface
-        activityInterface?.attachFragment(this)
-    }
-
-    override fun onDetach() {
-        super.onDetach()
-
-        // Detach to the activity interface, if necessary.
-        val activityInterface = context as? ActivityInterface
-        activityInterface?.detachFragment(this)
-    }
-
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
 
@@ -169,9 +140,11 @@ abstract class FileChooserFragment : Fragment(), FragmentInterface {
         find<TextView>(R.id.chosen_filename).text = text
     }
 
-    override fun onActivityEvent(event: ActivityEvent) {
+    override fun handleActivityEvent(event: ActivityEvent) {
+        super.handleActivityEvent(event)
         when (event) {
             is ActivityEvent.FileChosenEvent -> onFileChosen(event.uri)
+            else -> {}
         }
     }
 
@@ -258,25 +231,29 @@ class ReadFilesFragment : FileChooserFragment() {
         // Set OnClick listeners.
         find<ImageButton>(R.id.choose_file_button)
                 .onClick { activityInterface?.showFileChooser() }
-        find<ImageButton>(R.id.play_file_button).onClick { onClickReadFile() }
-        find<ImageButton>(R.id.stop_button).onClick { speaker?.stopSpeech() }
-    }
-
-    private fun onClickReadFile() {
-        // Show the speaker not ready message if appropriate.
-        if (!speaker.isReady()) {
-            speakerActivity?.showSpeakerNotReadyMessage()
-            return
+        find<ImageButton>(R.id.play_file_button).onClick {
+            onClickPlay()
+        }
+        find<ImageButton>(R.id.stop_button).onClick {
+            myApplication.stopSpeech()
         }
 
+        // Set status field.
+        val event = activityInterface?.getLastStatusUpdate() ?: return
+        onStatusUpdate(event)
+    }
+
+    override fun updateStatusField(text: String) {
+        find<TextView>(R.id.status_text_field).text = text
+    }
+
+    private fun onClickPlay() {
+        // Speak from the chosen file's URI, displaying the appropriate alert on
+        // failure.
         val uri = chosenFileUri
-        when (uri?.isAccessibleFile(ctx)) {
-            true -> {
-                // TODO Make this more efficient.
-                val lines = uri.openContentInputStream(ctx)?.reader()?.readLines()
-                speaker?.speak(lines ?: return)
-            }
-            else -> buildInvalidFileAlertDialog().show()
+        when (myApplication.speak(uri, QUEUE_ADD)) {
+            TTS_NOT_READY -> myApplication.displayTTSNotReadyMessage(ctx)
+            INVALID_FILE_URI -> buildInvalidFileAlertDialog().show()
         }
     }
 }
@@ -297,7 +274,17 @@ class WriteFilesFragment : FileChooserFragment() {
         find<ImageButton>(R.id.save_button).onClick { onClickSave() }
         find<ImageButton>(R.id.choose_file_button)
                 .onClick { activityInterface?.showFileChooser() }
-        find<ImageButton>(R.id.stop_button).onClick { speaker?.stopSpeech() }
+        find<ImageButton>(R.id.stop_button).onClick {
+            myApplication.stopSpeech()
+        }
+
+        // Set status field.
+        val event = activityInterface?.getLastStatusUpdate() ?: return
+        onStatusUpdate(event)
+    }
+
+    override fun updateStatusField(text: String) {
+        find<TextView>(R.id.status_text_field).text = text
     }
 
     private fun writeSpeechToFile(uri: Uri?, havePermission: Boolean,
@@ -314,25 +301,16 @@ class WriteFilesFragment : FileChooserFragment() {
             return
         }
 
-        // Validate before continuing.
-        if (uri == null || !uri.isAccessibleFile(ctx)) {
-            buildInvalidFileAlertDialog().show()
-            return
-        }
-
-        val content = uri.openContentInputStream(ctx)?.reader()?.readText()
-        if (content.isNullOrBlank()) {
-            // Nothing to read.
-            return
-        }
-
-        // Save the file in the external storage directory using the filename
-        // + '.wav'.
+        // TODO Handle an already existing wave file.
+        // TODO Allow the user to select a custom directory.
+        // Synthesize the file's content into a wave file using the filename +
+        // '.wav'.
         val dir = Environment.getExternalStorageDirectory()
         val file = File(dir, waveFilename)
-        val listener = SynthesisEventListener(speakerActivity!!.myApplication,
-                waveFilename, ctx, file)
-        speaker?.synthesizeToFile(content, listener)
+        when (myApplication.synthesizeToFile(uri, file)) {
+            TTS_NOT_READY -> myApplication.displayTTSNotReadyMessage(ctx)
+            INVALID_FILE_URI -> buildInvalidFileAlertDialog().show()
+        }
     }
 
     private fun onClickSave() {
@@ -342,9 +320,9 @@ class WriteFilesFragment : FileChooserFragment() {
             return
         }
 
-        // Show the speaker not ready message if appropriate.
-        if (!speaker.isReady()) {
-            speakerActivity?.showSpeakerNotReadyMessage()
+        // Return early if TTS is not ready.
+        if (!myApplication.ttsReady) {
+            myApplication.displayTTSNotReadyMessage(ctx)
             return
         }
 

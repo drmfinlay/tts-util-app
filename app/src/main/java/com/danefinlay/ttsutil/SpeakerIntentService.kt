@@ -24,6 +24,7 @@ import android.app.IntentService
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.speech.tts.TextToSpeech.QUEUE_ADD
 import com.danefinlay.ttsutil.ui.EditReadActivity
 import org.jetbrains.anko.ctx
 import org.jetbrains.anko.longToast
@@ -49,9 +50,6 @@ class SpeakerIntentService : IntentService("SpeakerIntentService") {
     private val myApplication: ApplicationEx
         get() = application as ApplicationEx
 
-    private val speaker: Speaker?
-        get() = myApplication.speaker
-
     override fun onHandleIntent(intent: Intent?) {
         if (intent == null) return
 
@@ -73,10 +71,6 @@ class SpeakerIntentService : IntentService("SpeakerIntentService") {
      * parameters.
      */
     private fun handleActionReadText(text: String?) {
-        if (!speaker.isReady()) {
-            return
-        }
-
         // Display a message if 'text' is blank/empty.
         if (text == null || text.isBlank()) {
             runOnUiThread {
@@ -85,8 +79,10 @@ class SpeakerIntentService : IntentService("SpeakerIntentService") {
             return
         }
 
-        // Speak the text.
-        speaker?.speak(text)
+        // Speak the text, displaying the appropriate alert on failure.
+        when (myApplication.speak(text, QUEUE_ADD)) {
+            TTS_NOT_READY -> myApplication.displayTTSNotReadyMessage(this)
+        }
     }
 
     /**
@@ -132,7 +128,7 @@ class SpeakerIntentService : IntentService("SpeakerIntentService") {
      */
     private fun handleActionStopSpeaking(intent: Intent) {
         // Stop speech synthesis.
-        speaker?.stopSpeech()
+        myApplication.stopSpeech()
 
         // Retrieve the ID of the notification to dismiss, if any.
         val notificationId = intent.getIntExtra("notificationId", -1)
