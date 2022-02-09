@@ -205,7 +205,7 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
             runOnUiThread { longToast(messageId) }
             // Save the error message ID for later use, free TTS and return.
             errorMessage = getString(messageId)
-            freeSpeaker()
+            freeTTS()
             return
         }
 
@@ -281,7 +281,7 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
         ctx.runOnUiThread { longToast(notReadyMessage) }
     }
 
-    fun freeSpeaker() {
+    fun freeTTS() {
         stopSpeech()
         mTTS?.shutdown()
         mTTS = null
@@ -291,9 +291,9 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
         notificationTasks.forEach {notificationManager.cancel(it) }
     }
 
-    fun reinitialiseSpeaker(initListener: OnInitListener,
-                            preferredEngine: String?) {
-        freeSpeaker()
+    fun reinitialiseTTS(initListener: OnInitListener,
+                        preferredEngine: String?) {
+        freeTTS()
         setupTTS(initListener, preferredEngine)
     }
 
@@ -363,7 +363,7 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
         if (!ttsReady || tts == null) return TTS_NOT_READY
 
         // Initialize an event listener and tell it to begin synthesis.
-        val listener = SynthesisEventListener(this, tts, inputStream, size, outFile,
+        val listener = FileSynthesisEventListener(this, tts, inputStream, size, outFile,
                 this)
         utteranceProgressListener = listener
         listener.begin()
@@ -422,6 +422,6 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
         super.onLowMemory()
 
         // Stop and free the current text-to-speech engine.
-        freeSpeaker()
+        freeTTS()
     }
 }

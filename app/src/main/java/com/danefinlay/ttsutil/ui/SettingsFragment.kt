@@ -55,7 +55,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
     private fun reinitialiseTTS(preferredEngine: String?) {
         val listener = activity as TextToSpeech.OnInitListener
-        myApplication.reinitialiseSpeaker(listener, preferredEngine)
+        myApplication.reinitialiseTTS(listener, preferredEngine)
     }
 
     private fun handleTtsEnginePrefs(preference: Preference?): Boolean {

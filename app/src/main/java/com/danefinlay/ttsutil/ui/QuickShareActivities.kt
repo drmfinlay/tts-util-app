@@ -23,13 +23,13 @@ package com.danefinlay.ttsutil.ui
 import android.content.Intent
 import android.os.Bundle
 import com.danefinlay.ttsutil.ACTION_READ_CLIPBOARD
-import com.danefinlay.ttsutil.SpeakerIntentService
+import com.danefinlay.ttsutil.TTSIntentService
 
 /**
  * Activity to quickly read text from an input source.
- * Reading text is done via SpeakerIntentService.
+ * Reading text is done via TTSIntentService.
  */
-abstract class QuickShareActivity : SpeakerActivity() {
+abstract class QuickShareActivity : TTSActivity() {
 
     abstract fun startServiceAction()
 
@@ -62,7 +62,7 @@ class ReadClipboardActivity : QuickShareActivity() {
     override fun startServiceAction() {
         val intent = intent ?: return
         if (intent.action == ACTION_READ_CLIPBOARD) {
-            SpeakerIntentService.startActionReadClipboard(this)
+            TTSIntentService.startActionReadClipboard(this)
         }
     }
 }
@@ -73,7 +73,7 @@ class ReadTextActivity : QuickShareActivity() {
         val intent = intent ?: return
         if (intent.action == Intent.ACTION_SEND) {
             val text = intent.getStringExtra(Intent.EXTRA_TEXT)
-            SpeakerIntentService.startActionReadText(this, text)
+            TTSIntentService.startActionReadText(this, text)
         }
     }
 }

@@ -69,12 +69,12 @@ abstract class MyUtteranceProgressListener(ctx: Context, val tts: TextToSpeech) 
 }
 
 
-abstract class SpeakerEventListener(ctx: Context,
-                                    tts: TextToSpeech,
-                                    private val inputStream: InputStream,
-                                    private val inputSize: Long,
-                                    protected var taskId: Int,
-                                    val observer: TaskProgressObserver) :
+abstract class TTSEventListener(ctx: Context,
+                                tts: TextToSpeech,
+                                private val inputStream: InputStream,
+                                private val inputSize: Long,
+                                protected var taskId: Int,
+                                val observer: TaskProgressObserver) :
         MyUtteranceProgressListener(ctx, tts) {
 
     protected val reader: BufferedReader = inputStream.bufferedReader()
@@ -191,7 +191,7 @@ class SpeakingEventListener(ctx: Context,
                             inputSize: Long,
                             private val queueMode: Int,
                             observer: TaskProgressObserver) :
-        SpeakerEventListener(ctx, tts, inputStream, inputSize,
+        TTSEventListener(ctx, tts, inputStream, inputSize,
                 TASK_ID_READ_TEXT, observer) {
 
     private var audioFocusRequestGranted = false
@@ -276,11 +276,11 @@ class SpeakingEventListener(ctx: Context,
     }
 }
 
-class SynthesisEventListener(ctx: Context, tts: TextToSpeech,
-                             inputStream: InputStream, inputSize: Long,
-                             private val outFile: File,
-                             progressObserver: TaskProgressObserver) :
-        SpeakerEventListener(ctx, tts, inputStream, inputSize,
+class FileSynthesisEventListener(ctx: Context, tts: TextToSpeech,
+                                 inputStream: InputStream, inputSize: Long,
+                                 private val outFile: File,
+                                 progressObserver: TaskProgressObserver) :
+        TTSEventListener(ctx, tts, inputStream, inputSize,
                 TASK_ID_WRITE_FILE, progressObserver) {
 
     private var inWaveFiles = mutableListOf<File>()

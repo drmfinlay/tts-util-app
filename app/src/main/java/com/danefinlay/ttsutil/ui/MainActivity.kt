@@ -35,7 +35,7 @@ import androidx.navigation.ui.setupWithNavController
 import com.danefinlay.ttsutil.R
 import org.jetbrains.anko.find
 
-class MainActivity : SpeakerActivity() {
+class MainActivity : TTSActivity() {
 
     private lateinit var appBarConfiguration: AppBarConfiguration
 
@@ -80,8 +80,8 @@ class MainActivity : SpeakerActivity() {
             }
 
             R.id.menu_reinitialise_tts -> {
-                // Reinitialise the Speaker object.
-                myApplication.reinitialiseSpeaker(this, null)
+                // Reinitialise text-to-speech.
+                myApplication.reinitialiseTTS(this, null)
                 true
             }
 
@@ -114,7 +114,7 @@ class MainActivity : SpeakerActivity() {
         // application,) is finishing.
         if (isFinishing) {
             // Free TTS resources and clean up files.
-            myApplication.freeSpeaker()
+            myApplication.freeTTS()
             myApplication.cleanupFiles()
         }
     }

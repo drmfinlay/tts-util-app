@@ -26,7 +26,7 @@ import android.view.MenuItem
 import com.danefinlay.ttsutil.ACTION_EDIT_READ_CLIPBOARD
 import com.danefinlay.ttsutil.R
 
-class EditReadActivity : SpeakerActivity() {
+class EditReadActivity : TTSActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

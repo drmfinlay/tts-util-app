@@ -34,7 +34,7 @@ import java.util.*
  * Abstract activity class inherited from classes that use text-to-speech in some
  * way.
  */
-abstract class SpeakerActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener {
+abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

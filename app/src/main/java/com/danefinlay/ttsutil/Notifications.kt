@@ -67,8 +67,7 @@ fun getNotificationBuilder(ctx: Context, notificationId: Int):
             ctx, 0, onClickIntent, 0)
 
     // Just stop speaking for the delete intent (notification dismissal).
-    val onDeleteIntent = Intent(ctx,
-            SpeakerIntentService::class.java).apply {
+    val onDeleteIntent = Intent(ctx, TTSIntentService::class.java).apply {
         action = ACTION_STOP_SPEAKING
         putExtra("notificationId", notificationId)
     }

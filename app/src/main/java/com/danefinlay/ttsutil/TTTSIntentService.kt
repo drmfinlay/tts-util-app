@@ -45,7 +45,7 @@ private const val EXTRA_TEXT = "${APP_NAME}.extra.TEXT"
  * An [IntentService] subclass for handling asynchronous task requests in
  * a service on a separate handler thread.
  */
-class SpeakerIntentService : IntentService("SpeakerIntentService") {
+class TTSIntentService : IntentService("TTSIntentService") {
 
     private val myApplication: ApplicationEx
         get() = application as ApplicationEx
@@ -139,7 +139,7 @@ class SpeakerIntentService : IntentService("SpeakerIntentService") {
     companion object {
         private inline fun startAction(ctx: Context, actionString: String,
                                        block: Intent.() -> Unit) {
-            val intent = Intent(ctx, SpeakerIntentService::class.java)
+            val intent = Intent(ctx, TTSIntentService::class.java)
             intent.action = actionString
             intent.block()
             ctx.startService(intent)

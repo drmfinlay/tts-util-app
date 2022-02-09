@@ -89,7 +89,7 @@
         </activity>
 
         <service
-            android:name=".SpeakerIntentService"
+            android:name=".TTSIntentService"
             android:exported="false" />
     </application>
 
