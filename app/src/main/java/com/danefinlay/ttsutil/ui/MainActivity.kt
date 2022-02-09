@@ -101,10 +101,12 @@ class MainActivity : SpeakerActivity(), ActivityInterface {
     override fun onDestroy() {
         super.onDestroy()
 
-        // Free the speaker only if the activity (and probably the application)
-        // is finishing.
+        // Do a few things if this activity, (and, therefore, probably, the
+        // application,) is finishing.
         if (isFinishing) {
+            // Free TTS resources and clean up files.
             myApplication.freeSpeaker()
+            myApplication.cleanupFiles()
         }
     }
 

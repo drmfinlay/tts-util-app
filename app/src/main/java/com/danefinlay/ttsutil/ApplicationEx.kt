@@ -97,6 +97,18 @@ class ApplicationEx : Application() {
         }
     }
 
+    fun cleanupFiles() {
+        // Note: Exclude persistent data files here if the application ever requires
+        // them.
+
+        // Clean up no longer needed internal files.
+        (filesDir.listFiles() + cacheDir.listFiles()).forEach { f ->
+            if (f.isFile && f.canWrite()) {
+                f.delete()
+            }
+        }
+    }
+
     fun startSpeaker(initListener: TextToSpeech.OnInitListener,
                      preferredEngine: String?) {
         if (speaker == null) {
