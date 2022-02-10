@@ -55,6 +55,11 @@ class EditReadActivity : TTSActivity() {
     }
 
     override fun handleActivityEvent(event: ActivityEvent) {
+        // If this is a status update event, save it.
+        if (event is ActivityEvent.StatusUpdateEvent) {
+            mLastStatusUpdate = event
+        }
+
         val fragments = supportFragmentManager.fragments
         handleActivityEvent(event, fragments)
     }
