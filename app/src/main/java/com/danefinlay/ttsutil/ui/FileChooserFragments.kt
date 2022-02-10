@@ -248,12 +248,11 @@ class ReadFilesFragment : FileChooserFragment() {
     }
 
     private fun onClickPlay() {
-        // Speak from the chosen file's URI, displaying the appropriate alert on
-        // failure.
+        // Speak from the chosen file's URI and handle the result.
         val uri = chosenFileUri
-        when (myApplication.speak(uri, QUEUE_ADD)) {
-            TTS_NOT_READY -> myApplication.displayTTSNotReadyMessage(ctx)
+        when (val result = myApplication.speak(uri, QUEUE_ADD)) {
             INVALID_FILE_URI -> buildInvalidFileAlertDialog().show()
+            else -> myApplication.handleTTSOperationResult(result)
         }
     }
 }
@@ -307,9 +306,9 @@ class WriteFilesFragment : FileChooserFragment() {
         // '.wav'.
         val dir = Environment.getExternalStorageDirectory()
         val file = File(dir, waveFilename)
-        when (myApplication.synthesizeToFile(uri, file)) {
-            TTS_NOT_READY -> myApplication.displayTTSNotReadyMessage(ctx)
+        when (val result = myApplication.synthesizeToFile(uri, file)) {
             INVALID_FILE_URI -> buildInvalidFileAlertDialog().show()
+            else -> myApplication.handleTTSOperationResult(result)
         }
     }
 
@@ -322,7 +321,7 @@ class WriteFilesFragment : FileChooserFragment() {
 
         // Return early if TTS is not ready.
         if (!myApplication.ttsReady) {
-            myApplication.displayTTSNotReadyMessage(ctx)
+            myApplication.handleTTSOperationResult(TTS_NOT_READY)
             return
         }
 

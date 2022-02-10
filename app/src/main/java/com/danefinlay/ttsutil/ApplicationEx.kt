@@ -274,11 +274,15 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
         ctx.startActivity(intent)
     }
 
-    fun displayTTSNotReadyMessage(ctx: Context) {
-        val defaultMessage = getString(R.string.tts_not_ready_message)
-        val errorMessage = errorMessage
-        val notReadyMessage = errorMessage ?: defaultMessage
-        ctx.runOnUiThread { longToast(notReadyMessage) }
+    fun handleTTSOperationResult(result: Int) {
+        when (result) {
+            TTS_NOT_READY -> {
+                val defaultMessage = getString(R.string.tts_not_ready_message)
+                val errorMessage = errorMessage
+                val notReadyMessage = errorMessage ?: defaultMessage
+                runOnUiThread { longToast(notReadyMessage) }
+            }
+        }
     }
 
     fun freeTTS() {

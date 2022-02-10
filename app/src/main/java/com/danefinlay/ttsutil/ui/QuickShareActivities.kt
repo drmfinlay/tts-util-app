@@ -24,6 +24,7 @@ import android.content.Intent
 import android.os.Bundle
 import com.danefinlay.ttsutil.ACTION_READ_CLIPBOARD
 import com.danefinlay.ttsutil.TTSIntentService
+import com.danefinlay.ttsutil.TTS_NOT_READY
 
 /**
  * Activity to quickly read text from an input source.
@@ -35,7 +36,7 @@ abstract class QuickShareActivity : TTSActivity() {
 
     private fun initialize() {
         if (!myApplication.ttsReady) {
-            myApplication.displayTTSNotReadyMessage(this)
+            myApplication.handleTTSOperationResult(TTS_NOT_READY)
             return
         }
 

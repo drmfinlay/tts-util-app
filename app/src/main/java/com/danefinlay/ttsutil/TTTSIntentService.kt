@@ -79,10 +79,9 @@ class TTSIntentService : IntentService("TTSIntentService") {
             return
         }
 
-        // Speak the text, displaying the appropriate alert on failure.
-        when (myApplication.speak(text, QUEUE_ADD)) {
-            TTS_NOT_READY -> myApplication.displayTTSNotReadyMessage(this)
-        }
+        // Speak *text* and handle the result.
+        val result = myApplication.speak(text, QUEUE_ADD)
+        myApplication.handleTTSOperationResult(result)
     }
 
     /**

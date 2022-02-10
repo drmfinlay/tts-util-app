@@ -62,16 +62,16 @@ class SettingsFragment : PreferenceFragmentCompat() {
         val key = preference?.key
 
         // Handle opening the system settings.
+        val app = myApplication
         val ctx = requireContext()
         if (key == "pref_tts_system_settings") {
-            myApplication.openSystemTTSSettings(ctx)
+            app.openSystemTTSSettings(ctx)
             return true
         }
 
-        val app = myApplication
         val tts = app.mTTS
-        if (tts == null || !myApplication.ttsReady) {
-            myApplication.displayTTSNotReadyMessage(ctx)
+        if (tts == null || !app.ttsReady) {
+            app.handleTTSOperationResult(TTS_NOT_READY)
             return true
         }
 
