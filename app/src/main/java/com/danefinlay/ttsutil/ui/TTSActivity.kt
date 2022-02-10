@@ -142,10 +142,19 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     fun startInstallTTSDataActivity() {
-        val install = Intent()
-        install.action = TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA
+        // Initialize the start activity intent.
+        val intent = Intent(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA)
+
+        // Retrieve the current engine package name, if possible, and set it as
+        // the target package.  This tells the system to exclude other TTS
+        // engine packages installed.
+        val packageName = myApplication.ttsEngineName
+        if (packageName != null) intent.setPackage(packageName)
+
+        // Start the appropriate activity, displaying a warning message if no TTS
+        // engine is available.
         try {
-            startActivity(install)
+            startActivity(intent)
         } catch (e: ActivityNotFoundException) {
             toast(R.string.no_engine_available_message)
         }
