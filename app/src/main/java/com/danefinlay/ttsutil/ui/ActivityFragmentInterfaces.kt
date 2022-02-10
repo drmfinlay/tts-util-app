@@ -29,6 +29,7 @@ sealed class ActivityEvent {
     class FileChosenEvent(val uri: Uri) : ActivityEvent()
     class StatusUpdateEvent(val progress: Int,
                             val taskId: Int) : ActivityEvent()
+    class SampleTextReceivedEvent(val sampleText: String) : ActivityEvent()
 }
 
 /**
@@ -49,6 +50,11 @@ interface ActivityInterface {
      * Show a screen where the user can choose a file.
      */
     fun showFileChooser()
+
+    /**
+     * Function to request sample TTS text from the current TTS engine.
+     */
+    fun requestSampleTTSText()
 
     /**
      * Use attached fragments to handle an event.

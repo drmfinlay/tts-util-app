@@ -150,8 +150,7 @@
 
     <!--Miscellaneous.-->
     <string name="not_yet_implemented">Not implemented yet.</string>
-    <!--Only used if the TTS engine returns a null or empty sample string.-->
-    <string name="sample_tts_sentence">This is a sample English sentence.</string>
+    <string name="sample_tts_sentence">This is a sample sentence using text to speech.</string>
     <string name="cannot_speak_empty_text_msg">Cannot speak empty text.</string>
     <string name="clipboard_is_empty_msg">Clipboard is empty.</string>
     <string name="cannot_read_clipboard_android_10_msg">\'Read clipboard\' doesn\'t work on Android 10 yet.</string>

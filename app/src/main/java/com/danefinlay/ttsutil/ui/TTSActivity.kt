@@ -48,7 +48,7 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     override fun onInit(status: Int) {
-        // Note: This onInit() handles only what the activity needs to.
+        // Note: This onInit() handles only what an activity needs to.
         // ApplicationEx does most of the setup originally done here.
         val tts = myApplication.mTTS ?: return
 
@@ -91,6 +91,56 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener {
         }
     }
 
+    override fun requestSampleTTSText() {
+        // Initialize the start activity intent.
+        // Note: This action may be used to retrieve sample text for specific
+        // localities.
+        val intent = Intent(TextToSpeech.Engine.ACTION_GET_SAMPLE_TEXT)
+
+        // Retrieve the current engine package name, if possible, and set it as
+        // the target package.  This tells the system to exclude other TTS
+        // engine packages installed.
+        val packageName = myApplication.ttsEngineName
+        if (packageName != null) intent.setPackage(packageName)
+
+        // Start the appropriate activity for requesting TTS sample text from the
+        // engine, falling back on ours if an exception occurs.
+        try {
+            startActivityForResult(intent, SAMPLE_TEXT_CODE)
+        } catch (e: ActivityNotFoundException) {
+            // Dispatch an event with the sample text.
+            val sampleText = getString(R.string.sample_tts_sentence)
+            val event = ActivityEvent.SampleTextReceivedEvent(sampleText)
+            handleActivityEvent(event)
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int,
+                                  data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        when (requestCode) {
+            SAMPLE_TEXT_CODE -> {
+                // Note: Sample text may be available if resultCode is
+                // RESULT_CANCELLED.  Therefore, we do not check resultCode.
+                // This apparent error may be explained by the peculiar nature of
+                // the activity, which, for each engine this programmer has tried,
+                // behaves like a trampoline.
+                val key = TextToSpeech.Engine.EXTRA_SAMPLE_TEXT
+                val sampleText = if (data != null && data.hasExtra(key)) {
+                    // Retrieve the sample text.
+                    data.getStringExtra(key)
+                } else {
+                    // Engine sample text unavailable.  Falling back on ours.
+                    getString(R.string.sample_tts_sentence)
+                }
+
+                // Dispatch an event with the sample text.
+                val event = ActivityEvent.SampleTextReceivedEvent(sampleText)
+                handleActivityEvent(event)
+            }
+        }
+    }
+
     fun startInstallTTSDataActivity() {
         val install = Intent()
         install.action = TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA
@@ -101,4 +151,7 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener {
         }
     }
 
+    companion object {
+        private const val SAMPLE_TEXT_CODE = 6
+    }
 }

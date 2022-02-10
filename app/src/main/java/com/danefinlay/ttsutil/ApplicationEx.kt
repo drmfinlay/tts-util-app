@@ -58,6 +58,12 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
     var ttsReady = false
         private set
 
+    val ttsEngineName: String?
+        get() {
+            val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+            return prefs.getString("pref_tts_engine", mTTS?.defaultEngine)
+        }
+
     private val audioFocusGain = AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
     private val audioFocusRequest: AudioFocusRequest by lazy {
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O) {
