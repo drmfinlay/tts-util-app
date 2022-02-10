@@ -196,14 +196,12 @@ class SpeakingEventListener(ctx: Context,
 
     private var audioFocusRequestGranted = false
 
-    @Synchronized
     private fun enqueueSilentUtterance(durationInMs: Long) {
         // We ignore *queueMode* for silent utterances.  It does not make much sense
         // to use QUEUE_FLUSH here.
         tts.playSilentUtterance(durationInMs, QUEUE_ADD, nextUtteranceId())
     }
 
-    @Synchronized
     private fun enqueueTextUtterance(text: String, bytesRead: Int) {
         if (bytesRead == 0) return
 
@@ -285,7 +283,6 @@ class FileSynthesisEventListener(ctx: Context, tts: TextToSpeech,
 
     private var inWaveFiles = mutableListOf<File>()
 
-    @Synchronized
     private fun enqueueFileSynthesis(text: String, bytesRead: Int) {
         if (bytesRead == 0) return
 
