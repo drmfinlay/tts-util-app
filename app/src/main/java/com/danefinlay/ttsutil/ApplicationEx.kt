@@ -64,6 +64,15 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
             return prefs.getString("pref_tts_engine", mTTS?.defaultEngine)
         }
 
+    var notificationsEnabled: Boolean = true
+        set(value) {
+            field = value
+            if (!value) {
+                // Cancel any TTS notifications present.
+                notificationTasks.forEach {notificationManager.cancel(it) }
+            }
+        }
+
     private val audioFocusGain = AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
     private val audioFocusRequest: AudioFocusRequest by lazy {
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O) {
@@ -344,7 +353,9 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
         // Post a notification, if necessary.
         // TODO Make use of activity lifecycle callbacks to disable notifications
         //  when the activity is active.
-        if (taskId in notificationTasks) postNotification(progress, taskId)
+        if (notificationsEnabled && taskId in notificationTasks) {
+            postNotification(progress, taskId)
+        }
 
         // Notify other observers.
         progressObservers.forEach { it.notifyProgress(progress, taskId) }
