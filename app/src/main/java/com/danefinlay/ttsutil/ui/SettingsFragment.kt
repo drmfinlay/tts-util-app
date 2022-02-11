@@ -404,8 +404,12 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
         val currentIndex = speechRates.indexOf(currentValue)
 
         // Show a list alert dialog of speech rate choices.
-        val onItemSelected = { _: Int ->
-            // TODO Speak sample text with the selected speech rate.
+        val onItemSelected = { index: Int ->
+            // Play sample text with the selected speech rate.
+            // The current rate is restored afterward.
+            tts.setSpeechRate(speechRates[index])
+            val onFinishSample: () -> Unit = { tts.setSpeechRate(currentValue) }
+            playSampleText(onFinishSample)
         }
         val onClickPositive = { index: Int ->
             // Get the speech rate from the index of the selected item and
