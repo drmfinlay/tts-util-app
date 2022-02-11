@@ -27,21 +27,20 @@ abstract class MyFragment : Fragment(), FragmentInterface {
             else -> R.string.status_text_idle
         }
 
-        // Get the formatted text to set.
-        var statusText = getString(R.string.status_text_field,
-                getString(statusTextId))
-
-        // Add the percentage for statuses other than IDLE.
-        // Show "error" if progress<0.
-        if (statusTextId != R.string.status_text_idle) {
-            statusText += " ("
-            statusText += if (event.progress < 0) {
+        // Get the formatted status text.
+        var statusText: String = if (event.taskId != TASK_ID_IDLE) {
+            // Add the percentage for statuses other than IDLE.
+            // Show "stopped" if progress<0.
+            val parenthetical = "(" + if (event.progress < 0) {
                 getString(R.string.status_text_task_stopped)
             } else {
                 "${event.progress}%"
-            }
-            statusText += ")"
+            } + ")"
+            getString(statusTextId, parenthetical)
+        } else {
+            getString(statusTextId)
         }
+        statusText = getString(R.string.status_text_field, statusText)
 
         // Update the text field.
         updateStatusField(statusText)

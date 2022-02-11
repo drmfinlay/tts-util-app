@@ -41,9 +41,9 @@
     <!--Status text field strings.-->
     <string name="status_text_field">Status: %1$s</string>
     <string name="status_text_idle">Idle</string>
-    <string name="status_text_reading_text">Reading text</string>
-    <string name="status_text_writing_file">Writing file</string>
-    <string name="status_text_processing_file">Processing file</string>
+    <string name="status_text_reading_text">Reading text %1$s</string>
+    <string name="status_text_writing_file">Writing file %1$s</string>
+    <string name="status_text_processing_file">Processing file %1$s</string>
     <string name="status_text_task_stopped">stopped</string>
 
     <!--Button strings.-->
