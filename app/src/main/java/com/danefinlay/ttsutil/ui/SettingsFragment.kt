@@ -357,8 +357,12 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
         val currentIndex = pitches.indexOf(currentValue)
 
         // Show a list alert dialog of pitch choices.
-        val onItemSelected = { _: Int ->
-            // TODO Speak sample text with the selected pitch.
+        val onItemSelected = { index: Int ->
+            // Play sample text with the selected pitch.
+            // The current pitch is restored afterward.
+            tts.setPitch(pitches[index])
+            val onFinishSample: () -> Unit = { tts.setPitch(currentValue) }
+            playSampleText(onFinishSample)
         }
         val onClickPositive = { index: Int ->
             // Get the pitch from the index of the selected item and
