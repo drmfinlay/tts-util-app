@@ -38,6 +38,9 @@ abstract class MyUtteranceProgressListener(ctx: Context, val tts: TextToSpeech) 
 
     val app = ctx.applicationContext as ApplicationEx
 
+    @Volatile
+    protected var finalize: Boolean = false
+
     fun displayMessage(string: String, long: Boolean) {
         app.runOnUiThread {
             if (long) longToast(string)
@@ -65,6 +68,10 @@ abstract class MyUtteranceProgressListener(ctx: Context, val tts: TextToSpeech) 
     open fun finish(success: Boolean) {
         tts.setOnUtteranceProgressListener(null)
         app.clearUtteranceProgressListener()
+    }
+
+    open fun finalize() {
+        finalize = true
     }
 }
 
@@ -110,8 +117,6 @@ abstract class TTSEventListener(ctx: Context,
     }
 
     override fun finish(success: Boolean) {
-        super.finish(success)
-
         // Notify the progress observer that the task is finished or if an error
         // occurred.
         val progress = if (success) 100 else -1
@@ -120,6 +125,9 @@ abstract class TTSEventListener(ctx: Context,
         // Close the reader and input stream.
         reader.close()
         inputStream.close()
+
+        // Call the super method.
+        super.finish(success)
     }
 
     override fun onStart(utteranceId: String?) {}
@@ -166,6 +174,9 @@ abstract class TTSEventListener(ctx: Context,
         // Calculate and notify the progress listener.
         val progress = inputProcessed.toFloat() / inputSize * 100
         observer.notifyProgress(progress.toInt(), taskId)
+
+        // Finish early, if necessary.
+        if (finalize) finish(false)
 
         // Enqueue the next input.  If we have reached the end of the stream, then
         // finish.
@@ -269,8 +280,8 @@ class SpeakingEventListener(ctx: Context,
     }
 
     override fun finish(success: Boolean) {
-        super.finish(success)
         app.releaseAudioFocus()
+        super.finish(success)
     }
 }
 
@@ -282,6 +293,7 @@ class FileSynthesisEventListener(ctx: Context, tts: TextToSpeech,
                 TASK_ID_WRITE_FILE, progressObserver) {
 
     private var inWaveFiles = mutableListOf<File>()
+    private val interruptEvent = InterruptEvent()
 
     private fun enqueueFileSynthesis(text: String, bytesRead: Int) {
         if (bytesRead == 0) return
@@ -341,9 +353,14 @@ class FileSynthesisEventListener(ctx: Context, tts: TextToSpeech,
         return byte >= 0
     }
 
-    override fun finish(success: Boolean) {
-        super.finish(success)
+    override fun finalize() {
+        super.finalize()
 
+        // Set the interrupt event.
+        interruptEvent.interrupt = true
+    }
+
+    override fun finish(success: Boolean) {
         // Handle success=true.
         var mSuccess = success
         if (mSuccess) {
@@ -358,13 +375,11 @@ class FileSynthesisEventListener(ctx: Context, tts: TextToSpeech,
 
             // Join each utterance's wave file into the output file passed to this
             // listener.  Notify the progress observer as files are concatenated.
-            // TODO This method can be long-running and should be stopped if the
-            //  user requests it (via the stop button).
             try {
-                joinWaveFiles(inWaveFiles, outFile, deleteFiles = true) {
+                mSuccess = joinWaveFiles(inWaveFiles, outFile,true,
+                        interruptEvent) {
                     p: Int -> observer.notifyProgress(p, taskId)
                 }
-                observer.notifyProgress(100, taskId)
             } catch (error: RuntimeException) {
                 Log.e(TAG, "Failed to join wave ${inWaveFiles.size} files.", error)
                 observer.notifyProgress(-1, taskId)
@@ -389,5 +404,8 @@ class FileSynthesisEventListener(ctx: Context, tts: TextToSpeech,
             app.getString(R.string.wave_file_error_msg)
         }
         displayMessage(msg, true)
+
+        // Call the super method.
+        super.finish(mSuccess)
     }
 }

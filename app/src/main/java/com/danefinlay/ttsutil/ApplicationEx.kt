@@ -285,16 +285,11 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
         val tts = mTTS ?: return true
         if (tts.isSpeaking) return tts.stop() == 0
 
-        // If utteranceProgressListener is set, it means that it did not finish
-        // correctly, perhaps because the TTS engine application or the service was
-        // restarted.  The listener's finish() method is called here as a remedy.
-        utteranceProgressListener?.finish(false)
-
-        // Notify progress observers.
-        // Since this stops TTS operations, the following notifyProgress() call
-        // will, if a TTS operation is in progress, be closely followed by another
-        // call with parameters (-1, TASK_ID_X).
-        notifyProgress(100, TASK_ID_IDLE)
+        // If an utterance progress listener is set, tell it to finalize.
+        // Otherwise, notify progress observers that we are now idle.
+        val listener = utteranceProgressListener
+        if (listener != null) listener.finalize()
+        else notifyProgress(100, TASK_ID_IDLE)
         return true
     }
 
