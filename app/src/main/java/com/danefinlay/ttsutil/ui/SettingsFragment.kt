@@ -170,6 +170,7 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
                     onClickPositive(selection)
                 }
             }
+            setNegativeButton(R.string.alert_negative_message) { _, _ -> }
         }
     }
 

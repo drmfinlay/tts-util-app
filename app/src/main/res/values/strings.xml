@@ -79,8 +79,7 @@
 
     <!--Dialog strings.-->
     <string name="alert_positive_message">Okay</string>
-    <string name="alert_negative_message1">No thanks</string>
-    <string name="alert_negative_message2">Never mind</string>
+    <string name="alert_negative_message">Cancel</string>
     <string name="no_tts_data_alert_title">Missing language TTS data</string>
     <string name="no_tts_data_alert_message">"Data for the language %1$s is missing.  Would you like to open the %2$s settings screen to download it?"</string>
     <string name="tts_not_ready_message">Text-to-speech isn\'t ready. Try again in a moment.</string>

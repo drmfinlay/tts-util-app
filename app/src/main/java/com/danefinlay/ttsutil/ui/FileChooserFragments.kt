@@ -183,7 +183,7 @@ abstract class FileChooserFragment : MyFragment() {
             positiveButton(R.string.alert_positive_message) {
                 activityInterface?.showFileChooser()
             }
-            negativeButton(R.string.alert_negative_message1)
+            negativeButton(R.string.alert_negative_message)
         }
     }
 
@@ -196,7 +196,7 @@ abstract class FileChooserFragment : MyFragment() {
                 // Try asking for storage permission again.
                 withStoragePermission { havePermission -> block(havePermission) }
             }
-            negativeButton(R.string.alert_negative_message1)
+            negativeButton(R.string.alert_negative_message)
         }
     }
 
@@ -341,7 +341,7 @@ class WriteFilesFragment : FileChooserFragment() {
                     writeSpeechToFile(uri, havePermission, waveFilename)
                 }
             }
-            negativeButton(R.string.alert_negative_message2)
+            negativeButton(R.string.alert_negative_message)
 
             // Show the dialog.
             show()
