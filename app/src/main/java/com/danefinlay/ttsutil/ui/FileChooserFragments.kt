@@ -319,9 +319,13 @@ class WriteFilesFragment : FileChooserFragment() {
             return
         }
 
-        // Return early if TTS is not ready.
+        // Return early if TTS is busy or not ready.
         if (!myApplication.ttsReady) {
             myApplication.handleTTSOperationResult(TTS_NOT_READY)
+            return
+        }
+        if (myApplication.readingTaskInProgress) {
+            myApplication.handleTTSOperationResult(TTS_BUSY)
             return
         }
 

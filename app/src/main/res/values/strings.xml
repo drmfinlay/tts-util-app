@@ -83,6 +83,7 @@
     <string name="no_tts_data_alert_title">Missing language TTS data</string>
     <string name="no_tts_data_alert_message">"Data for the language %1$s is missing.  Would you like to open the %2$s settings screen to download it?"</string>
     <string name="tts_not_ready_message">Text-to-speech isn\'t ready. Try again in a moment.</string>
+    <string name="tts_busy_message">Cannot perform operation: %1$s.</string>
     <string name="no_engine_available_message">No text-to-speech engine is available.</string>
     <string name="invalid_file_dialog_title">File not found</string>
     <string name="invalid_file_dialog_message">The chosen file could not be found. Maybe it has been deleted or renamed?\n\nChoose another?</string>
@@ -155,7 +156,6 @@
     <string name="clipboard_is_empty_msg">Clipboard is empty.</string>
     <string name="cannot_read_clipboard_android_10_msg">\'Read clipboard\' doesn\'t work on Android 10 yet.</string>
     <string name="no_tts_voices_msg">The TTS engine reported no voice selection.</string>
-    <string name="pre_file_synthesis_msg">Stopping speech prior to file synthesis.</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
     <string name="nav_header_desc">Navigation header</string>

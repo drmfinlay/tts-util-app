@@ -341,16 +341,6 @@ class FileSynthesisEventListener(ctx: Context, tts: TextToSpeech,
         return byte >= 0
     }
 
-    override fun begin() {
-        // Stop speech before synthesizing.
-        if (tts.isSpeaking) {
-            displayMessage(R.string.pre_file_synthesis_msg, false)
-        }
-
-        // Create a new file for writing wave data.
-        super.begin()
-    }
-
     override fun finish(success: Boolean) {
         super.finish(success)
 
@@ -374,6 +364,7 @@ class FileSynthesisEventListener(ctx: Context, tts: TextToSpeech,
                 joinWaveFiles(inWaveFiles, outFile, deleteFiles = true) {
                     p: Int -> observer.notifyProgress(p, taskId)
                 }
+                observer.notifyProgress(100, taskId)
             } catch (error: RuntimeException) {
                 Log.e(TAG, "Failed to join wave ${inWaveFiles.size} files.", error)
                 observer.notifyProgress(-1, taskId)

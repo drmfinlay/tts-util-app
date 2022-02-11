@@ -58,6 +58,12 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
     }
 
     private fun reinitialiseTTS(preferredEngine: String?) {
+        // Refuse to reinitialise TTS if there is a running task.
+        if (myApplication.taskInProgress) {
+            myApplication.handleTTSOperationResult(TTS_BUSY)
+            return
+        }
+
         val listener = activity as TextToSpeech.OnInitListener
         myApplication.reinitialiseTTS(listener, preferredEngine)
     }
@@ -74,8 +80,11 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
                 // We use QUEUE_FLUSH because it is more appropriate.
                 // If successful, disable notifications for the duration.
                 val result = app.speak(event.sampleText, QUEUE_FLUSH)
-                if (result == SUCCESS) app.notificationsEnabled = false
-                else app.handleTTSOperationResult(result)
+                if (result == SUCCESS) {
+                    app.notificationsEnabled = false
+                } else if (result == TTS_NOT_READY) {
+                    app.handleTTSOperationResult(result)
+                }
             }
             is ActivityEvent.StatusUpdateEvent -> {
                 val progress = event.progress
@@ -143,6 +152,9 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
         }
 
         // Handle setting preferences.
+        // It is here noted that these selection menus may be used to change the TTS
+        // voice, pitch and/or speech rate during long-running reading or file
+        // synthesis tasks.
         return when (key) {
             "pref_tts_engine" -> handleSetTtsEngine(key, tts)
             "pref_tts_voice" -> handleSetTtsVoice(key, tts)
@@ -251,7 +263,9 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
         }
         val onItemSelected = { index: Int ->
             // Play sample text with the selected voice, if possible.
-            playSampleWithVoice(tts, currentVoice, voiceSelection[index])
+            if (!myApplication.taskInProgress) {
+                playSampleWithVoice(tts, currentVoice, voiceSelection[index])
+            }
         }
 
         // Set the current index as either the current voice, if present, or the
@@ -299,7 +313,9 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
             // Play sample text with the selected voice, if possible.
             val item = displayNames[index]
             val selectedVoice = voicesByDisplayName[item]!![0]
-            playSampleWithVoice(tts, currentVoice, selectedVoice)
+            if (!myApplication.taskInProgress) {
+                playSampleWithVoice(tts, currentVoice, selectedVoice)
+            }
         }
         val onClickPositive: (Int) -> Unit = { index: Int ->
             // Retrieve the list of voices for the selected display name and handle
@@ -359,11 +375,13 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
 
         // Show a list alert dialog of pitch choices.
         val onItemSelected = { index: Int ->
-            // Play sample text with the selected pitch.
+            // Play sample text with the selected pitch, if possible.
             // The current pitch is restored afterward.
-            tts.setPitch(pitches[index])
-            val onFinishSample: () -> Unit = { tts.setPitch(currentValue) }
-            playSampleText(onFinishSample)
+            if (!myApplication.taskInProgress) {
+                tts.setPitch(pitches[index])
+                val onFinishSample: () -> Unit = { tts.setPitch(currentValue) }
+                playSampleText(onFinishSample)
+            }
         }
         val onClickPositive = { index: Int ->
             // Get the pitch from the index of the selected item and
@@ -406,11 +424,13 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
 
         // Show a list alert dialog of speech rate choices.
         val onItemSelected = { index: Int ->
-            // Play sample text with the selected speech rate.
+            // Play sample text with the selected speech rate, if possible.
             // The current rate is restored afterward.
-            tts.setSpeechRate(speechRates[index])
-            val onFinishSample: () -> Unit = { tts.setSpeechRate(currentValue) }
-            playSampleText(onFinishSample)
+            if (!myApplication.taskInProgress) {
+                tts.setSpeechRate(speechRates[index])
+                val onFinishSample: () -> Unit = { tts.setSpeechRate(currentValue) }
+                playSampleText(onFinishSample)
+            }
         }
         val onClickPositive = { index: Int ->
             // Get the speech rate from the index of the selected item and

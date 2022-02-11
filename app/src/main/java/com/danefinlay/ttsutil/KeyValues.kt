@@ -30,6 +30,7 @@ const val TAG = "TTSUtil"
 const val SUCCESS = 0
 const val TTS_NOT_READY = -1
 const val INVALID_FILE_URI = -2
+const val TTS_BUSY = -3
 
 // Task identifiers.
 const val TASK_ID_IDLE = 0

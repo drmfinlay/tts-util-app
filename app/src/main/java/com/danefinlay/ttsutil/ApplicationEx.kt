@@ -45,7 +45,8 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
         private set
 
     private var utteranceProgressListener: MyUtteranceProgressListener? = null
-    private var lastUtteranceWasFileSynthesis: Boolean = false
+    private var currentTaskId: Int = TASK_ID_IDLE
+    private var currentTaskProgress: Int = 100
     private var errorMessage: String? = null
     private val progressObservers = mutableSetOf<TaskProgressObserver>()
     private var notificationBuilder: NotificationCompat.Builder? = null
@@ -57,6 +58,22 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
      * */
     var ttsReady = false
         private set
+
+    val readingTaskInProgress: Boolean
+        get () {
+            val readingTasks = listOf(TASK_ID_READ_TEXT)
+            return currentTaskId in readingTasks && taskInProgress
+        }
+
+    val fileSynthesisTaskInProgress: Boolean
+        get () {
+            val fileSynthesisTasks = listOf(TASK_ID_WRITE_FILE,
+                    TASK_ID_PROCESS_FILE)
+            return currentTaskId in fileSynthesisTasks && taskInProgress
+        }
+
+    val taskInProgress: Boolean
+        get () = currentTaskProgress in 0..99
 
     val ttsEngineName: String?
         get() {
@@ -297,6 +314,22 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
                 val notReadyMessage = errorMessage ?: defaultMessage
                 runOnUiThread { longToast(notReadyMessage) }
             }
+            TTS_BUSY -> {
+                // Inform the user that the application is currently busy performing
+                // another operation.
+                val currentOperationTextId = when (currentTaskId) {
+                    TASK_ID_READ_TEXT ->
+                        R.string.speaking_notification_title
+                    TASK_ID_PROCESS_FILE ->
+                        R.string.post_synthesis_notification_title
+                    TASK_ID_WRITE_FILE ->
+                        R.string.synthesis_notification_title
+                    else -> return
+                }
+                val message = getString(R.string.tts_busy_message,
+                        getString(currentOperationTextId))
+                runOnUiThread { longToast(message) }
+            }
         }
     }
 
@@ -305,6 +338,8 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
         mTTS?.shutdown()
         mTTS = null
         utteranceProgressListener = null
+        currentTaskId = TASK_ID_IDLE
+        currentTaskProgress = 100
 
         // Cancel any TTS notifications present.
         notificationTasks.forEach {notificationManager.cancel(it) }
@@ -357,6 +392,10 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
             postNotification(progress, taskId)
         }
 
+        // Save current task attributes.
+        currentTaskProgress = progress
+        currentTaskId = taskId
+
         // Notify other observers.
         progressObservers.forEach { it.notifyProgress(progress, taskId) }
     }
@@ -367,8 +406,9 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
         // If TTS is not yet ready, return early.
         if (!ttsReady || tts == null) return TTS_NOT_READY
 
-        // Stop possible file synthesis before speaking.
-        if (lastUtteranceWasFileSynthesis && tts.isSpeaking) stopSpeech()
+        // If file synthesis is in process, return early.
+        // The user must stop the current operation manually.
+        if (fileSynthesisTaskInProgress) return TTS_BUSY
 
         // Initialize an event listener and tell it to begin reading.
         val listener = SpeakingEventListener(this, tts, inStream, size, queueMode,
@@ -380,19 +420,20 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
 
     fun synthesizeToFile(inputStream: InputStream, size: Long, outFile: File): Int {
         val tts = mTTS
+
         // If TTS is not yet ready, return early.
         if (!ttsReady || tts == null) return TTS_NOT_READY
+
+        // If text is currently being read, return early.
+        // The user must stop the operation manually.
+        // This should allow for queueing of file synthesis events.
+        if (readingTaskInProgress) return TTS_BUSY
 
         // Initialize an event listener and tell it to begin synthesis.
         val listener = FileSynthesisEventListener(this, tts, inputStream, size, outFile,
                 this)
         utteranceProgressListener = listener
         listener.begin()
-
-        // Set an internal variable for keeping track of file synthesis.
-        // This is because we allow user interactions to enqueue speech events, but
-        // not file synthesis events since it would lead to awkward silence.
-        lastUtteranceWasFileSynthesis = true
         return SUCCESS
     }
 
