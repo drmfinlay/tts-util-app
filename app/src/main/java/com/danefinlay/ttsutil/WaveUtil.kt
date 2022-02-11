@@ -367,6 +367,11 @@ class WaveFile(val stream: InputStream) {
     }
 }
 
+class InterruptEvent {
+    @Volatile
+    var interrupt: Boolean = false
+}
+
 /**
  * Function for taking wave files and writing a joined wave file.
  *
@@ -380,20 +385,26 @@ class WaveFile(val stream: InputStream) {
  * @param   inFiles             List of wave files.
  * @param   outFile             Output file where the joined wave file will be written.
  * @param   deleteFiles         Delete each inFile after processing.
- * @param   progressObserver    Callback function for observing progress out of 100%.
+ * @param   interruptEvent      Event to check for early returns, i.e., interrupts.
+ * @param   progressCallback    Callback function for observing progress out of 100%.
+ * @return  success
  * @exception   IncompatibleWaveFileException   Raised for invalid/incompatible Wave
  * files.
  */
 fun joinWaveFiles(inFiles: List<File>, outFile: File,
                   deleteFiles: Boolean = false,
-                  progressObserver: ((progress: Int) -> Unit)? = null) {
+                  interruptEvent: InterruptEvent? = null,
+                  progressCallback: ((progress: Int) -> Unit)? = null): Boolean {
+    // Return early if appropriate.
+    if (interruptEvent?.interrupt == true) return false
+
     // Notify the observer that work has begun.
-    progressObserver?.invoke(0)
+    progressCallback?.invoke(0)
 
     // Handle special case: empty list.
     if (inFiles.isEmpty()) {
-        progressObserver?.invoke(100)
-        return
+        progressCallback?.invoke(100)
+        return true
     }
 
     // Read each file, verifying that all files are compatible.
@@ -442,9 +453,12 @@ fun joinWaveFiles(inFiles: List<File>, outFile: File,
         // Write the data chunk header.
         outStream.write(header.dataSubChunk.writeToArray(dataSubChunkSize))
 
+        // Return early if appropriate.
+        if (interruptEvent?.interrupt == true) return false
+
         // Notify the observer of the progress so far.
         var count = (totalChunkSize - dataSubChunkSize).toFloat()
-        progressObserver?.invoke((count / totalChunkSize * 100).toInt())
+        progressCallback?.invoke((count / totalChunkSize * 100).toInt())
 
         // Stream data from each file into the output file.
         inFiles.zip(waveFiles).forEach { (f, wf) ->
@@ -455,9 +469,13 @@ fun joinWaveFiles(inFiles: List<File>, outFile: File,
             // Delete the input file, if necessary.
             if (deleteFiles) f.delete()
 
+            // Return early if appropriate.
+            if (interruptEvent?.interrupt == true) return false
+
             // Notify the observer after each file is written, if necessary.
             count += wf.header.dataSubChunk.ckSize
-            progressObserver?.invoke((count / totalChunkSize * 100).toInt())
+            progressCallback?.invoke((count / totalChunkSize * 100).toInt())
         }
     }
+    return true
 }
