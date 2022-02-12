@@ -31,6 +31,7 @@ import android.util.Log
 import org.jetbrains.anko.*
 import java.io.BufferedReader
 import java.io.File
+import java.io.IOException
 import java.io.InputStream
 
 abstract class MyUtteranceProgressListener(ctx: Context, val tts: TextToSpeech) :
@@ -110,7 +111,11 @@ abstract class TTSEventListener(ctx: Context,
 
         // Enqueue the next (first) input.
         // This starts the process of processing the stream.
-        streamHasFurtherInput = enqueueNextInput()
+        try {
+            streamHasFurtherInput = enqueueNextInput()
+        } catch (exception: IOException) {
+            finish(false)
+        }
 
         // Notify the progress listener that work has begun.
         observer.notifyProgress(0, taskId)
@@ -164,24 +169,27 @@ abstract class TTSEventListener(ctx: Context,
     }
 
     override fun onDone(utteranceId: String?) {
-        // Note: This function may be called before an utterance is completely
-        // processed.  That is why the indicated progress sometimes jumps ahead and
-        // hits 100% before the voice stops.
-
         // Add processed bytes to *inputProcessed*.
         inputProcessed += utteranceBytesQueue.removeAt(0)
 
-        // Calculate and notify the progress listener.
+        // Call finish() if we have reached the end of the stream or have been
+        // requested to finalize.
+        val success = !streamHasFurtherInput
+        if (success || finalize) {
+            finish(success)
+            return
+        }
+
+        // Calculate progress and notify the progress listener.
         val progress = inputProcessed.toFloat() / inputSize * 100
         observer.notifyProgress(progress.toInt(), taskId)
 
-        // Finish early, if necessary.
-        if (finalize) finish(false)
-
-        // Enqueue the next input.  If we have reached the end of the stream, then
-        // finish.
-        if (streamHasFurtherInput) streamHasFurtherInput = enqueueNextInput()
-        else finish(true)
+        // Enqueue the next input.
+        try {
+            streamHasFurtherInput = enqueueNextInput()
+        } catch (exception: IOException) {
+            finish(false)
+        }
     }
 
     companion object {
@@ -277,6 +285,15 @@ class SpeakingEventListener(ctx: Context,
         if (!audioFocusRequestGranted) {
             audioFocusRequestGranted = app.requestAudioFocus()
         }
+    }
+
+    override fun onDone(utteranceId: String?) {
+        // Note: This function may be called before an utterance is completely
+        // processed.  This appears to be related to our use of silent utterances.
+        // With this in mind, wait until the utterance is *really* done before we
+        // proceed.
+        while (tts.isSpeaking) Thread.sleep(5)
+        super.onDone(utteranceId)
     }
 
     override fun finish(success: Boolean) {
