@@ -96,7 +96,7 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
 
     private val audioFocusGain = AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
     private val audioFocusRequest: AudioFocusRequest by lazy {
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val audioAttributes = AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
@@ -124,13 +124,13 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
 
     fun requestAudioFocus(): Boolean {
         val audioManager = audioManager
-        val success = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+        val success = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            audioManager.requestAudioFocus(audioFocusRequest)
+        } else {
             @Suppress("deprecation")
             audioManager.requestAudioFocus(
-                    onAudioFocusChangeListener, AudioManager.STREAM_ALARM,
+                    onAudioFocusChangeListener, AudioManager.STREAM_MUSIC,
                     audioFocusGain)
-        } else {
-            audioManager.requestAudioFocus(audioFocusRequest)
         }
 
         // Check the success value.
@@ -138,8 +138,8 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
     }
 
     fun releaseAudioFocus() {
-        // abandon the audio focus using the same context and AudioFocusChangeListener used
-        // in requestAudioFocusResult to request it
+        // Abandon the audio focus using the same context and
+        // AudioFocusChangeListener used to request it.
         val audioManager = audioManager
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
             @Suppress("deprecation")
@@ -344,7 +344,10 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
         currentTaskData = null
 
         // Cancel any TTS notifications present.
-        notificationTasks.forEach {notificationManager.cancel(it) }
+        notificationTasks.forEach { notificationManager.cancel(it) }
+
+        // Release audio focus.
+        releaseAudioFocus()
     }
 
     fun reinitialiseTTS(initListener: OnInitListener,
