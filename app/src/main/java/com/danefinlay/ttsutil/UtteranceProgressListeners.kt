@@ -68,7 +68,6 @@ abstract class MyUtteranceProgressListener(ctx: Context, val tts: TextToSpeech) 
     @CallSuper
     open fun finish(success: Boolean) {
         tts.setOnUtteranceProgressListener(null)
-        app.clearUtteranceProgressListener()
     }
 
     open fun finalize() {
