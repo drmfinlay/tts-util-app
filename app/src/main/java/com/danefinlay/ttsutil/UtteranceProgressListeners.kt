@@ -82,10 +82,10 @@ abstract class TTSEventListener(ctx: Context,
                                 private val inputStream: InputStream,
                                 private val inputSize: Long,
                                 protected var taskId: Int,
-                                val observer: TaskProgressObserver) :
+                                protected val observer: TaskProgressObserver) :
         MyUtteranceProgressListener(ctx, tts) {
 
-    protected val reader: BufferedReader = inputStream.bufferedReader()
+    protected lateinit var reader: BufferedReader
     protected val maxInputLength = getMaxSpeechInputLength()
     private var inputProcessed: Long = 0
     protected var streamHasFurtherInput: Boolean = true
@@ -109,9 +109,10 @@ abstract class TTSEventListener(ctx: Context,
     override fun begin() {
         super.begin()
 
-        // Enqueue the next (first) input.
-        // This starts the process of processing the stream.
+        // Open a reader on the input stream and enqueue the first input bytes.
+        // This jumpstarts the processing of the entire stream.
         try {
+            reader = inputStream.bufferedReader()
             streamHasFurtherInput = enqueueNextInput()
         } catch (exception: IOException) {
             finish(false)
@@ -122,14 +123,14 @@ abstract class TTSEventListener(ctx: Context,
     }
 
     override fun finish(success: Boolean) {
+        // Close the reader and input stream.
+        reader.close()
+        inputStream.close()
+
         // Notify the progress observer that the task is finished or if an error
         // occurred.
         val progress = if (success) 100 else -1
         observer.notifyProgress(progress, taskId)
-
-        // Close the reader and input stream.
-        reader.close()
-        inputStream.close()
 
         // Call the super method.
         super.finish(success)
@@ -170,7 +171,9 @@ abstract class TTSEventListener(ctx: Context,
 
     override fun onDone(utteranceId: String?) {
         // Add processed bytes to *inputProcessed*.
-        inputProcessed += utteranceBytesQueue.removeAt(0)
+        if (utteranceBytesQueue.size > 0) {
+            inputProcessed += utteranceBytesQueue.removeAt(0)
+        }
 
         // Call finish() if we have reached the end of the stream or have been
         // requested to finalize.
@@ -213,7 +216,15 @@ class SpeakingEventListener(ctx: Context,
         TTSEventListener(ctx, tts, inputStream, inputSize,
                 TASK_ID_READ_TEXT, observer) {
 
-    private var audioFocusRequestGranted = false
+    override fun begin() {
+        // Request audio focus.  Finish early if our request was denied.
+        if (!app.requestAudioFocus()) {
+            finish(false)
+            return
+        }
+
+        super.begin()
+    }
 
     private fun enqueueSilentUtterance(durationInMs: Long) {
         // We ignore *queueMode* for silent utterances.  It does not make much sense
@@ -278,13 +289,6 @@ class SpeakingEventListener(ctx: Context,
 
         // Return whether there is further input.
         return byte >= 0
-    }
-
-    override fun onStart(utteranceId: String?) {
-        // Only request audio focus if we don't already have it.
-        if (!audioFocusRequestGranted) {
-            audioFocusRequestGranted = app.requestAudioFocus()
-        }
     }
 
     override fun onDone(utteranceId: String?) {
@@ -386,6 +390,10 @@ class FileSynthesisEventListener(ctx: Context, tts: TextToSpeech,
             val inWaveFiles = inWaveFiles
                     .filterNot { it.length() < WaveFileHeader.MIN_SIZE }
 
+            // Notify the progress observer that the first task has finished.
+            // This is purposefully done here because this listener has two tasks.
+            observer.notifyProgress(100, taskId)
+
             // Notify the progress observer that post-processing has begun.
             taskId = TASK_ID_PROCESS_FILE
             observer.notifyProgress(0, taskId)
@@ -398,9 +406,8 @@ class FileSynthesisEventListener(ctx: Context, tts: TextToSpeech,
                     p: Int -> observer.notifyProgress(p, taskId)
                 }
             } catch (error: RuntimeException) {
-                Log.e(TAG, "Failed to join wave ${inWaveFiles.size} files.", error)
-                observer.notifyProgress(-1, taskId)
                 mSuccess = false
+                Log.e(TAG, "Failed to join wave ${inWaveFiles.size} files.", error)
             }
         }
 
