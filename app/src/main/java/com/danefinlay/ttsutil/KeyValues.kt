@@ -26,6 +26,11 @@ const val APP_NAME = "com.danefinlay.ttsutil"
 const val START_ACTIVITY_FLAGS = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
 const val TAG = "TTSUtil"
 
+// Activity request codes.
+const val FILE_SELECT_CODE = 0
+const val SAMPLE_TEXT_CODE = 1
+const val REQUEST_EXTERNAL_STORAGE = 2
+
 // TTS operation result flags.
 const val SUCCESS = 0
 const val TTS_NOT_READY = -1
@@ -37,3 +42,7 @@ const val TASK_ID_IDLE = 0
 const val TASK_ID_READ_TEXT = 1
 const val TASK_ID_WRITE_FILE = 2
 const val TASK_ID_PROCESS_FILE = 3
+
+// Misc.
+const val CHOSEN_FILE_URI_KEY = "$APP_NAME.CHOSEN_FILE_URI_KEY"
+const val CHOSEN_FILE_NAME_KEY = "$APP_NAME.CHOSEN_FILE_NAME_KEY"

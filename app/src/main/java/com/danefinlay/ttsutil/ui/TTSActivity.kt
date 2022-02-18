@@ -159,8 +159,4 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener {
             toast(R.string.no_engine_available_message)
         }
     }
-
-    companion object {
-        private const val SAMPLE_TEXT_CODE = 6
-    }
 }

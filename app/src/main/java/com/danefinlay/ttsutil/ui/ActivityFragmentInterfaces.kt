@@ -23,16 +23,6 @@ package com.danefinlay.ttsutil.ui
 import android.net.Uri
 
 /**
- * Activity event classes.
- */
-sealed class ActivityEvent {
-    class FileChosenEvent(val uri: Uri) : ActivityEvent()
-    class StatusUpdateEvent(val progress: Int,
-                            val taskId: Int) : ActivityEvent()
-    class SampleTextReceivedEvent(val sampleText: String) : ActivityEvent()
-}
-
-/**
  * Interface between fragments and their activity.
  */
 interface FragmentInterface {
@@ -67,4 +57,9 @@ interface ActivityInterface {
      * TASK_ID_IDLE is used if there have been no updates yet.
      */
     fun getLastStatusUpdate(): ActivityEvent.StatusUpdateEvent
+
+    /**
+     * Get the most recent file chosen event, if any.
+     */
+    fun getLastFileChosenEvent(): ActivityEvent.FileChosenEvent?
 }
