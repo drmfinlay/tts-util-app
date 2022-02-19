@@ -91,6 +91,7 @@
     <string name="no_file_chosen_dialog_message">No file has been chosen. Would you like to choose one?</string>
     <string name="write_to_file_alert_title">Write to wave file</string>
     <string name="write_to_file_alert_message_1">The current file is \"%1$s\". The content of this file will be synthesized, written to \"%2$s\" and placed into internal storage.\n\nIs this okay?</string>
+    <string name="write_to_file_alert_message_2">The current content of the text field will be synthesized, written to \"%1$s\" and placed into internal storage.\n\nIs this okay?</string>
     <string name="write_to_file_message_success">The file was successfully synthesized as \"%1$s\".</string>
     <string name="write_to_file_message_failure">Failed to create wave file \"%1$s\".</string>
     <string name="no_storage_permission_title">No write storage permission</string>
@@ -99,6 +100,7 @@
     <string name="use_default_tts_preference">Use default</string>
 
     <!--File-related strings.-->
+    <string name="output_wave_filename">output</string>
     <string name="chosen_file_label">File to read text from:</string>
     <string name="no_file_chosen">No file chosen</string>
     <string name="no_file_chosen_dec">*No file chosen*</string>

@@ -24,6 +24,7 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.speech.tts.TextToSpeech.QUEUE_ADD
 import android.support.design.widget.TextInputLayout
 import android.support.v7.preference.PreferenceManager
@@ -35,10 +36,11 @@ import android.widget.TextView
 import com.danefinlay.ttsutil.*
 import org.jetbrains.anko.*
 import org.jetbrains.anko.support.v4.find
+import java.io.File
 
 abstract class ReadTextFragmentBase : MyFragment() {
 
-    private val inputLayout: TextInputLayout
+    protected val inputLayout: TextInputLayout
         get() = find(R.id.input_layout)
 
     var inputLayoutContent: String?
@@ -56,11 +58,10 @@ abstract class ReadTextFragmentBase : MyFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Set OnClick listener for the start/stop speaking buttons.
+        // Set OnClick listener for common buttons.
         find<ImageButton>(R.id.play_button).onClick { onClickPlay() }
-        find<ImageButton>(R.id.stop_button).onClick {
-            myApplication.stopSpeech()
-        }
+        find<ImageButton>(R.id.save_button).onClick { onClickSave() }
+        find<ImageButton>(R.id.stop_button).onClick { myApplication.stopSpeech() }
 
         // Set status field.
         val event = activityInterface?.getLastStatusUpdate() ?: return
@@ -96,6 +97,50 @@ abstract class ReadTextFragmentBase : MyFragment() {
         // Speak *text* and handle the result.
         val result = myApplication.speak(text, QUEUE_ADD)
         myApplication.handleTTSOperationResult(result)
+    }
+
+    private fun synthesizeTextToFile(filename: String) {
+        // Retrieve input field text.  If blank, display an alert message.
+        val text = inputLayoutContent ?: ""
+        if (text.isBlank()) {
+            ctx.toast(R.string.cannot_speak_empty_text_msg)
+            return
+        }
+
+        // TODO Handle an already existing wave file.
+        // TODO Allow the user to select a custom directory.
+        // Synthesize the text into a wave file and handle the result.
+        val dir = Environment.getExternalStorageDirectory()
+        val file = File(dir, filename)
+        val result = myApplication.synthesizeToFile(text, file)
+        myApplication.handleTTSOperationResult(result)
+    }
+
+    private fun buildSaveWaveFileAlertDialog(filename: String): AlertDialogBuilder {
+        val message = getString(R.string.write_to_file_alert_message_2, filename)
+        return AlertDialogBuilder(ctx).apply {
+            title(R.string.write_to_file_alert_title)
+            message(message)
+            positiveButton(R.string.alert_positive_message) { synthesizeTextToFile(filename) }
+            negativeButton(R.string.alert_negative_message)
+        }
+    }
+
+    private fun onClickSave() {
+        // Return early if TTS is busy or not ready.
+        if (!myApplication.ttsReady) {
+            myApplication.handleTTSOperationResult(TTS_NOT_READY)
+            return
+        }
+        if (myApplication.readingTaskInProgress) {
+            myApplication.handleTTSOperationResult(TTS_BUSY)
+            return
+        }
+
+        // Show a confirmation dialog to the user.
+        // TODO Allow the user to change the filename.
+        val filename = getString(R.string.output_wave_filename) + ".wav"
+        buildSaveWaveFileAlertDialog(filename).show()
     }
 
     override fun updateStatusField(text: String) {

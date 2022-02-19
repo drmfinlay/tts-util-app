@@ -67,13 +67,22 @@
             app:layout_constraintStart_toStartOf="parent"/>
 
         <ImageButton
+            android:id="@+id/save_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_outline_save_24"
+            android:contentDescription="@string/save_button"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toEndOf="@id/play_button"/>
+
+        <ImageButton
             android:id="@+id/stop_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@drawable/ic_outline_stop_circle_24"
             android:contentDescription="@string/stop_button"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toEndOf="@id/play_button"/>
+            app:layout_constraintStart_toEndOf="@id/save_button"/>
 
         <ImageButton
             android:id="@+id/paste_button"
