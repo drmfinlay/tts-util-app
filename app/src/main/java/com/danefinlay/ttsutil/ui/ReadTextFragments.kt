@@ -254,24 +254,13 @@ class ReadClipboardFragment : ReadTextFragmentBase() {
         super.onActivityCreated(savedInstanceState)
 
         val ctx = context
-        if (savedInstanceState == null && ctx != null) {
-            val text = ctx.getClipboardText()
+        if (savedInstanceState != null || ctx == null) return
 
-            // Android 10 restricts access to the clipboard for privacy reasons.
-            // Accessing it from the foreground activity is permitted, but it seems
-            // to require a short delay (async).
-            if (text == null && Build.VERSION.SDK_INT >= 29) {
-                doAsync {
-                    Thread.sleep(100)
-                    ctx.runOnUiThread {
-                        if (this@ReadClipboardFragment.view != null)
-                            inputLayoutContent = ctx.getClipboardText()
-                    }
-                }
-            } else {
-                // Otherwise just update the text field.
-                inputLayoutContent = text
-            }
+        // Set the (initial) content of the input layout.
+        // Note: The safety check on *view* is necessary because of how the
+        // useClipboardText() function works.
+        ctx.useClipboardText(false) { text: String? ->
+            if (view != null) inputLayoutContent = text
         }
     }
 }

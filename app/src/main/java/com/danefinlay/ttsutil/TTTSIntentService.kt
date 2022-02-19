@@ -101,11 +101,13 @@ class TTSIntentService : IntentService("TTSIntentService") {
      * Handle action ReadClipboard in the provided background thread.
      */
     private fun handleActionReadClipboard() {
-        // Show a warning toast message about this action on Android 10.
+        // Show a warning message about this action on Android 10 and open the edit
+        // activity instead.
         if (Build.VERSION.SDK_INT >= 29) {
             runOnUiThread {
-                longToast(R.string.cannot_read_clipboard_android_10_msg)
+                longToast(R.string.read_clipboard_android_10_warning_message)
             }
+            handleActionEditReadClipboard()
             return
         }
 
@@ -117,8 +119,11 @@ class TTSIntentService : IntentService("TTSIntentService") {
      * Handle action EditReadClipboard in the provided background thread.
      */
     private fun handleActionEditReadClipboard() {
-        val text = ctx.getClipboardText() ?: ""
-        handleActionEditReadText(text)
+        val intent = Intent(ctx, EditReadActivity::class.java).apply {
+            addFlags(START_ACTIVITY_FLAGS)
+            action = ACTION_EDIT_READ_CLIPBOARD
+        }
+        startActivity(intent)
     }
 
     /**

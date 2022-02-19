@@ -21,10 +21,9 @@
 package com.danefinlay.ttsutil.ui
 
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
-import com.danefinlay.ttsutil.ACTION_READ_CLIPBOARD
-import com.danefinlay.ttsutil.TTSIntentService
-import com.danefinlay.ttsutil.TTS_NOT_READY
+import com.danefinlay.ttsutil.*
 
 /**
  * Activity to quickly read text from an input source.
@@ -67,7 +66,6 @@ class ReadClipboardActivity : QuickShareActivity() {
         }
     }
 }
-
 
 class ReadTextActivity : QuickShareActivity() {
     override fun startServiceAction() {
