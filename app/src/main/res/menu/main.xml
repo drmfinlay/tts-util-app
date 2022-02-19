@@ -33,7 +33,7 @@
         app:showAsAction="ifRoom"/>
 
     <item android:id="@+id/menu_reinitialise_tts"
-        android:title="@string/menu_reinitialise_tts"
+        android:title="@string/menu_reinitialize_tts"
         android:icon="@android:drawable/ic_menu_revert"
         app:showAsAction="ifRoom" />
 </menu>

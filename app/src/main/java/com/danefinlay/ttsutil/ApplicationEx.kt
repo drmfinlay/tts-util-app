@@ -236,7 +236,7 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
                 R.string.no_engine_available_message
             } else {
                 // General TTS initialisation failure.
-                R.string.tts_initialisation_failure_msg
+                R.string.tts_initialization_failure_msg
             }
             runOnUiThread { longToast(messageId) }
             // Save the error message ID for later use, free TTS and return.

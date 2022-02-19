@@ -28,7 +28,7 @@
         android:shortcutId="read_clipboard"
         android:enabled="true"
         android:icon="@mipmap/ic_read_clipboard_shortcut"
-        android:shortcutShortLabel="@string/read_clipboard_fragment_label">
+        android:shortcutShortLabel="@string/read_clipboard_shortcut">
         <intent
             android:action="com.danefinlay.ttsutil.action.READ_CLIPBOARD"
             android:targetPackage="com.danefinlay.ttsutil"

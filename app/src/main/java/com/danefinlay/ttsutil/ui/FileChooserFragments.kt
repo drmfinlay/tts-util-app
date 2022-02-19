@@ -146,7 +146,7 @@ abstract class FileChooserFragment : MyFragment() {
         return AlertDialogBuilder(ctx).apply {
             title(R.string.no_storage_permission_title)
             message(R.string.no_storage_permission_message)
-            positiveButton(R.string.grant_permission_message) {
+            positiveButton(R.string.grant_permission_positive_message) {
                 // Try asking for storage permission again.
                 withStoragePermission { havePermission -> block(havePermission) }
             }
