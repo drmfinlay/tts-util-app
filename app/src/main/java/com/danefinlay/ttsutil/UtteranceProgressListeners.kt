@@ -420,13 +420,10 @@ class FileSynthesisEventListener(ctx: Context, tts: TextToSpeech,
         }
 
         // Display a toast message.
-        val msg = if (mSuccess) {
-            app.getString(R.string.write_to_file_message_success,
-                    outFile.name)
-        } else {
-            app.getString(R.string.wave_file_error_msg)
-        }
-        displayMessage(msg, true)
+        val messageId = if (mSuccess) R.string.write_to_file_message_success
+                        else R.string.write_to_file_message_failure
+        val message = app.getString(messageId, outFile.name)
+        displayMessage(message, true)
 
         // Call the super method.
         super.finish(mSuccess)

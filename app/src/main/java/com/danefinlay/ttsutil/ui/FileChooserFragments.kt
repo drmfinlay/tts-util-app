@@ -237,8 +237,7 @@ class WriteFilesFragment : FileChooserFragment() {
 
         // TODO Handle an already existing wave file.
         // TODO Allow the user to select a custom directory.
-        // Synthesize the file's content into a wave file using the filename +
-        // '.wav'.
+        // Synthesize the file's content into a wave file and handle the result.
         val dir = Environment.getExternalStorageDirectory()
         val file = File(dir, waveFilename)
         when (val result = myApplication.synthesizeToFile(uri, file)) {
@@ -266,15 +265,13 @@ class WriteFilesFragment : FileChooserFragment() {
         }
 
         // Build and display an appropriate alert dialog.
-        val msgPart1 = getString(R.string.write_to_file_alert_message_p1)
-        val msgPart2 = getString(R.string.write_to_file_alert_message_p2)
         val filename = event.displayName
         val waveFilename = "$filename.wav"
-        val fullMsg = "$msgPart1 \"$filename\"\n" +
-                "\n$msgPart2 \"$waveFilename\""
+        val message = getString(R.string.write_to_file_alert_message_1,
+                filename, waveFilename)
         AlertDialogBuilder(ctx).apply {
             title(R.string.write_files_fragment_label)
-            message(fullMsg)
+            message(message)
             positiveButton(R.string.alert_positive_message) {
                 // Ask the user for write permission if necessary.
                 withStoragePermission { havePermission ->

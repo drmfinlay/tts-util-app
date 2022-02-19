@@ -32,7 +32,7 @@
     <string name="read_files_fragment_label">Read from files</string>
     <string name="read_files_fragment_desc">This part of the app can process text files using text-to-speech.\n\nChoose a text file from storage and press the \'Play\' button.</string>
     <string name="write_files_fragment_label">Write to files</string>
-    <string name="write_files_fragment_desc">This part of the app can create a speech wave file using text from a chosen file. Most media player applications will be able to play wave files.\n\nChoose a text file from storage and press the \'Save\' button.\n\nSuccessfully synthesised wave files will be placed in internal storage.</string>
+    <string name="write_files_fragment_desc">This part of the app can create a speech wave file using text from a chosen file. Most media player applications will be able to play wave files.\n\nChoose a text file from storage and press the \'Save\' button.</string>
     <string name="settings_fragment_label">Settings</string>
     <string name="edit_read_activity_label">Edit &amp; read text</string>
     <string name="edit_read_activity_desc">Edit the text below and have it read with text-to-speech.</string>
@@ -89,14 +89,13 @@
     <string name="invalid_file_dialog_message">The chosen file could not be found. Maybe it has been deleted or renamed?\n\nChoose another?</string>
     <string name="no_file_chosen_dialog_title">No file chosen</string>
     <string name="no_file_chosen_dialog_message">No file has been chosen. Would you like to choose one?</string>
-    <string name="write_to_file_alert_message_p1">The current file is:</string>
-    <string name="write_to_file_alert_message_p2">The content of that file will be synthesised and written to:</string>
-    <string name="write_to_file_message_success">The file was successfully synthesised as: "%1$s".</string>
-    <string name="write_to_file_message_failure">Failed to create wave file "%1$s".</string>
+    <string name="write_to_file_alert_title">Write to wave file</string>
+    <string name="write_to_file_alert_message_1">The current file is \"%1$s\". The content of this file will be synthesized, written to \"%2$s\" and placed into internal storage.\n\nIs this okay?</string>
+    <string name="write_to_file_message_success">The file was successfully synthesized as \"%1$s\".</string>
+    <string name="write_to_file_message_failure">Failed to create wave file \"%1$s\".</string>
     <string name="no_storage_permission_title">No write storage permission</string>
     <string name="no_storage_permission_message">Permission to write to storage was not granted.  The app needs write access in order to save the wave file to storage. \n\nWould you like to grant permission?</string>
     <string name="grant_permission_message">Grant permission</string>
-    <string name="wave_file_error_msg">Failed to create wave file.</string>
     <string name="use_default_tts_preference">Use default</string>
 
     <!--File-related strings.-->
