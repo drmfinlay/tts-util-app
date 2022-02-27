@@ -31,9 +31,9 @@ abstract class MyAppCompatActivity : AppCompatActivity(),
         if (savedInstanceState == null) {
             val prefs = getSharedPreferences(packageName, MODE_PRIVATE)
             val uriString = prefs.getString(CHOSEN_FILE_URI_KEY, null)
-            val uri = Uri.parse(uriString)
             val displayName = prefs.getString(CHOSEN_FILE_NAME_KEY, null)
-            if (uri != null && displayName != null) {
+            if (uriString != null && displayName != null) {
+                val uri = Uri.parse(uriString)
                 val event = ActivityEvent.FileChosenEvent(uri, displayName)
                 mLastChosenFileEvent = event
             }
