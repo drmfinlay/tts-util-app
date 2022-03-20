@@ -37,10 +37,6 @@
             android:icon="@drawable/ic_folder"
             android:title="@string/read_files_fragment_label" />
         <item
-            android:id="@+id/nav_write_files"
-            android:icon="@drawable/ic_save"
-            android:title="@string/write_files_fragment_label" />
-        <item
             android:id="@+id/nav_settings"
             android:icon="@android:drawable/ic_menu_preferences"
             android:title="@string/settings_fragment_label" />

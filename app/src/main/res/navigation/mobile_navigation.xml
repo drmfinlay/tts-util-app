@@ -44,12 +44,6 @@
         tools:layout="@layout/fragment_read_files" />
 
     <fragment
-        android:id="@+id/nav_write_files"
-        android:name="com.danefinlay.ttsutil.ui.WriteFilesFragment"
-        android:label="@string/write_files_fragment_label"
-        tools:layout="@layout/fragment_write_files" />
-
-    <fragment
         android:id="@+id/nav_settings"
         android:name="com.danefinlay.ttsutil.ui.SettingsFragment"
         android:label="@string/settings_fragment_label" />

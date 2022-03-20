@@ -54,7 +54,7 @@ class MainActivity : TTSActivity() {
         // Passing each menu ID as a set of Ids because each
         // menu should be considered as top level destinations.
         appBarConfiguration = AppBarConfiguration(setOf(
-                R.id.nav_read_text, R.id.nav_read_files, R.id.nav_write_files,
+                R.id.nav_read_text, R.id.nav_read_files,
                 R.id.nav_read_clipboard, R.id.nav_settings), drawerLayout)
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)

@@ -178,11 +178,10 @@ class ReadFilesFragment : FileChooserFragment() {
         super.onViewCreated(view, savedInstanceState)
 
         // Set OnClick listeners.
+        find<ImageButton>(R.id.play_file_button).onClick { onClickPlay() }
+        find<ImageButton>(R.id.save_button).onClick { onClickSave() }
         find<ImageButton>(R.id.choose_file_button)
                 .onClick { activityInterface?.showFileChooser() }
-        find<ImageButton>(R.id.play_file_button).onClick {
-            onClickPlay()
-        }
     }
 
     override fun updateStatusField(text: String) {
@@ -196,29 +195,6 @@ class ReadFilesFragment : FileChooserFragment() {
             INVALID_FILE_URI -> buildInvalidFileAlertDialog(uri).show()
             else -> myApplication.handleTTSOperationResult(result)
         }
-    }
-}
-
-class WriteFilesFragment : FileChooserFragment() {
-
-    override fun onCreateView(
-            inflater: LayoutInflater,
-            container: ViewGroup?,
-            savedInstanceState: Bundle?
-    ): View? {
-        return inflater.inflate(R.layout.fragment_write_files, container,
-                false)
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        find<ImageButton>(R.id.save_button).onClick { onClickSave() }
-        find<ImageButton>(R.id.choose_file_button)
-                .onClick { activityInterface?.showFileChooser() }
-    }
-
-    override fun updateStatusField(text: String) {
-        find<TextView>(R.id.status_text_field).text = text
     }
 
     private fun writeSpeechToFile(uri: Uri?, havePermission: Boolean,
@@ -270,7 +246,7 @@ class WriteFilesFragment : FileChooserFragment() {
         val message = getString(R.string.write_to_file_alert_message_1,
                 filename, waveFilename)
         AlertDialogBuilder(ctx).apply {
-            title(R.string.write_files_fragment_label)
+            title(R.string.write_to_file_alert_title)
             message(message)
             positiveButton(R.string.alert_positive_message) {
                 // Ask the user for write permission if necessary.
