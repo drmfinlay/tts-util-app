@@ -45,6 +45,18 @@ sealed class ActivityEvent : Parcelable {
         }
     }
 
+    class TTSReadyEvent : ActivityEvent(), Parcelable {
+        override fun writeToParcel(dest: Parcel?, flags: Int) {}
+        override fun describeContents(): Int = 0
+
+        companion object CREATOR : Parcelable.Creator<TTSReadyEvent> {
+            override fun createFromParcel(parcel: Parcel): TTSReadyEvent =
+                    TTSReadyEvent()
+            override fun newArray(size: Int): Array<TTSReadyEvent?> =
+                    arrayOfNulls(size)
+        }
+    }
+
     class StatusUpdateEvent(val progress: Int,
                             val taskId: Int) : ActivityEvent() {
         constructor(parcel: Parcel) : this(parcel.readInt(), parcel.readInt())

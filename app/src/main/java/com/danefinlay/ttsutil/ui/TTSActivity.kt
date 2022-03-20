@@ -65,6 +65,11 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener {
         if (languageUnavailable) {
             runOnUiThread { showNoTTSDataDialog(tts, language) }
         }
+
+        // Emit a TTS ready event.
+        if (status == TextToSpeech.SUCCESS) {
+            handleActivityEvent(ActivityEvent.TTSReadyEvent())
+        }
     }
 
     private fun showNoTTSDataDialog(tts: TextToSpeech, language: Locale?) {
