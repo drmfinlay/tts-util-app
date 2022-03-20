@@ -39,7 +39,7 @@ import java.io.File
 
 abstract class ReadTextFragmentBase : MyFragment() {
 
-    protected var mPlaybackOnStart: Boolean = false
+    protected var playbackOnStart: Boolean = false
     protected val inputLayout: TextInputLayout
         get() = find(R.id.input_layout)
 
@@ -68,23 +68,19 @@ abstract class ReadTextFragmentBase : MyFragment() {
         onStatusUpdate(event)
 
         // Handle playback on start.
-        if (savedInstanceState == null) {
-            val intent = activity?.intent
-            if (intent?.getBooleanExtra("playbackOnStart", false) == true) {
-                mPlaybackOnStart = true
-            }
+        val intent = activity?.intent
+        if (savedInstanceState == null && intent != null) {
+            playbackOnStart = intent.getBooleanExtra("playbackOnStart", false)
         }
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
+        if (savedInstanceState == null) return
 
         // Restore fragment instance state here.
-        val content = savedInstanceState?.getString("inputLayoutContent")
-        if (content != null) inputLayoutContent = content
-        val playbackOnStart = savedInstanceState?.getBoolean("playbackOnStart",
-                false)
-        if (playbackOnStart != null) mPlaybackOnStart = playbackOnStart
+        inputLayoutContent = savedInstanceState.getString("inputLayoutContent")
+        playbackOnStart = savedInstanceState.getBoolean("playbackOnStart", false)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -93,7 +89,7 @@ abstract class ReadTextFragmentBase : MyFragment() {
         // Save fragment instance state here.
         if (view != null) {
             outState.putString("inputLayoutContent", inputLayoutContent)
-            outState.putBoolean("playbackOnStart", mPlaybackOnStart)
+            outState.putBoolean("playbackOnStart", playbackOnStart)
         }
     }
 
@@ -103,16 +99,13 @@ abstract class ReadTextFragmentBase : MyFragment() {
             is ActivityEvent.TTSReadyEvent -> {
                 // If playback on start was requested, begin playback, since TTS is
                 // now ready.
-                if (mPlaybackOnStart) {
-                    onClickPlay()
-                    mPlaybackOnStart = false
-                }
+                if (playbackOnStart) attemptPlaybackOnStart()
             }
             else -> {}
         }
     }
 
-    protected fun onClickPlay() {
+    private fun onClickPlay() {
         // Retrieve input field text.  If blank, use the hint text
         // and display an alert message.
         var text = inputLayoutContent ?: ""
@@ -194,7 +187,7 @@ abstract class ReadTextFragmentBase : MyFragment() {
             myApplication.handleTTSOperationResult(TTS_NOT_READY)
         } else {
             onClickPlay()
-            mPlaybackOnStart = false
+            playbackOnStart = false
         }
     }
 }
@@ -271,7 +264,7 @@ class ReadTextFragment : ReadTextFragmentBase() {
         }
 
         // Attempt to start playback, if requested.
-        if (mPlaybackOnStart) attemptPlaybackOnStart()
+        if (playbackOnStart) attemptPlaybackOnStart()
     }
 }
 
@@ -318,7 +311,7 @@ class ReadClipboardFragment : ReadTextFragmentBase() {
                 inputLayoutContent = text
 
                 // Attempt to start playback, if requested.
-                if (mPlaybackOnStart) attemptPlaybackOnStart()
+                if (playbackOnStart) attemptPlaybackOnStart()
             }
         }
     }
