@@ -148,8 +148,8 @@ abstract class ReadTextFragmentBase : MyFragment() {
         return AlertDialogBuilder(ctx).apply {
             title(R.string.write_to_file_alert_title)
             message(message)
-            positiveButton(R.string.alert_positive_message) { synthesizeTextToFile(filename) }
-            negativeButton(R.string.alert_negative_message)
+            positiveButton(R.string.alert_positive_message_2) { synthesizeTextToFile(filename) }
+            negativeButton(R.string.alert_negative_message_2)
         }
     }
 

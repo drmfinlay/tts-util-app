@@ -124,20 +124,26 @@ abstract class FileChooserFragment : MyFragment() {
         // chosen already.
         val title: Int
         val message: Int
+        val positive: Int
+        val negative: Int
         if (uri == null) {
             title = R.string.no_file_chosen_dialog_title
             message = R.string.no_file_chosen_dialog_message
+            positive = R.string.alert_positive_message_2
+            negative = R.string.alert_negative_message_2
         } else {
             title = R.string.invalid_file_dialog_title
             message = R.string.invalid_file_dialog_message
+            positive = R.string.alert_positive_message_1
+            negative = R.string.alert_negative_message_1
         }
         return AlertDialogBuilder(ctx).apply {
             title(title)
             message(message)
-            positiveButton(R.string.alert_positive_message) {
+            positiveButton(positive) {
                 activityInterface?.showFileChooser()
             }
-            negativeButton(R.string.alert_negative_message)
+            negativeButton(negative)
         }
     }
 
@@ -150,7 +156,7 @@ abstract class FileChooserFragment : MyFragment() {
                 // Try asking for storage permission again.
                 withStoragePermission { havePermission -> block(havePermission) }
             }
-            negativeButton(R.string.alert_negative_message)
+            negativeButton(R.string.alert_negative_message_1)
         }
     }
 
@@ -248,13 +254,13 @@ class ReadFilesFragment : FileChooserFragment() {
         AlertDialogBuilder(ctx).apply {
             title(R.string.write_to_file_alert_title)
             message(message)
-            positiveButton(R.string.alert_positive_message) {
+            positiveButton(R.string.alert_positive_message_2) {
                 // Ask the user for write permission if necessary.
                 withStoragePermission { havePermission ->
                     writeSpeechToFile(uri, havePermission, waveFilename)
                 }
             }
-            negativeButton(R.string.alert_negative_message)
+            negativeButton(R.string.alert_negative_message_2)
 
             // Show the dialog.
             show()

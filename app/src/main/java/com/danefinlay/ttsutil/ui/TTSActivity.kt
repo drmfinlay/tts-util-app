@@ -88,10 +88,10 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener {
             message(messageText)
 
             // Set buttons and show the dialog.
-            positiveButton(R.string.alert_positive_message) {
+            positiveButton(R.string.alert_positive_message_2) {
                 startInstallTTSDataActivity()
             }
-            negativeButton(R.string.alert_negative_message)
+            negativeButton(R.string.alert_negative_message_2)
             show()
         }
     }

@@ -34,7 +34,7 @@
     <string name="settings_fragment_label">Settings</string>
     <string name="edit_read_activity_label">Edit &amp; read text</string>
     <string name="edit_read_activity_desc">Edit the text below and have it read with text-to-speech.</string>
-    <string name="about_activity_label">TTS Util</string>
+    <string name="about_activity_label">About TTS Util</string>
 
     <!--Status text field strings.-->
     <string name="status_text_field">Status: %1$s</string>
@@ -76,18 +76,20 @@
     <string name="link_freeotp" translatable="false">&lt;a href=&quot;https://freeotp.github.io&quot;&gt;FreeOTP&lt;/a&gt;</string>
 
     <!--Dialog strings.-->
-    <string name="alert_positive_message">Okay</string>
-    <string name="alert_negative_message">Cancel</string>
+    <string name="alert_positive_message_1">Okay</string>
+    <string name="alert_negative_message_1">Cancel</string>
+    <string name="alert_positive_message_2">Yes</string>
+    <string name="alert_negative_message_2">No</string>
     <string name="grant_permission_positive_message">Grant permission</string>
     <string name="no_tts_data_alert_title">Missing Language TTS Data</string>
-    <string name="no_tts_data_alert_message">Data for the language %1$s is missing.  Would you like to open the %2$s settings screen to download it?</string>
+    <string name="no_tts_data_alert_message">Data for the language %1$s is missing.\n\nWould you like to open the %2$s settings screen to download it?</string>
     <string name="tts_not_ready_message">Text-to-speech is not ready. Try again in a moment.</string>
     <string name="tts_busy_message">Cannot perform operation: %1$s.</string>
     <string name="no_engine_available_message">No text-to-speech engine is available.</string>
     <string name="invalid_file_dialog_title">File Not Found</string>
     <string name="invalid_file_dialog_message">The chosen file could not be found. Maybe it has been deleted or renamed?\n\nChoose another?</string>
     <string name="no_file_chosen_dialog_title">No File Chosen</string>
-    <string name="no_file_chosen_dialog_message">No file has been chosen. Would you like to choose one?</string>
+    <string name="no_file_chosen_dialog_message">No file has been chosen.\n\nWould you like to choose one?</string>
     <string name="write_to_file_alert_title">Write to Wave File</string>
     <string name="write_to_file_alert_message_1">The current file is \"%1$s\". The content of this file will be synthesized, written to \"%2$s\" and placed into internal storage.\n\nIs this okay?</string>
     <string name="write_to_file_alert_message_2">The current content of the text field will be synthesized, written to \"%1$s\" and placed into internal storage.\n\nIs this okay?</string>

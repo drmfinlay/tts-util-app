@@ -190,7 +190,7 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
                 selection = index
                 onItemSelected(index)
             }
-            setPositiveButton(R.string.alert_positive_message) { _, _ ->
+            setPositiveButton(R.string.alert_positive_message_1) { _, _ ->
                 if (selection >= 0 && selection < items.size) {
                     onClickPositive(selection)
                 }
@@ -200,7 +200,7 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
 
     private fun AlertDialog.Builder.setCancelButton(onCancel: () -> Unit):
             AlertDialog.Builder {
-        setNegativeButton(R.string.alert_negative_message) { _, _ -> }
+        setNegativeButton(R.string.alert_negative_message_1) { _, _ -> }
 
         // Note: The OnDismissListener will be notified: when the negative button is
         // pressed; when the alert is cancelled; and when the alert is dismissed.
