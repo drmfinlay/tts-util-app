@@ -39,6 +39,7 @@ import java.io.File
 
 abstract class ReadTextFragmentBase : MyFragment() {
 
+    protected var mPlaybackOnStart: Boolean = false
     protected val inputLayout: TextInputLayout
         get() = find(R.id.input_layout)
 
@@ -65,6 +66,14 @@ abstract class ReadTextFragmentBase : MyFragment() {
         // Set status field.
         val event = activityInterface?.getLastStatusUpdate() ?: return
         onStatusUpdate(event)
+
+        // Handle playback on start.
+        if (savedInstanceState == null) {
+            val intent = activity?.intent
+            if (intent?.getBooleanExtra("playbackOnStart", false) == true) {
+                mPlaybackOnStart = true
+            }
+        }
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
@@ -73,6 +82,9 @@ abstract class ReadTextFragmentBase : MyFragment() {
         // Restore fragment instance state here.
         val content = savedInstanceState?.getString("inputLayoutContent")
         if (content != null) inputLayoutContent = content
+        val playbackOnStart = savedInstanceState?.getBoolean("playbackOnStart",
+                false)
+        if (playbackOnStart != null) mPlaybackOnStart = playbackOnStart
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -81,10 +93,26 @@ abstract class ReadTextFragmentBase : MyFragment() {
         // Save fragment instance state here.
         if (view != null) {
             outState.putString("inputLayoutContent", inputLayoutContent)
+            outState.putBoolean("playbackOnStart", mPlaybackOnStart)
         }
     }
 
-    private fun onClickPlay() {
+    override fun handleActivityEvent(event: ActivityEvent) {
+        super.handleActivityEvent(event)
+        when (event) {
+            is ActivityEvent.TTSReadyEvent -> {
+                // If playback on start was requested, begin playback, since TTS is
+                // now ready.
+                if (mPlaybackOnStart) {
+                    onClickPlay()
+                    mPlaybackOnStart = false
+                }
+            }
+            else -> {}
+        }
+    }
+
+    protected fun onClickPlay() {
         // Retrieve input field text.  If blank, use the hint text
         // and display an alert message.
         var text = inputLayoutContent ?: ""
@@ -144,6 +172,15 @@ abstract class ReadTextFragmentBase : MyFragment() {
 
     override fun updateStatusField(text: String) {
         find<TextView>(R.id.status_text_field).text = text
+    }
+
+    protected fun attemptPlaybackOnStart() {
+        if (!myApplication.ttsReady) {
+            myApplication.handleTTSOperationResult(TTS_NOT_READY)
+        } else {
+            onClickPlay()
+            mPlaybackOnStart = false
+        }
     }
 }
 
@@ -217,6 +254,9 @@ class ReadTextFragment : ReadTextFragmentBase() {
         if (savedInstanceState == null && intent?.action == Intent.ACTION_SEND) {
             inputLayoutContent = intent.getStringExtra(Intent.EXTRA_TEXT)
         }
+
+        // Attempt to start playback, if requested.
+        if (mPlaybackOnStart) attemptPlaybackOnStart()
     }
 }
 
@@ -259,7 +299,12 @@ class ReadClipboardFragment : ReadTextFragmentBase() {
         // Note: The safety check on *view* is necessary because of how the
         // useClipboardText() function works.
         ctx.useClipboardText(false) { text: String? ->
-            if (view != null) inputLayoutContent = text
+            if (view != null) {
+                inputLayoutContent = text
+
+                // Attempt to start playback, if requested.
+                if (mPlaybackOnStart) attemptPlaybackOnStart()
+            }
         }
     }
 }
