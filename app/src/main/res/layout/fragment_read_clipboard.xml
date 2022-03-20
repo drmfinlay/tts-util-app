@@ -88,7 +88,7 @@
             android:id="@+id/paste_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/ic_content_paste"
+            android:src="@drawable/ic_baseline_content_paste_24"
             android:contentDescription="@string/paste_button"
             android:layout_marginStart="24dp"
             app:layout_constraintTop_toTopOf="parent"

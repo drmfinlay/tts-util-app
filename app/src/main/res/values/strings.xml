@@ -30,7 +30,7 @@
     <string name="read_clipboard_fragment_label">Read clipboard</string>
     <string name="read_clipboard_fragment_desc">Press the \'Play\' button to have clipboard text spoken.  The \'Save\' button may be used to synthesize and write the text to a wave file.\n\nThe text field can be updated with the current clipboard text by pressing the \'Paste\' button.</string>
     <string name="read_files_fragment_label">Read to/from files</string>
-    <string name="read_files_fragment_desc">This part of the application may be used to read text files or synthesize wave files using text-to-speech.\n\nChoose a text file from storage and press the \'Play\' button to have the its content read.  Press the \'Save\' button to have it synthesized and written to a wave file instead.</string>
+    <string name="read_files_fragment_desc">This part of the application may be used to read text files or synthesize wave files using text-to-speech.\n\nChoose a text file from storage and press the \'Play\' button to have its content read.  Press the \'Save\' button to have it synthesized and written to a wave file instead.</string>
     <string name="settings_fragment_label">Settings</string>
     <string name="edit_read_activity_label">Edit &amp; read text</string>
     <string name="about_activity_label">About TTS Util</string>
