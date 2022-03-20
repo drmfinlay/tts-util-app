@@ -20,8 +20,6 @@
 
 package com.danefinlay.ttsutil.ui
 
-import android.net.Uri
-
 /**
  * Interface between fragments and their activity.
  */

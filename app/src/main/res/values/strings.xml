@@ -33,7 +33,6 @@
     <string name="read_files_fragment_desc">This part of the application may be used to read text files or synthesize wave files using text-to-speech.\n\nChoose a text file from storage and press the \'Play\' button to have the its content read.  Press the \'Save\' button to have it synthesized and written to a wave file instead.</string>
     <string name="settings_fragment_label">Settings</string>
     <string name="edit_read_activity_label">Edit &amp; read text</string>
-    <string name="edit_read_activity_desc">Edit the text below and have it read with text-to-speech.</string>
     <string name="about_activity_label">About TTS Util</string>
 
     <!--Status text field strings.-->
@@ -101,7 +100,6 @@
     <!--File-related strings.-->
     <string name="output_wave_filename">output</string>
     <string name="chosen_file_label">File to read text from:</string>
-    <string name="no_file_chosen">No file chosen</string>
     <string name="no_file_chosen_dec">*No file chosen*</string>
     <string name="file_chooser_title">Select a File…</string>
     <string name="no_file_manager_msg">No file manager application found.</string>
@@ -132,7 +130,6 @@
     <string name="synthesis_error_msg_net_timeout">Text-to-speech failed due to a network timeout.</string>
     <string name="synthesis_error_msg_invalid_req">Text-to-speech failed due to a network timeout.</string>
     <string name="synthesis_error_msg_voice_data">Text-to-speech failed because voice data was not installed.</string>
-    <string name="file_synthesis_interrupted_msg">File synthesis was interrupted.</string>
     <string name="tts_initialization_failure_msg">Text-to-speech engine failed to initialize.</string>
     <string name="using_general_tts_language_msg">Selected language is not available, using %1$s.</string>
     <string name="no_tts_language_available_msg">Neither the selected nor the system speaker languages are available.</string>
