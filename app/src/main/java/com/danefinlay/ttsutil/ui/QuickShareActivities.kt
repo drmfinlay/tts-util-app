@@ -23,6 +23,7 @@ package com.danefinlay.ttsutil.ui
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.speech.tts.TextToSpeech
 import com.danefinlay.ttsutil.*
 
 /**
@@ -33,26 +34,28 @@ abstract class QuickShareActivity : TTSActivity() {
 
     abstract fun startServiceAction()
 
-    private fun initialize() {
-        if (!myApplication.ttsReady) {
-            myApplication.handleTTSOperationResult(TTS_NOT_READY)
-            return
-        }
-
-        // TTS is ready.  Start the appropriate service action and finish the
-        // activity.
-        startServiceAction()
-        finish()
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        initialize()
+
+        // If TTS is ready, start the appropriate service action and finish the
+        // activity.  Otherwise, wait until TTS is ready.
+        if (myApplication.ttsReady) {
+            startServiceAction()
+            finish()
+        }
     }
 
     override fun onInit(status: Int) {
         super.onInit(status)
-        initialize()
+
+        // If TTS is ready, start the appropriate service action and finish the
+        // activity.  Otherwise, handle TTS_NOT_READY.
+        if (status == TextToSpeech.SUCCESS) {
+            startServiceAction()
+            finish()
+        } else {
+            myApplication.handleTTSOperationResult(TTS_NOT_READY)
+        }
     }
 
     override fun handleActivityEvent(event: ActivityEvent) {}
