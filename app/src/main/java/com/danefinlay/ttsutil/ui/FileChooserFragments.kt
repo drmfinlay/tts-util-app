@@ -20,10 +20,7 @@
 
 package com.danefinlay.ttsutil.ui
 
-import android.Manifest
-import android.content.pm.PackageManager
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.speech.tts.TextToSpeech.QUEUE_ADD
@@ -37,12 +34,10 @@ import org.jetbrains.anko.*
 import org.jetbrains.anko.support.v4.find
 import java.io.File
 
-typealias PermissionBlock = (granted: Boolean) -> Unit
 
 abstract class FileChooserFragment : MyFragment() {
 
     protected var fileChosenEvent: ActivityEvent.FileChosenEvent? = null
-    private var tempStoragePermissionBlock: PermissionBlock = {}
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -55,52 +50,6 @@ abstract class FileChooserFragment : MyFragment() {
         if (event1 != null) onStatusUpdate(event1)
         val event2 = activityInterface?.getLastFileChosenEvent()
         if (event2 != null) onFileChosen(event2)
-    }
-
-    fun withStoragePermission(block: PermissionBlock) {
-        // Check if we have write permission.
-        if (Build.VERSION.SDK_INT >= 23) {
-            val permission = ctx.checkSelfPermission(
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE)
-            if (permission != PackageManager.PERMISSION_GRANTED) {
-                // We don't have permission, so prompt the user.
-                requestPermissions(PERMISSIONS_STORAGE, REQUEST_EXTERNAL_STORAGE)
-
-                // Store the function so we can execute it later if the user
-                // grants us storage permission.
-                tempStoragePermissionBlock = block
-            }
-            else {
-                // We have permission, so execute the function.
-                block(true)
-            }
-        } else {
-            // No need to check permission before Android 23, so execute the
-            // function.
-            block(true)
-        }
-    }
-
-    override fun onRequestPermissionsResult(requestCode: Int,
-                                            permissions: Array<out String>,
-                                            grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-
-        if (permissions.contentEquals(PERMISSIONS_STORAGE)) {
-            // Check that all permissions were granted.
-            var allGranted = true
-            for (result in grantResults) {
-                if (result != PackageManager.PERMISSION_GRANTED) {
-                    // Permission wasn't granted.
-                    allGranted = false
-                    break
-                }
-            }
-
-            // Execute the storage permission block and replace it.
-            tempStoragePermissionBlock(allGranted)
-            tempStoragePermissionBlock = {}
-        }
     }
 
     protected fun onFileChosen(event: ActivityEvent.FileChosenEvent) {
@@ -146,27 +95,6 @@ abstract class FileChooserFragment : MyFragment() {
             negativeButton(negative)
         }
     }
-
-    protected fun buildNoPermissionAlertDialog(block: PermissionBlock):
-            AlertDialogBuilder {
-        return AlertDialogBuilder(ctx).apply {
-            title(R.string.no_storage_permission_title)
-            message(R.string.no_storage_permission_message)
-            positiveButton(R.string.grant_permission_positive_message) {
-                // Try asking for storage permission again.
-                withStoragePermission { havePermission -> block(havePermission) }
-            }
-            negativeButton(R.string.alert_negative_message_1)
-        }
-    }
-
-    companion object {
-        // Storage Permissions
-        private val PERMISSIONS_STORAGE = arrayOf(
-                Manifest.permission.READ_EXTERNAL_STORAGE,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE
-        )
-    }
 }
 
 class ReadFilesFragment : FileChooserFragment() {
@@ -203,15 +131,13 @@ class ReadFilesFragment : FileChooserFragment() {
         }
     }
 
-    private fun writeSpeechToFile(uri: Uri?, havePermission: Boolean,
-                                  waveFilename: String) {
-        if (!havePermission) {
+    private fun synthesizeTextToFile(uri: Uri?, waveFilename: String,
+                                     storageAccess: Boolean) {
+        if (!storageAccess) {
             // Show a dialog if we don't have read/write storage permission.
             // and return here if permission is granted.
-            val permissionBlock = { havePermission2: Boolean ->
-                if (havePermission2) {
-                    writeSpeechToFile(uri, havePermission2, waveFilename)
-                }
+            val permissionBlock: (Boolean) -> Unit = { granted ->
+                if (granted) synthesizeTextToFile(uri, waveFilename, granted)
             }
             buildNoPermissionAlertDialog(permissionBlock).show()
             return
@@ -256,8 +182,8 @@ class ReadFilesFragment : FileChooserFragment() {
             message(message)
             positiveButton(R.string.alert_positive_message_2) {
                 // Ask the user for write permission if necessary.
-                withStoragePermission { havePermission ->
-                    writeSpeechToFile(uri, havePermission, waveFilename)
+                withStoragePermission { granted ->
+                    synthesizeTextToFile(uri, waveFilename, granted)
                 }
             }
             negativeButton(R.string.alert_negative_message_2)

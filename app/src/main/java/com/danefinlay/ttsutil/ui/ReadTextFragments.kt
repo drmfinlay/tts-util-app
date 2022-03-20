@@ -126,7 +126,17 @@ abstract class ReadTextFragmentBase : MyFragment() {
         myApplication.handleTTSOperationResult(result)
     }
 
-    private fun synthesizeTextToFile(filename: String) {
+    private fun synthesizeTextToFile(filename: String, storageAccess: Boolean) {
+        if (!storageAccess) {
+            // Show a dialog if we don't have read/write storage permission.
+            // and return here if permission is granted.
+            val permissionBlock: (Boolean) -> Unit = { granted ->
+                if (granted) synthesizeTextToFile(filename, granted)
+            }
+            buildNoPermissionAlertDialog(permissionBlock).show()
+            return
+        }
+
         // Retrieve input field text.  If blank, display an alert message.
         val text = inputLayoutContent ?: ""
         if (text.isBlank()) {
@@ -148,7 +158,12 @@ abstract class ReadTextFragmentBase : MyFragment() {
         return AlertDialogBuilder(ctx).apply {
             title(R.string.write_to_file_alert_title)
             message(message)
-            positiveButton(R.string.alert_positive_message_2) { synthesizeTextToFile(filename) }
+            positiveButton(R.string.alert_positive_message_2) {
+                // Ask the user for write permission if necessary.
+                withStoragePermission { granted ->
+                    synthesizeTextToFile(filename, granted)
+                }
+            }
             negativeButton(R.string.alert_negative_message_2)
         }
     }
