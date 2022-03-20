@@ -33,11 +33,14 @@ class EditReadActivity : TTSActivity() {
         setContentView(R.layout.activity_edit_read)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         if (savedInstanceState == null) {
+            // Instantiate the appropriate fragment.
             val fragment: ReadTextFragmentBase = when (intent?.action) {
                 Intent.ACTION_SEND -> ReadTextFragment()
                 ACTION_EDIT_READ_CLIPBOARD -> ReadClipboardFragment()
                 else -> return
             }
+
+            // Show the instantiated fragment.
             supportFragmentManager.beginTransaction()
                     .replace(R.id.fragment_container, fragment)
                     .commit()

@@ -60,7 +60,7 @@ class TTSIntentService : IntentService("TTSIntentService") {
         when (intent.action) {
             ACTION_EDIT_READ_TEXT -> handleActionEditReadText(text)
             ACTION_READ_CLIPBOARD -> handleActionReadClipboard()
-            ACTION_EDIT_READ_CLIPBOARD -> handleActionEditReadClipboard()
+            ACTION_EDIT_READ_CLIPBOARD -> handleActionEditReadClipboard(false)
             ACTION_STOP_SPEAKING -> handleActionStopSpeaking(intent)
             ACTION_READ_TEXT -> handleActionReadText(text)
         }
@@ -102,12 +102,13 @@ class TTSIntentService : IntentService("TTSIntentService") {
      */
     private fun handleActionReadClipboard() {
         // Show a warning message about this action on Android 10 and open the edit
-        // activity instead.
+        // activity instead, instructing playback to begin on start (without further
+        // user interaction).
         if (Build.VERSION.SDK_INT >= 29) {
             runOnUiThread {
                 longToast(R.string.read_clipboard_android_10_warning_message)
             }
-            handleActionEditReadClipboard()
+            handleActionEditReadClipboard(true)
             return
         }
 
@@ -118,10 +119,11 @@ class TTSIntentService : IntentService("TTSIntentService") {
     /**
      * Handle action EditReadClipboard in the provided background thread.
      */
-    private fun handleActionEditReadClipboard() {
+    private fun handleActionEditReadClipboard(playbackOnStart: Boolean) {
         val intent = Intent(ctx, EditReadActivity::class.java).apply {
             addFlags(START_ACTIVITY_FLAGS)
             action = ACTION_EDIT_READ_CLIPBOARD
+            putExtra("playbackOnStart", playbackOnStart)
         }
         startActivity(intent)
     }
