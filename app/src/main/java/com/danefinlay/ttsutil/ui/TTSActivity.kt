@@ -52,7 +52,8 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener {
         // ApplicationEx does most of the setup originally done here.
         val tts = myApplication.mTTS ?: return
 
-        // Install missing voice data if required.
+        // Ask the user to install missing voice data, if necessary for the selected
+        // language and if the TTS engine reports one or more available voices.
         // Note: countAvailableVoices() is more reliable when voice data is not yet
         // downloaded, at least with Google's text-to-speech engine, which, in this
         // case, defaults to an available voice.
@@ -62,7 +63,7 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener {
                 tts.isLanguageAvailable(language) == LANG_MISSING_DATA ||
                 tts.countAvailableVoices(language) == 0
         )
-        if (languageUnavailable) {
+        if (tts.voicesEx.size > 0 && languageUnavailable) {
             runOnUiThread { showNoTTSDataDialog(tts, language) }
         }
 
