@@ -1,0 +1,13 @@
+* Add four memory buttons in the *Read text* screens (thanks to @woheller69).
+* Add "nicer" image buttons (thanks to @woheller69).
+* Add status fields to each screen.
+* Add the ability to create wave files from input text and clipboard text.
+* Allow selection of non-local documents in the file choice screen.
+* Change the application settings menus to play sample text.
+* Change the application to follow the system theme where possible (thanks to @woheller69).
+* Fix an error where large text files could not be synthesized.
+* Fix an error where the application did not properly release the audio focus.
+* Improve the performance of text-to-speech playback and file synthesis.
+* Improve voice selection in the application settings.
+* Merge the *Read from files* and *Write to files* screens.
+* Other fixes and improvements.

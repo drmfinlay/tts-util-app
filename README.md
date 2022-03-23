@@ -14,7 +14,7 @@ Features
 --------
 
 - Read input text, clipboard text or text files using text-to-speech.
-- Create speech wave files from text files.
+- Create speech wave files from input text, clipboard text or text files.
 - Share text to read using share menu entries.
 - Read clipboard text using launcher shortcuts (requires Android 8 or higher).
 - Configurable app-specific text-to-speech settings: engine, voice, pitch and speech rate.
