@@ -227,6 +227,8 @@ class ReadTextFragment : ReadTextFragmentBase() {
         }
     }
 
+    private var persistentContent: Boolean = false
+
     override fun onCreateView(
             inflater: LayoutInflater,
             container: ViewGroup?,
@@ -257,14 +259,40 @@ class ReadTextFragment : ReadTextFragmentBase() {
                     button.setOnLongClickListener(listener)
         }
 
-        // Handle ACTION_SEND.
+        // Set input layout content as necessary.
+        // The content of the input layout is set to persist between uses unless
+        // ACTION_SEND is specified.
         val intent = activity?.intent
-        if (savedInstanceState == null && intent?.action == Intent.ACTION_SEND) {
-            inputLayoutContent = intent.getStringExtra(Intent.EXTRA_TEXT)
+        if (savedInstanceState == null && intent != null) {
+            if (intent.action == Intent.ACTION_SEND) {
+                persistentContent = false
+                inputLayoutContent = intent.getStringExtra(Intent.EXTRA_TEXT)
+            } else {
+                persistentContent = true
+                inputLayoutContent = prefs.getString(CONTENT_PREF_KEY, "")
+            }
         }
 
         // Attempt to start playback, if requested.
         if (playbackOnStart) attemptPlaybackOnStart()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        if (view == null) return
+
+        // If the content of the fragment's input layout should be persisted, save
+        // it asynchronously to shared preferences.
+        if (persistentContent) {
+            val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+            val editor: SharedPreferences.Editor = prefs.edit()
+            editor.putString(CONTENT_PREF_KEY, inputLayoutContent)
+            editor.apply()
+        }
+    }
+
+    companion object {
+        private const val CONTENT_PREF_KEY = "$APP_NAME.READ_TEXT_CONTENT"
     }
 }
 
