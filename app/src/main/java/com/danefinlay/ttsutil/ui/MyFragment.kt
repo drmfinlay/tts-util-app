@@ -119,6 +119,19 @@ abstract class MyFragment : Fragment(), FragmentInterface {
         }
     }
 
+    protected fun buildInvalidDirAlertDialog(): AlertDialogBuilder {
+        val title = R.string.invalid_dir_dialog_title
+        val message = R.string.invalid_dir_dialog_message
+        return AlertDialogBuilder(ctx).apply {
+            title(title)
+            message(message)
+            positiveButton(R.string.alert_positive_message_1) {
+                activityInterface?.showDirChooser()
+            }
+            negativeButton(R.string.alert_negative_message_1)
+        }
+    }
+
     companion object {
         // Storage Permissions
         private val PERMISSIONS_STORAGE = arrayOf(

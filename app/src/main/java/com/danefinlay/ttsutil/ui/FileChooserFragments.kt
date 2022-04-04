@@ -24,6 +24,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.speech.tts.TextToSpeech.QUEUE_ADD
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -37,7 +38,8 @@ import java.io.File
 
 abstract class FileChooserFragment : MyFragment() {
 
-    protected var fileChosenEvent: ActivityEvent.FileChosenEvent? = null
+    protected var dirChosenEvent: ActivityEvent.ChosenFileEvent? = null
+    protected var fileChosenEvent: ActivityEvent.ChosenFileEvent? = null
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -45,14 +47,21 @@ abstract class FileChooserFragment : MyFragment() {
         // Set OnClick listener for common buttons.
         find<ImageButton>(R.id.stop_button).onClick { myApplication.stopSpeech() }
 
-        // Set text fields.
+        // Re-process last updates.
         val event1 = activityInterface?.getLastStatusUpdate()
         if (event1 != null) onStatusUpdate(event1)
-        val event2 = activityInterface?.getLastFileChosenEvent()
-        if (event2 != null) onFileChosen(event2)
+        val event2 = activityInterface?.getLastDirChosenEvent()
+        if (event2 != null) onDirChosen(event2)
+        val event3 = activityInterface?.getLastFileChosenEvent()
+        if (event3 != null) onFileChosen(event3)
     }
 
-    protected fun onFileChosen(event: ActivityEvent.FileChosenEvent) {
+    private fun onDirChosen(event: ActivityEvent.ChosenFileEvent) {
+        dirChosenEvent = event
+        Log.e(TAG, "${event.uri}")
+    }
+
+    protected fun onFileChosen(event: ActivityEvent.ChosenFileEvent) {
         // Set the property and display name text field.
         fileChosenEvent = event
         var text = event.displayName
@@ -63,7 +72,12 @@ abstract class FileChooserFragment : MyFragment() {
     override fun handleActivityEvent(event: ActivityEvent) {
         super.handleActivityEvent(event)
         when (event) {
-            is ActivityEvent.FileChosenEvent -> onFileChosen(event)
+            is ActivityEvent.ChosenFileEvent -> {
+                when (event.fileType) {
+                    0 -> onDirChosen(event)
+                    1 -> onFileChosen(event)
+                }
+            }
             else -> {}
         }
     }
@@ -71,10 +85,7 @@ abstract class FileChooserFragment : MyFragment() {
     protected fun buildInvalidFileAlertDialog(uri: Uri?): AlertDialogBuilder {
         // Use a different title and message based on whether or not a file has been
         // chosen already.
-        val title: Int
-        val message: Int
-        val positive: Int
-        val negative: Int
+        val title: Int; val message: Int; val positive: Int; val negative: Int
         if (uri == null) {
             title = R.string.no_file_chosen_dialog_title
             message = R.string.no_file_chosen_dialog_message
@@ -116,6 +127,8 @@ class ReadFilesFragment : FileChooserFragment() {
         find<ImageButton>(R.id.save_button).onClick { onClickSave() }
         find<ImageButton>(R.id.choose_file_button)
                 .onClick { activityInterface?.showFileChooser() }
+        find<ImageButton>(R.id.choose_dir_button)
+                .onClick { activityInterface?.showDirChooser() }
     }
 
     override fun updateStatusField(text: String) {

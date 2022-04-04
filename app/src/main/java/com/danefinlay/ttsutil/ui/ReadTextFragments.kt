@@ -27,6 +27,7 @@ import android.os.Environment
 import android.speech.tts.TextToSpeech.QUEUE_ADD
 import android.support.design.widget.TextInputLayout
 import android.support.v7.preference.PreferenceManager
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -39,6 +40,7 @@ import java.io.File
 
 abstract class ReadTextFragmentBase : MyFragment() {
 
+    protected var dirChosenEvent: ActivityEvent.ChosenFileEvent? = null
     protected var playbackOnStart: Boolean = false
     protected val inputLayout: TextInputLayout
         get() = find(R.id.input_layout)
@@ -62,10 +64,14 @@ abstract class ReadTextFragmentBase : MyFragment() {
         find<ImageButton>(R.id.play_button).onClick { onClickPlay() }
         find<ImageButton>(R.id.save_button).onClick { onClickSave() }
         find<ImageButton>(R.id.stop_button).onClick { myApplication.stopSpeech() }
+        find<ImageButton>(R.id.choose_dir_button)
+                .onClick { activityInterface?.showDirChooser() }
 
-        // Set status field.
-        val event = activityInterface?.getLastStatusUpdate() ?: return
-        onStatusUpdate(event)
+        // Re-process last updates.
+        val event1 = activityInterface?.getLastStatusUpdate()
+        if (event1 != null) onStatusUpdate(event1)
+        val event2 = activityInterface?.getLastDirChosenEvent()
+        if (event2 != null) onDirChosen(event2)
 
         // Handle playback on start.
         val intent = activity?.intent
@@ -93,6 +99,11 @@ abstract class ReadTextFragmentBase : MyFragment() {
         }
     }
 
+    private fun onDirChosen(event: ActivityEvent.ChosenFileEvent) {
+        dirChosenEvent = event
+        Log.e(TAG, "${event.uri}")
+    }
+
     override fun handleActivityEvent(event: ActivityEvent) {
         super.handleActivityEvent(event)
         when (event) {
@@ -100,6 +111,10 @@ abstract class ReadTextFragmentBase : MyFragment() {
                 // If playback on start was requested, begin playback, since TTS is
                 // now ready.
                 if (playbackOnStart) attemptPlaybackOnStart()
+            }
+            is ActivityEvent.ChosenFileEvent -> {
+                // Handle directory chosen events.
+                if (event.fileType == 0) onDirChosen(event)
             }
             else -> {}
         }

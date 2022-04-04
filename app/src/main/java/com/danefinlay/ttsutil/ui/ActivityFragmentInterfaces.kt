@@ -40,6 +40,11 @@ interface ActivityInterface {
     fun showFileChooser()
 
     /**
+     * Show a screen where the user can choose a directory.
+     */
+    fun showDirChooser()
+
+    /**
      * Function to request sample TTS text from the current TTS engine.
      */
     fun requestSampleTTSText()
@@ -57,7 +62,12 @@ interface ActivityInterface {
     fun getLastStatusUpdate(): ActivityEvent.StatusUpdateEvent
 
     /**
+     * Get the most recent directory chosen event, if any.
+     */
+    fun getLastDirChosenEvent(): ActivityEvent.ChosenFileEvent?
+
+    /**
      * Get the most recent file chosen event, if any.
      */
-    fun getLastFileChosenEvent(): ActivityEvent.FileChosenEvent?
+    fun getLastFileChosenEvent(): ActivityEvent.ChosenFileEvent?
 }

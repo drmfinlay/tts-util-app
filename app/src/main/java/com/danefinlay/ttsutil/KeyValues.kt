@@ -27,9 +27,10 @@ const val START_ACTIVITY_FLAGS = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_
 const val TAG = "TTSUtil"
 
 // Activity request codes.
-const val FILE_SELECT_CODE = 0
-const val SAMPLE_TEXT_CODE = 1
-const val REQUEST_EXTERNAL_STORAGE = 2
+const val DIR_SELECT_CODE = 0
+const val FILE_SELECT_CODE = 1
+const val SAMPLE_TEXT_CODE = 2
+const val REQUEST_EXTERNAL_STORAGE = 3
 
 // TTS operation result flags.
 const val SUCCESS = 0
@@ -46,3 +47,5 @@ const val TASK_ID_PROCESS_FILE = 3
 // Misc.
 const val CHOSEN_FILE_URI_KEY = "$APP_NAME.CHOSEN_FILE_URI_KEY"
 const val CHOSEN_FILE_NAME_KEY = "$APP_NAME.CHOSEN_FILE_NAME_KEY"
+const val CHOSEN_DIR_URI_KEY = "$APP_NAME.CHOSEN_DIR_URI_KEY"
+const val CHOSEN_DIR_NAME_KEY = "$APP_NAME.CHOSEN_DIR_NAME_KEY"

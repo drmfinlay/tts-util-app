@@ -94,6 +94,15 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toEndOf="@id/stop_button"/>
 
+        <ImageButton
+            android:id="@+id/choose_dir_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_outline_folder_open_24"
+            android:contentDescription="@string/choose_dir_button"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/clear_box_button" />
+
     </android.support.constraint.ConstraintLayout>
 
     <android.support.design.widget.TextInputLayout

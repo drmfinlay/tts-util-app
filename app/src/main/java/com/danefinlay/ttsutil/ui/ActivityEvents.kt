@@ -25,22 +25,27 @@ import android.os.Parcel
 import android.os.Parcelable
 
 sealed class ActivityEvent : Parcelable {
-    class FileChosenEvent(val uri: Uri, val displayName: String) : ActivityEvent() {
+    class ChosenFileEvent(val uri: Uri,
+                          val displayName: String,
+                          val fileType: Int) : ActivityEvent() {
         constructor(parcel: Parcel) : this(
                 parcel.readParcelable(Uri::class.java.classLoader)!!,
-                parcel.readString()!!)
+                parcel.readString()!!,
+                parcel.readInt()
+        )
 
         override fun writeToParcel(parcel: Parcel, flags: Int) {
             parcel.writeParcelable(uri, flags)
             parcel.writeString(displayName)
+            parcel.writeInt(fileType)
         }
 
         override fun describeContents(): Int = 0
 
-        companion object CREATOR : Parcelable.Creator<FileChosenEvent> {
-            override fun createFromParcel(parcel: Parcel): FileChosenEvent =
-                    FileChosenEvent(parcel)
-            override fun newArray(size: Int): Array<FileChosenEvent?> =
+        companion object CREATOR : Parcelable.Creator<ChosenFileEvent> {
+            override fun createFromParcel(parcel: Parcel): ChosenFileEvent =
+                    ChosenFileEvent(parcel)
+            override fun newArray(size: Int): Array<ChosenFileEvent?> =
                     arrayOfNulls(size)
         }
     }
