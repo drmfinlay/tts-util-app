@@ -22,14 +22,13 @@ package com.danefinlay.ttsutil.ui
 
 import android.os.Bundle
 import android.support.v4.content.pm.PackageInfoCompat
-import android.support.v7.app.AppCompatActivity
 import android.view.MenuItem
 import android.widget.TextView
 import com.danefinlay.ttsutil.APP_NAME
 import com.danefinlay.ttsutil.R
 import org.jetbrains.anko.find
 
-class AboutActivity : AppCompatActivity() {
+class AboutActivity : MyAppCompatActivity() {
 
     private fun setAckText(ackTextViewId: Int, ackStringId: Int,
                            ackLinkStringId: Int, licenceLinkText: String) {

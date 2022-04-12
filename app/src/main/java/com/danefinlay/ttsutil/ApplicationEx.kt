@@ -87,11 +87,17 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
 
     var notificationsEnabled: Boolean = true
         set(value) {
-            field = value
-            if (!value) {
+            if (!field && value) {
+                // If re-enabling, post the current notification, if any.
+                val taskData = currentTaskData
+                if (taskData != null) {
+                    postNotification(taskData.progress, taskData.taskId)
+                }
+            } else if (!value) {
                 // Cancel any TTS notifications present.
                 notificationTasks.forEach {notificationManager.cancel(it) }
             }
+            field = value
         }
 
     private val audioFocusGain = AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
@@ -392,8 +398,6 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
     @Synchronized
     override fun notifyProgress(progress: Int, taskId: Int) {
         // Post a notification, if necessary.
-        // TODO Make use of activity lifecycle callbacks to disable notifications
-        //  when the activity is active.
         if (notificationsEnabled && taskId in notificationTasks) {
             postNotification(progress, taskId)
         }

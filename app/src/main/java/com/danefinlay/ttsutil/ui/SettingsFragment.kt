@@ -82,11 +82,9 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
 
                 // Speak sample text and handle the result.
                 // We use QUEUE_FLUSH because it is more appropriate.
-                // If successful, disable notifications for the duration.
                 val result = app.speak(event.sampleText, QUEUE_FLUSH)
                 if (result == SUCCESS) {
                     sampleInProgress = true
-                    app.notificationsEnabled = false
                 } else if (result == TTS_NOT_READY) {
                     app.handleTTSOperationResult(result)
                 }
@@ -96,9 +94,8 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
                 val taskId = event.taskId
                 val finished = progress == 100 || progress == -1
                 if (finished && taskId == TASK_ID_READ_TEXT) {
-                    // Re-enable notifications and invoke onFinishSample().
+                    // Invoke onFinishSample().
                     sampleInProgress = false
-                    app.notificationsEnabled = true
                     onFinishSample?.invoke()
                     onFinishSample = null
                 }
