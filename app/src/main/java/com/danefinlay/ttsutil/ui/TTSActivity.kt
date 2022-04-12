@@ -22,11 +22,16 @@ package com.danefinlay.ttsutil.ui
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.content.SharedPreferences
+import android.net.Uri
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.speech.tts.TextToSpeech.LANG_MISSING_DATA
+import android.support.v4.app.Fragment
+import android.util.Log
 import com.danefinlay.ttsutil.*
 import org.jetbrains.anko.AlertDialogBuilder
+import org.jetbrains.anko.longToast
 import org.jetbrains.anko.toast
 import java.util.*
 
@@ -34,7 +39,33 @@ import java.util.*
  * Abstract activity class inherited from classes that use text-to-speech in some
  * way.
  */
-abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener {
+abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
+        ActivityInterface, TaskProgressObserver {
+
+    private val idleStatusEvent =
+            ActivityEvent.StatusUpdateEvent(100, TASK_ID_IDLE)
+
+    protected var mLastStatusUpdate = idleStatusEvent
+    protected var mLastChosenDirEvent: ActivityEvent.ChosenFileEvent? = null
+    protected var mLastChosenFileEvent: ActivityEvent.ChosenFileEvent? = null
+
+    private fun retrieveChosenFileData(prefs: SharedPreferences,
+                                       uriKey: String, nameKey: String,
+                                       fileType: Int): ActivityEvent.ChosenFileEvent? {
+        val uriString = prefs.getString(uriKey, null)
+        val displayName = prefs.getString(nameKey, null)
+        if (uriString == null || displayName == null) return null
+        val uri = Uri.parse(uriString)
+        return ActivityEvent.ChosenFileEvent(uri, displayName, fileType)
+    }
+
+    private fun saveChosenFileData(prefs: SharedPreferences, uriKey: String,
+                                   nameKey: String, event: ActivityEvent.ChosenFileEvent) {
+        prefs.edit()
+                .putString(uriKey, event.uri.toString())
+                .putString(nameKey, event.displayName)
+                .apply()  // apply() is asynchronous.
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,6 +75,48 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener {
         // causes a noticeable delay when the application starts.
         if (savedInstanceState == null && !myApplication.ttsReady) {
             myApplication.setupTTS(this, null)
+        }
+
+        // Register as a task progress observer.
+        myApplication.addProgressObserver(this)
+
+        // Restore persistent data, if necessary.
+        if (savedInstanceState == null) {
+            val prefs = getSharedPreferences(packageName, MODE_PRIVATE)
+            val event1 = retrieveChosenFileData(prefs, CHOSEN_DIR_URI_KEY,
+                    CHOSEN_DIR_NAME_KEY, 0)
+            if (event1 != null) mLastChosenDirEvent = event1
+            val event2 = retrieveChosenFileData(prefs, CHOSEN_FILE_URI_KEY,
+                    CHOSEN_FILE_NAME_KEY, 1)
+            if (event2 != null) mLastChosenFileEvent = event2
+            return
+        }
+
+        // Restore instance data.
+        savedInstanceState.run {
+            mLastStatusUpdate = getParcelable("mLastStatusUpdate")
+                    ?: idleStatusEvent
+            mLastChosenFileEvent = getParcelable("mLastChosenFileEvent")
+            mLastChosenDirEvent = getParcelable("mLastChosenDirEvent")
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle?) {
+        super.onSaveInstanceState(outState)
+        // Save data.
+        outState?.run {
+            putParcelable("mLastStatusUpdate", mLastStatusUpdate)
+            putParcelable("mLastChosenFileEvent", mLastChosenFileEvent)
+        }
+    }
+
+    protected fun handleActivityEvent(event: ActivityEvent,
+                                      fragments: List<Fragment>) {
+        // Iterate each attached fragment and, if it implements the right interface,
+        // use it to handle this event.
+        for (fragment in fragments) {
+            if (fragment !is FragmentInterface) continue
+            fragment.handleActivityEvent(event)
         }
     }
 
@@ -121,11 +194,53 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener {
         }
     }
 
+    protected fun startFileChooserActivity(intent: Intent, chooserTitle: String,
+                                           requestCode: Int) {
+        try {
+            val chooserIntent = Intent.createChooser(intent, chooserTitle)
+            startActivityForResult(chooserIntent, requestCode)
+        } catch (ex: ActivityNotFoundException) {
+            // Potentially direct the user to the Market with a Dialog.
+            longToast(getString(R.string.no_file_manager_msg))
+        }
+    }
+
+    override fun showFileChooser() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            type = "text/*"
+            addCategory(Intent.CATEGORY_OPENABLE)
+            addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+
+            // TODO Allow processing of multiple text files.
+            putExtra(Intent.EXTRA_ALLOW_MULTIPLE, false)
+        }
+        val title = getString(R.string.file_chooser_title)
+        startFileChooserActivity(intent, title, FILE_SELECT_CODE)
+    }
+
+    override fun showDirChooser() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+        val title = getString(R.string.dir_chooser_title)
+        startFileChooserActivity(intent, title, DIR_SELECT_CODE)
+    }
+
+    override fun getLastStatusUpdate() = mLastStatusUpdate
+    override fun getLastFileChosenEvent() = mLastChosenFileEvent
+    override fun getLastDirChosenEvent() = mLastChosenDirEvent
+
+    override fun notifyProgress(progress: Int, taskId: Int) {
+        // Inform each compatible fragment of the progress via a status update
+        // event.  Ensure that this runs on the main thread.
+        val event = ActivityEvent.StatusUpdateEvent(progress, taskId)
+        runOnUiThread { handleActivityEvent(event) }
+    }
+
     override fun onActivityResult(requestCode: Int, resultCode: Int,
                                   data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        when (requestCode) {
-            SAMPLE_TEXT_CODE -> {
+        when {
+            requestCode == SAMPLE_TEXT_CODE -> {
                 // Note: Sample text may be available if resultCode is
                 // RESULT_CANCELLED.  Therefore, we do not check resultCode.
                 // This apparent error may be explained by the peculiar nature of
@@ -142,6 +257,39 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener {
 
                 // Dispatch an event with the sample text.
                 val event = ActivityEvent.SampleTextReceivedEvent(sampleText)
+                handleActivityEvent(event)
+            }
+            requestCode == DIR_SELECT_CODE && resultCode == RESULT_OK -> {
+                // Get the Uri of the selected directory, returning early if it is
+                // invalid.
+                val uri = data?.data ?: return
+                val displayName = "<placeholder>"  // FIXME
+                Log.e(TAG, "$uri")
+                // DocumentsContract.
+
+                // Set shared preference and property values.
+                val event = ActivityEvent.ChosenFileEvent(uri, displayName, 0)
+                saveChosenFileData(getSharedPreferences(packageName, MODE_PRIVATE),
+                        CHOSEN_DIR_URI_KEY, CHOSEN_DIR_NAME_KEY, event)
+                mLastChosenDirEvent = event
+
+                // Send a file chosen event.
+                handleActivityEvent(event)
+            }
+            requestCode == FILE_SELECT_CODE && resultCode == RESULT_OK -> {
+                // Get the Uri of the selected file, returning early if it is
+                // invalid.
+                val uri = data?.data ?: return
+                if (!uri.isAccessibleFile(this)) return
+                val displayName = uri.retrieveFileDisplayName(this) ?: return
+
+                // Set shared preference and property values.
+                val event = ActivityEvent.ChosenFileEvent(uri, displayName, 1)
+                saveChosenFileData(getSharedPreferences(packageName, MODE_PRIVATE),
+                        CHOSEN_FILE_URI_KEY, CHOSEN_FILE_NAME_KEY, event)
+                mLastChosenFileEvent = event
+
+                // Send a file chosen event.
                 handleActivityEvent(event)
             }
         }
@@ -164,5 +312,10 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener {
         } catch (e: ActivityNotFoundException) {
             toast(R.string.no_engine_available_message)
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        myApplication.deleteProgressObserver(this)
     }
 }
