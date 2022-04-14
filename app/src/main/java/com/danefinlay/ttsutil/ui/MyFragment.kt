@@ -11,7 +11,6 @@ import org.jetbrains.anko.AlertDialogBuilder
 
 abstract class MyFragment : Fragment(), FragmentInterface {
 
-    // TODO This should be 'Context?'
     protected val Fragment.ctx: Context
         get() = this.requireContext()
 

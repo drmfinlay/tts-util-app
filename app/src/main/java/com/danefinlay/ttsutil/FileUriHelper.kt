@@ -23,7 +23,9 @@ package com.danefinlay.ttsutil
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.provider.MediaStore
+import org.jetbrains.anko.storageManager
 import java.io.InputStream
 import java.io.OutputStream
 
@@ -71,11 +73,11 @@ fun Uri.isAccessibleFile(ctx: Context): Boolean {
  * Get the display name of the file, falling back on the last segment in the path if
  * the display name is not available.
  *
- * Read permission is taken prior to querying for the display name.
+ * Read permission is taken prior to querying for the display name, if requested.
  */
-fun Uri.retrieveFileDisplayName(ctx: Context): String? {
+fun Uri.retrieveFileDisplayName(ctx: Context, takePermission: Boolean): String? {
     // Ensure we have permission to access the display name.
-    takeReadUriPermission(ctx)
+    if (takePermission) takeReadUriPermission(ctx)
 
     // Retrieve the display name, falling back on the URI's last path segment, if
     // there is one.
@@ -93,6 +95,32 @@ fun Uri.retrieveFileDisplayName(ctx: Context): String? {
     return lastPathSegment
 }
 
+
+/**
+ * Return a description of the storage volume containing the resource indicated by
+ * the Uri, if possible.
+ */
+fun Uri.resolveStorageVolumeDescription(ctx: Context): String? {
+    var result: String? = null
+    if (authority?.startsWith("com.android.externalstorage") == true) {
+        result = ctx.getString(R.string.default_output_dir)
+    }
+
+    // Find a matching storage volume using the storage manager, if possible.
+    val pathSegmentParts = lastPathSegment?.split(":")
+    if (pathSegmentParts != null && Build.VERSION.SDK_INT >= 24) {
+        if (pathSegmentParts.first() == "primary") {
+            result = ctx.storageManager.primaryStorageVolume.getDescription(ctx)
+        } else for (volume in ctx.storageManager.storageVolumes) {
+            if (volume.uuid == pathSegmentParts.first()) {
+                result = volume.getDescription(ctx)
+            }
+        }
+    }
+    return result
+}
+
+
 fun Uri.getFileSize(ctx: Context): Long? {
     takeReadUriPermission(ctx)
 
@@ -107,11 +135,12 @@ fun Uri.getFileSize(ctx: Context): Long? {
  * Open an input stream on to the content associated with the URI, assuming content
  * exists.
  *
- * Read permission is taken prior to opening the input stream.
+ * Read permission is taken prior to opening the input stream, if requested.
  */
-fun Uri.openContentInputStream(ctx: Context): InputStream? {
-    // Ensure we have permission to read the content.
-    takeReadUriPermission(ctx)
+fun Uri.openContentInputStream(ctx: Context,
+                               takePermission: Boolean): InputStream? {
+    // Take write permission, if necessary.
+    if (takePermission) takeReadUriPermission(ctx)
 
     // Open an input stream.
     return ctx.contentResolver.openInputStream(this)
@@ -122,11 +151,12 @@ fun Uri.openContentInputStream(ctx: Context): InputStream? {
  * Open an output stream on to the content associated with the URI, assuming content
  * exists.
  *
- * Write permission is taken prior to opening the output stream.
+ * Write permission is taken prior to opening the output stream, if requested.
  */
-fun Uri.openContentOutputStream(ctx: Context): OutputStream? {
-    // Ensure we have permission to write content.
-    takeWriteUriPermission(ctx)
+fun Uri.openContentOutputStream(ctx: Context,
+                                takePermission: Boolean): OutputStream? {
+    // Take write permission, if necessary.
+    if (takePermission) takeWriteUriPermission(ctx)
 
     // Open an output stream.
     return ctx.contentResolver.openOutputStream(this)

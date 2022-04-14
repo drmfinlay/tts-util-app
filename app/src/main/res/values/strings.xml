@@ -93,9 +93,8 @@
     <string name="invalid_dir_dialog_title">Directory not found</string>
     <string name="invalid_dir_dialog_message">The specified output directory could not be found.  Maybe it has been deleted or renamed?\n\nChoose another?</string>
     <string name="write_to_file_alert_title">Write to Wave File</string>
-    <!-- TODO Change these to show the current output directory -->
-    <string name="write_to_file_alert_message_1">The current file is \"%1$s\". The content of this file will be synthesized, written to \"%2$s\" and placed into internal storage.\n\nIs this okay?</string>
-    <string name="write_to_file_alert_message_2">The current content of the text field will be synthesized, written to \"%1$s\" and placed into internal storage.\n\nIs this okay?</string>
+    <string name="write_to_file_alert_message_1">The current file is \"%1$s\". The content of this file will be synthesized, written to \"%2$s\" and placed into %3$s.\n\nIs this okay?</string>
+    <string name="write_to_file_alert_message_2">The current content of the text field will be synthesized, written to \"%1$s\" and placed into %2$s.\n\nIs this okay?</string>
 
     <string name="write_to_file_message_success">The file was successfully synthesized as \"%1$s\".</string>
     <string name="write_to_file_message_failure">Failed to create wave file \"%1$s\".</string>
@@ -106,7 +105,8 @@
     <string name="output_wave_filename">output</string>
     <string name="chosen_file_label">File to read text from:</string>
     <string name="no_file_chosen_dec">*No file chosen*</string>
-    <string name="default_output_dir">internal storage</string>
+    <string name="default_output_dir">Internal shared storage</string>
+    <string name="generic_output_dir">the specified directory</string>
     <string name="file_chooser_title">Select a File…</string>
     <string name="dir_chooser_title">Select a Directory…</string>
     <string name="no_file_manager_msg">No file manager application found.</string>

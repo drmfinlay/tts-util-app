@@ -28,7 +28,7 @@ import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.speech.tts.TextToSpeech.LANG_MISSING_DATA
 import android.support.v4.app.Fragment
-import android.util.Log
+import android.support.v4.provider.DocumentFile
 import com.danefinlay.ttsutil.*
 import org.jetbrains.anko.AlertDialogBuilder
 import org.jetbrains.anko.longToast
@@ -263,9 +263,19 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
                 // Get the Uri of the selected directory, returning early if it is
                 // invalid.
                 val uri = data?.data ?: return
-                val displayName = "<placeholder>"  // FIXME
-                Log.e(TAG, "$uri")
-                // DocumentsContract.
+
+                // Determine the display name.
+                val documentFile = DocumentFile.fromTreeUri(this, uri)
+                val dirName = documentFile?.name ?: ""
+                var displayName = ""
+                if (dirName.length > 0) displayName = """"$dirName""""
+
+                // Use a description of the storage volume instead, if appropriate.
+                if (uri.path?.endsWith(":") == true) {
+                    val volumeDesc = documentFile?.uri
+                            ?.resolveStorageVolumeDescription(this)
+                    if (volumeDesc != null) displayName = volumeDesc
+                }
 
                 // Set shared preference and property values.
                 val event = ActivityEvent.ChosenFileEvent(uri, displayName, 0)
@@ -281,7 +291,8 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
                 // invalid.
                 val uri = data?.data ?: return
                 if (!uri.isAccessibleFile(this)) return
-                val displayName = uri.retrieveFileDisplayName(this) ?: return
+                val displayName = uri.retrieveFileDisplayName(this, true)
+                        ?: return
 
                 // Set shared preference and property values.
                 val event = ActivityEvent.ChosenFileEvent(uri, displayName, 1)

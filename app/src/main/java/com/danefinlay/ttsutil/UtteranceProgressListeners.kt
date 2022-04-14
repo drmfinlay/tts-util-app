@@ -29,10 +29,7 @@ import android.speech.tts.UtteranceProgressListener
 import android.support.annotation.CallSuper
 import android.util.Log
 import org.jetbrains.anko.*
-import java.io.BufferedReader
-import java.io.File
-import java.io.IOException
-import java.io.InputStream
+import java.io.*
 
 abstract class MyUtteranceProgressListener(ctx: Context, val tts: TextToSpeech) :
         UtteranceProgressListener() {
@@ -307,7 +304,8 @@ class SpeakingEventListener(ctx: Context,
 
 class FileSynthesisEventListener(ctx: Context, tts: TextToSpeech,
                                  inputStream: InputStream, inputSize: Long,
-                                 private val outFile: File,
+                                 private val outputStream: OutputStream,
+                                 private val waveFilename: String,
                                  progressObserver: TaskProgressObserver) :
         TTSEventListener(ctx, tts, inputStream, inputSize,
                 TASK_ID_WRITE_FILE, progressObserver) {
@@ -400,7 +398,7 @@ class FileSynthesisEventListener(ctx: Context, tts: TextToSpeech,
             // Join each utterance's wave file into the output file passed to this
             // listener.  Notify the progress observer as files are concatenated.
             try {
-                mSuccess = joinWaveFiles(inWaveFiles, outFile,true,
+                mSuccess = joinWaveFiles(inWaveFiles, outputStream,true,
                         interruptEvent) {
                     p: Int -> observer.notifyProgress(p, taskId)
                 }
@@ -422,7 +420,7 @@ class FileSynthesisEventListener(ctx: Context, tts: TextToSpeech,
         // Display a toast message.
         val messageId = if (mSuccess) R.string.write_to_file_message_success
                         else R.string.write_to_file_message_failure
-        val message = app.getString(messageId, outFile.name)
+        val message = app.getString(messageId, waveFilename)
         displayMessage(message, true)
 
         // Call the super method.

@@ -383,7 +383,7 @@ class InterruptEvent {
  * platforms.
  *
  * @param   inFiles             List of wave files.
- * @param   outFile             Output file where the joined wave file will be written.
+ * @param   outStream           Output stream to which the joined wave file will be written.
  * @param   deleteFiles         Delete each inFile after processing.
  * @param   interruptEvent      Event to check for early returns, i.e., interrupts.
  * @param   progressCallback    Callback function for observing progress out of 100%.
@@ -391,7 +391,7 @@ class InterruptEvent {
  * @exception   IncompatibleWaveFileException   Raised for invalid/incompatible Wave
  * files.
  */
-fun joinWaveFiles(inFiles: List<File>, outFile: File,
+fun joinWaveFiles(inFiles: List<File>, outStream: OutputStream,
                   deleteFiles: Boolean = false,
                   interruptEvent: InterruptEvent? = null,
                   progressCallback: ((progress: Int) -> Unit)? = null): Boolean {
@@ -436,22 +436,22 @@ fun joinWaveFiles(inFiles: List<File>, outFile: File,
             (8 + dataSubChunkSize)
 
     // Open the output file for writing.
-    FileOutputStream(outFile).buffered().use { outStream ->
+    outStream.buffered().use { bOutStream ->
 
         // Write the RIFF header.
-        outStream.write(header.riffChunk.writeToArray(totalChunkSize))
+        bOutStream.write(header.riffChunk.writeToArray(totalChunkSize))
 
         // Write the "fmt " sub-chunk.
-        outStream.write(header.fmtSubChunk.writeToArray())
+        bOutStream.write(header.fmtSubChunk.writeToArray())
 
         // Write the "fact" sub-chunk, if necessary.
         if (header.factSubChunk != null) {
             val newSampleLength = totalChunkSize / header.fmtSubChunk.numChannels
-            outStream.write(header.factSubChunk.writeToArray(newSampleLength))
+            bOutStream.write(header.factSubChunk.writeToArray(newSampleLength))
         }
 
         // Write the data chunk header.
-        outStream.write(header.dataSubChunk.writeToArray(dataSubChunkSize))
+        bOutStream.write(header.dataSubChunk.writeToArray(dataSubChunkSize))
 
         // Return early if appropriate.
         if (interruptEvent?.interrupt == true) return false
@@ -463,7 +463,7 @@ fun joinWaveFiles(inFiles: List<File>, outFile: File,
         // Stream data from each file into the output file.
         inFiles.zip(waveFiles).forEach { (f, wf) ->
             wf.readDataChunk { byte ->
-                outStream.write(byte)
+                bOutStream.write(byte)
             }
 
             // Delete the input file, if necessary.

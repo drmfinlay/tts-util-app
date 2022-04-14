@@ -33,11 +33,10 @@ import android.speech.tts.TextToSpeech
 import android.speech.tts.TextToSpeech.OnInitListener
 import android.speech.tts.TextToSpeech.QUEUE_FLUSH
 import android.support.v4.app.NotificationCompat
+import android.support.v4.provider.DocumentFile
 import android.support.v7.preference.PreferenceManager
 import org.jetbrains.anko.*
-import java.io.ByteArrayInputStream
-import java.io.File
-import java.io.InputStream
+import java.io.*
 import java.util.*
 
 class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
@@ -433,18 +432,40 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
                 currentTaskData = null
             }
         }
+    }
 
+    private inline fun useContentUri(
+            contentUri: Uri?,
+            block: (inStream: InputStream, size: Long) -> Int): Int {
+        // Open an input stream on and retrieve the size of the URI's content,
+        // if possible, and invoke the given function.
+        if (contentUri?.isAccessibleFile(this) == true) {
+            val inStream = contentUri.openContentInputStream(this, true)
+            val fileSize = contentUri.getFileSize(this)
+            if (inStream != null && fileSize != null) {
+                return block(inStream, fileSize)
+            }
+        }
+
+        // The given URI was invalid.
+        return INVALID_FILE_URI
     }
 
     fun speak(inStream: InputStream, size: Long, queueMode: Int): Int {
         val tts = mTTS
 
         // If TTS is not yet ready, return early.
-        if (!ttsReady || tts == null) return TTS_NOT_READY
+        if (!ttsReady || tts == null) {
+            inStream.close()
+            return TTS_NOT_READY
+        }
 
         // If file synthesis is in process, return early.
         // The user must stop the current operation manually.
-        if (fileSynthesisTaskInProgress) return TTS_BUSY
+        if (fileSynthesisTaskInProgress) {
+            inStream.close()
+            return TTS_BUSY
+        }
 
         // Handle QUEUE_FLUSH and QUEUE_DESTROY by clearing the task queue and
         // finalizing the current task.
@@ -471,20 +492,62 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
         return SUCCESS
     }
 
-    fun synthesizeToFile(inputStream: InputStream, size: Long, outFile: File): Int {
+    fun synthesizeToFile(inStream: InputStream, size: Long,
+                         outDirectory: Directory, waveFilename: String): Int {
         val tts = mTTS
 
+        // Verify that *outDirectory* is valid.  If it is, then open an output
+        // stream on the specified wave file.  If it is not, return early.
+        // Note: Directory types are handled separately here because the
+        // DocumentFile.fromFile() method, if used, causes trouble later on.
+        var outStream: OutputStream? = null
+        when (outDirectory) {
+            is Directory.DocumentTree -> {
+                val uri = outDirectory.uri
+
+                // Open an output stream on the specified file and directory.
+                // Return early if the Uri is invalid.
+                val dir = DocumentFile.fromTreeUri(this, uri)
+                if (dir == null || !dir.exists()) {
+                    return INVALID_OUT_DIR
+                }
+
+                // TODO Handle already existing wave files by creating new files:
+                //  '<filename>.wav (1)', <filename>.wav (2), etc.
+                // Create a new wave file, if necessary.
+                var file = dir.findFile(waveFilename)
+                if (file == null) file = dir.createFile("audio/x-wav", waveFilename)
+
+                // If successful, open an output stream on it and invoke the given
+                // function.
+                outStream = file?.uri?.openContentOutputStream(this, false)
+            }
+            is Directory.FileDir -> {
+                val file = File(outDirectory.file, waveFilename)
+                outStream = FileOutputStream(file)
+            }
+        }
+        if (outStream == null) return INVALID_OUT_DIR
+
         // If TTS is not yet ready, return early.
-        if (!ttsReady || tts == null) return TTS_NOT_READY
+        if (!ttsReady || tts == null) {
+            inStream.close()
+            outStream.close()
+            return TTS_NOT_READY
+        }
 
         // If text is currently being read, return early.
         // The user must stop the task manually.
         // This should allow for queueing of file synthesis events.
-        if (readingTaskInProgress) return TTS_BUSY
+        if (readingTaskInProgress) {
+            inStream.close()
+            outStream.close()
+            return TTS_BUSY
+        }
 
         // Initialize the event listener and task data.
-        val listener = FileSynthesisEventListener(this, tts, inputStream, size,
-                outFile, this)
+        val listener = FileSynthesisEventListener(this, tts, inStream, size,
+                outStream, waveFilename, this)
         val taskData = TaskData(TASK_ID_WRITE_FILE, 0, listener)
 
         // If a task is currently in process, enqueue this one.
@@ -505,39 +568,26 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
         return speak(inStream, size, queueMode)
     }
 
-    fun synthesizeToFile(text: String, outFile: File): Int {
+    fun synthesizeToFile(text: String, outDirectory: Directory,
+                         waveFilename: String): Int {
         val inStream = ByteArrayInputStream(text.toByteArray())
-        return synthesizeToFile(inStream, text.length.toLong(), outFile)
+        return synthesizeToFile(inStream, text.length.toLong(), outDirectory,
+                waveFilename)
     }
 
-    private inline fun useUri(
-            uri: Uri?,
-            block: (inStream: InputStream, size: Long) -> Int): Int {
-        // Open an input stream on and retrieve the size of the URI's content,
-        // if possible, and invoke the given function.
-        if (uri?.isAccessibleFile(this) == true) {
-            val inStream = uri.openContentInputStream(this)
-            val fileSize = uri.getFileSize(this)
-            if (inStream != null && fileSize != null) {
-                return block(inStream, fileSize)
-            }
-        }
-
-        // The given URI was invalid.
-        return INVALID_FILE_URI
-    }
-
-    fun speak(uri: Uri?, queueMode: Int): Int {
+    fun speak(contentUri: Uri?, queueMode: Int): Int {
         // Speak the URI content, if possible.
-        return useUri(uri) {
+        return useContentUri(contentUri) {
             inStream, size -> speak(inStream, size, queueMode)
         }
     }
 
-    fun synthesizeToFile(uri: Uri?, outFile: File): Int {
-        // Synthesize speech from the URI content, if possible.
-        return useUri(uri) { inStream, size ->
-            synthesizeToFile(inStream, size, outFile)
+    fun synthesizeToFile(contentUri: Uri?, outDirectory: Directory,
+                         waveFilename: String): Int {
+        // Synthesize speech from the URI content into the specified wave file, if
+        // possible.
+        return useContentUri(contentUri) { inStream, size ->
+            synthesizeToFile(inStream, size, outDirectory, waveFilename)
         }
     }
 
