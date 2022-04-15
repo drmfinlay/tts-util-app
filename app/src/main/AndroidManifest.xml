@@ -92,7 +92,7 @@
             android:label="@string/read_text_fragment_label"
             android:exported="true"
             android:taskAffinity=""
-            android:theme="@android:style/Theme.NoDisplay">
+            android:theme="@style/Theme.AppCompat.DayNight">
             <intent-filter>
                 <action android:name="android.intent.action.PROCESS_TEXT" />
 
