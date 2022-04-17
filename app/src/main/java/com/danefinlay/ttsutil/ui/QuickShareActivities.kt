@@ -21,8 +21,10 @@
 package com.danefinlay.ttsutil.ui
 
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
+import android.support.annotation.RequiresApi
 import com.danefinlay.ttsutil.ACTION_READ_CLIPBOARD
 import com.danefinlay.ttsutil.TTSIntentService
 import com.danefinlay.ttsutil.TTS_NOT_READY
@@ -76,6 +78,16 @@ class ReadTextActivity : QuickShareActivity() {
         val intent = intent ?: return
         if (intent.action == Intent.ACTION_SEND) {
             val text = intent.getStringExtra(Intent.EXTRA_TEXT)
+            TTSIntentService.startActionReadText(this, text)
+        }
+    }
+}
+class TextActionActivity : QuickShareActivity() {
+    @RequiresApi(Build.VERSION_CODES.M)
+    override fun startServiceAction() {
+        val intent = intent ?: return
+        if (intent.action == Intent.ACTION_PROCESS_TEXT) {
+            val text = intent.getStringExtra(Intent.EXTRA_PROCESS_TEXT)
             TTSIntentService.startActionReadText(this, text)
         }
     }
