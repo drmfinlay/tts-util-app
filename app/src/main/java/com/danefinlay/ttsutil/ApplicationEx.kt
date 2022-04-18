@@ -370,6 +370,9 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
     }
 
     private fun postNotification(progress: Int, taskId: Int) {
+        // Do nothing if the given task ID is, e.g., TASK_ID_IDLE.
+        if (taskId !in notificationTasks) return
+
         // Initialize the notification builder using the given task ID.
         var builder: NotificationCompat.Builder? = notificationBuilder
         if (builder == null) {
@@ -396,8 +399,8 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
 
     @Synchronized
     override fun notifyProgress(progress: Int, taskId: Int) {
-        // Post a notification, if necessary.
-        if (notificationsEnabled && taskId in notificationTasks) {
+        // Post a progress notification, if necessary.
+        if (notificationsEnabled) {
             postNotification(progress, taskId)
         }
 
