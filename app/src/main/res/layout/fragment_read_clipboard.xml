@@ -102,7 +102,6 @@
             android:layout_height="wrap_content"
             android:src="@drawable/ic_outline_folder_open_24"
             android:contentDescription="@string/choose_dir_button"
-            android:tooltipText="@string/choose_dir_button"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toEndOf="@+id/paste_button" />
 
