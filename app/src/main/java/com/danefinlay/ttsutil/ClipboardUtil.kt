@@ -51,7 +51,7 @@ fun Context.getClipboardText(): String? {
     for (i in 0 until clipData.itemCount) {
         val item = clipData.getItemAt(i)
         val itemText = item?.text
-        if (!itemText.isNullOrBlank()) {
+        if (itemText != null) {
             text = itemText.toString()
             break
         }
