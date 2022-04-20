@@ -23,7 +23,9 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="@dimen/fragment_margin"
+    android:paddingVertical="@dimen/fragment_margin">
 
     <TextView
         android:id="@+id/fragment_description"
