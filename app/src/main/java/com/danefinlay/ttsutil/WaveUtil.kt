@@ -430,9 +430,9 @@ fun joinWaveFiles(inFiles: List<File>, outStream: OutputStream,
     }
     val header = wf1.header
     val fmtSubChunkSize = header.fmtSubChunk.ckSize
-    val factSubChunkSize = header.factSubChunk?.ckSize ?: 0
+    val factSubChunkSize = header.factSubChunk?.ckSize
     val totalChunkSize = 4 + (8 + fmtSubChunkSize) +
-            (if (factSubChunkSize > 0) 8 + factSubChunkSize else 0) +
+            (if (factSubChunkSize != null) 8 + factSubChunkSize else 0) +
             (8 + dataSubChunkSize)
 
     // Open the output file for writing.
