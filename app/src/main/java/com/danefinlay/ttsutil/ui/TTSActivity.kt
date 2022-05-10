@@ -43,27 +43,43 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
         ActivityInterface, TaskProgressObserver {
 
     private val idleStatusEvent =
-            ActivityEvent.StatusUpdateEvent(100, TASK_ID_IDLE)
+            ActivityEvent.StatusUpdateEvent(100, TASK_ID_IDLE, 0)
 
     protected var mLastStatusUpdate = idleStatusEvent
     protected var mLastChosenDirEvent: ActivityEvent.ChosenFileEvent? = null
     protected var mLastChosenFileEvent: ActivityEvent.ChosenFileEvent? = null
 
-    private fun retrieveChosenFileData(prefs: SharedPreferences,
-                                       uriKey: String, nameKey: String,
-                                       fileType: Int): ActivityEvent.ChosenFileEvent? {
-        val uriString = prefs.getString(uriKey, null)
-        val displayName = prefs.getString(nameKey, null)
-        if (uriString == null || displayName == null) return null
-        val uri = Uri.parse(uriString)
-        return ActivityEvent.ChosenFileEvent(uri, displayName, fileType)
+    private fun retrieveChosenFileData(prefs: SharedPreferences, uriKey: String,
+                                       nameKey: String, fileType: Int):
+            ActivityEvent.ChosenFileEvent? {
+        // Retrieve the saved chosen file data.
+        val uriPrefString = prefs.getString(uriKey, "")
+        val displayNamePrefString = prefs.getString(nameKey, null)
+        if (uriPrefString == null || displayNamePrefString == null) return null
+
+        // Note: The Uri and display names are delimited by null characters to
+        // This is done to avoid mangling; filenames cannot typically include this
+        // character.
+        val uri = uriPrefString.split(Char.MIN_VALUE).filter { it.length > 0 }
+                .map { Uri.parse(it) }
+        val displayNames = displayNamePrefString.split(Char.MIN_VALUE)
+                .filter { it.length > 0 }
+        return ActivityEvent.ChosenFileEvent(uri, displayNames, fileType)
     }
 
     private fun saveChosenFileData(prefs: SharedPreferences, uriKey: String,
-                                   nameKey: String, event: ActivityEvent.ChosenFileEvent) {
+                                   nameKey: String,
+                                   event: ActivityEvent.ChosenFileEvent) {
+        // Save chosen file data delimited by null characters.
+        val uriString = event.uriList.fold("") { acc, uri ->
+            acc + uri.toString() + Char.MIN_VALUE
+        }
+        val displayNamesString = event.displayNameList.fold("") { acc, s ->
+            acc + s + Char.MIN_VALUE
+        }
         prefs.edit()
-                .putString(uriKey, event.uri.toString())
-                .putString(nameKey, event.displayName)
+                .putString(uriKey, uriString)
+                .putString(nameKey, displayNamesString)
                 .apply()  // apply() is asynchronous.
     }
 
@@ -84,10 +100,10 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
         if (savedInstanceState == null) {
             val prefs = getSharedPreferences(packageName, MODE_PRIVATE)
             val event1 = retrieveChosenFileData(prefs, CHOSEN_DIR_URI_KEY,
-                    CHOSEN_DIR_NAME_KEY, 0)
+                    CHOSEN_DIR_NAME_KEY, DIR_SELECT_CODE)
             if (event1 != null) mLastChosenDirEvent = event1
             val event2 = retrieveChosenFileData(prefs, CHOSEN_FILE_URI_KEY,
-                    CHOSEN_FILE_NAME_KEY, 1)
+                    CHOSEN_FILE_NAME_KEY, FILE_SELECT_CODE)
             if (event2 != null) mLastChosenFileEvent = event2
             return
         }
@@ -211,9 +227,7 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
             addCategory(Intent.CATEGORY_OPENABLE)
             addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-
-            // TODO Allow processing of multiple text files.
-            putExtra(Intent.EXTRA_ALLOW_MULTIPLE, false)
+            putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
         }
         val title = getString(R.string.file_chooser_title)
         startFileChooserActivity(intent, title, FILE_SELECT_CODE)
@@ -229,10 +243,11 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
     override fun getLastFileChosenEvent() = mLastChosenFileEvent
     override fun getLastDirChosenEvent() = mLastChosenDirEvent
 
-    override fun notifyProgress(progress: Int, taskId: Int) {
+    override fun notifyProgress(progress: Int, taskId: Int, remainingTasks: Int) {
         // Inform each compatible fragment of the progress via a status update
         // event.  Ensure that this runs on the main thread.
-        val event = ActivityEvent.StatusUpdateEvent(progress, taskId)
+        val event = ActivityEvent.StatusUpdateEvent(progress, taskId,
+                remainingTasks)
         runOnUiThread { handleActivityEvent(event) }
     }
 
@@ -266,9 +281,13 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
 
                 // Determine the display name.
                 val documentFile = DocumentFile.fromTreeUri(this, uri)
-                val dirName = documentFile?.name ?: ""
-                var displayName = ""
-                if (dirName.length > 0) displayName = """"$dirName""""
+                val dirName = documentFile?.name
+                var displayName: String
+                if (dirName == null) {
+                    displayName = getString(R.string.generic_output_dir)
+                } else {
+                    displayName = """"$dirName""""
+                }
 
                 // Use a description of the storage volume instead, if appropriate.
                 if (uri.path?.endsWith(":") == true) {
@@ -278,7 +297,8 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
                 }
 
                 // Set shared preference and property values.
-                val event = ActivityEvent.ChosenFileEvent(uri, displayName, 0)
+                val event = ActivityEvent.ChosenFileEvent(listOf(uri),
+                        listOf(displayName), requestCode)
                 saveChosenFileData(getSharedPreferences(packageName, MODE_PRIVATE),
                         CHOSEN_DIR_URI_KEY, CHOSEN_DIR_NAME_KEY, event)
                 mLastChosenDirEvent = event
@@ -287,15 +307,32 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
                 handleActivityEvent(event)
             }
             requestCode == FILE_SELECT_CODE && resultCode == RESULT_OK -> {
-                // Get the Uri of the selected file, returning early if it is
+                // Get the Uri of the selected file(s), returning early if any are
                 // invalid.
-                val uri = data?.data ?: return
-                if (!uri.isAccessibleFile(this)) return
-                val displayName = uri.retrieveFileDisplayName(this, true)
-                        ?: return
+                if (data == null) return
+                val uriList = mutableListOf<Uri>()
+                val clipData = data.clipData
+                if (clipData == null) {
+                    val uri = data.data
+                    if (uri != null) uriList.add(uri)
+                } else {
+                    for (i in 0 until clipData.itemCount) {
+                        uriList.add(clipData.getItemAt(i).uri)
+                    }
+                }
+
+                // Set display names for each Uri.
+                val displayNames = mutableListOf<String>()
+                val fallbackName = getString(R.string.fallback_filename)
+                for (uri in uriList) {
+                    val displayName = uri.retrieveFileDisplayName(this, true)
+                    displayNames.add(displayName ?: fallbackName)
+                }
+
+                val event = ActivityEvent.ChosenFileEvent(uriList, displayNames,
+                        requestCode)
 
                 // Set shared preference and property values.
-                val event = ActivityEvent.ChosenFileEvent(uri, displayName, 1)
                 saveChosenFileData(getSharedPreferences(packageName, MODE_PRIVATE),
                         CHOSEN_FILE_URI_KEY, CHOSEN_FILE_NAME_KEY, event)
                 mLastChosenFileEvent = event

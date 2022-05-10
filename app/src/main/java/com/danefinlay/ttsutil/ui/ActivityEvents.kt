@@ -25,26 +25,29 @@ import android.os.Parcel
 import android.os.Parcelable
 
 sealed class ActivityEvent : Parcelable {
-    class ChosenFileEvent(val uri: Uri,
-                          val displayName: String,
+    class ChosenFileEvent(val uriList: List<Uri>,
+                          val displayNameList: List<String>,
                           val fileType: Int) : ActivityEvent() {
         constructor(parcel: Parcel) : this(
-                parcel.readParcelable(Uri::class.java.classLoader)!!,
-                parcel.readString()!!,
-                parcel.readInt()
-        )
+                parcel.createTypedArrayList(Uri.CREATOR)!!,
+                parcel.createStringArrayList()!!,
+                parcel.readInt())
 
         override fun writeToParcel(parcel: Parcel, flags: Int) {
-            parcel.writeParcelable(uri, flags)
-            parcel.writeString(displayName)
+            parcel.writeTypedList(uriList)
+            parcel.writeStringList(displayNameList)
             parcel.writeInt(fileType)
         }
+
+        val firstUri: Uri = uriList.first()
+        val firstDisplayName: String = displayNameList.first()
 
         override fun describeContents(): Int = 0
 
         companion object CREATOR : Parcelable.Creator<ChosenFileEvent> {
             override fun createFromParcel(parcel: Parcel): ChosenFileEvent =
                     ChosenFileEvent(parcel)
+
             override fun newArray(size: Int): Array<ChosenFileEvent?> =
                     arrayOfNulls(size)
         }
@@ -63,12 +66,15 @@ sealed class ActivityEvent : Parcelable {
     }
 
     class StatusUpdateEvent(val progress: Int,
-                            val taskId: Int) : ActivityEvent() {
-        constructor(parcel: Parcel) : this(parcel.readInt(), parcel.readInt())
+                            val taskId: Int,
+                            val remainingTasks: Int) : ActivityEvent() {
+        constructor(parcel: Parcel) :
+                this(parcel.readInt(), parcel.readInt(), parcel.readInt())
 
         override fun writeToParcel(parcel: Parcel, flags: Int) {
             parcel.writeInt(progress)
             parcel.writeInt(taskId)
+            parcel.writeInt(remainingTasks)
         }
 
         override fun describeContents(): Int = 0

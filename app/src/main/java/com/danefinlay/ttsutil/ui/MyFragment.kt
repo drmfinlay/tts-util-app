@@ -11,10 +11,10 @@ import org.jetbrains.anko.AlertDialogBuilder
 
 abstract class MyFragment : Fragment(), FragmentInterface {
 
-    protected val Fragment.ctx: Context
+    protected val ctx: Context
         get() = this.requireContext()
 
-    protected val Fragment.myApplication: ApplicationEx
+    protected val myApplication: ApplicationEx
         get() = ctx.applicationContext as ApplicationEx
 
     protected val activityInterface: ActivityInterface?
@@ -23,6 +23,7 @@ abstract class MyFragment : Fragment(), FragmentInterface {
     private var tempStoragePermissionBlock: (granted: Boolean) -> Unit = {}
 
     abstract fun updateStatusField(text: String)
+    abstract fun updateTaskCountField(count: Int)
 
     protected fun onStatusUpdate(event: ActivityEvent.StatusUpdateEvent) {
         val statusTextId = when (event.taskId) {
@@ -47,8 +48,11 @@ abstract class MyFragment : Fragment(), FragmentInterface {
         }
         statusText = getString(R.string.status_text_field, statusText)
 
-        // Update the text field.
+        // Update the status text field.
         updateStatusField(statusText)
+
+        // Update the task count field.
+        updateTaskCountField(event.remainingTasks)
     }
 
     override fun handleActivityEvent(event: ActivityEvent) {

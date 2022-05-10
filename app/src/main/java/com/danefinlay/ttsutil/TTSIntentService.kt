@@ -80,7 +80,7 @@ class TTSIntentService : IntentService("TTSIntentService") {
         }
 
         // Speak *text* and handle the result.
-        val result = myApplication.speak(text, QUEUE_ADD)
+        val result = myApplication.enqueueReadInputTask(text, QUEUE_ADD)
         myApplication.handleTTSOperationResult(result)
     }
 
@@ -137,9 +137,9 @@ class TTSIntentService : IntentService("TTSIntentService") {
         myApplication.stopSpeech()
 
         // Retrieve the ID of the notification to dismiss, if any.
-        val notificationId = intent.getIntExtra("notificationId", -1)
-        if (notificationId == -1) return
-        myApplication.notificationManager.cancel(notificationId)
+        val taskId = intent.getIntExtra("taskId", -1)
+        if (taskId == -1) return
+        myApplication.notificationManager.cancel(taskId)
     }
 
     companion object {
@@ -203,9 +203,9 @@ class TTSIntentService : IntentService("TTSIntentService") {
          * @see IntentService
          */
         @JvmStatic
-        fun startActionStopSpeaking(ctx: Context, notificationId: Int) =
+        fun startActionStopSpeaking(ctx: Context, taskId: Int) =
                 startAction(ctx, ACTION_STOP_SPEAKING) {
-                    putExtra("notificationId", notificationId)
+                    putExtra("taskId", taskId)
                 }
     }
 }

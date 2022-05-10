@@ -34,33 +34,31 @@ import java.lang.RuntimeException
 val notificationTasks = listOf(TASK_ID_READ_TEXT, TASK_ID_WRITE_FILE,
         TASK_ID_PROCESS_FILE)
 
-fun getNotificationBuilder(ctx: Context, notificationId: Int):
-        NotificationCompat.Builder {
-    // Retrieve the title and text based on the notification ID.
-    val titleId: Int
-    val textId: Int
-    when (notificationId) {
-        TASK_ID_READ_TEXT -> {
-            titleId = R.string.speaking_notification_title
-            textId = R.string.speaking_notification_text
-        }
-        TASK_ID_WRITE_FILE -> {
-            titleId = R.string.synthesis_notification_title
-            textId = R.string.synthesis_notification_text
-        }
-        TASK_ID_PROCESS_FILE -> {
-            titleId = R.string.post_synthesis_notification_title
-            textId = R.string.post_synthesis_notification_text
-        }
-        else -> {
-            throw RuntimeException("Invalid notification ID $notificationId")
-        }
+fun getNotificationTitle(ctx: Context, taskId: Int): String {
+    val stringId = when (taskId) {
+        TASK_ID_READ_TEXT -> R.string.speaking_notification_title
+        TASK_ID_WRITE_FILE -> R.string.synthesis_notification_title
+        TASK_ID_PROCESS_FILE -> R.string.post_synthesis_notification_title
+        else -> throw RuntimeException("Invalid task ID $taskId")
     }
+    return ctx.getString(stringId)
+}
 
+fun getNotificationText(ctx: Context, taskId: Int, remainingTasks: Int): String {
+    val textId = when (taskId) {
+        TASK_ID_READ_TEXT, TASK_ID_WRITE_FILE, TASK_ID_PROCESS_FILE ->
+            R.string.progress_notification_text
+        else -> throw RuntimeException("Invalid task ID $taskId")
+    }
+    return ctx.getString(textId, remainingTasks,
+            ctx.resources.getQuantityString(R.plurals.tasks, remainingTasks))
+}
+
+fun getNotificationBuilder(ctx: Context, taskId: Int): NotificationCompat.Builder {
     // Create an Intent and PendingIntent for when the user clicks on the
     // notification. This should just open/re-open MainActivity.
     val onClickIntent = Intent(ctx, MainActivity::class.java).apply {
-        putExtra("notificationId", notificationId)
+        putExtra("taskId", taskId)
         addFlags(START_ACTIVITY_FLAGS)
     }
     val contentPendingIntent = PendingIntent.getActivity(
@@ -69,7 +67,7 @@ fun getNotificationBuilder(ctx: Context, notificationId: Int):
     // Just stop speaking for the delete intent (notification dismissal).
     val onDeleteIntent = Intent(ctx, TTSIntentService::class.java).apply {
         action = ACTION_STOP_SPEAKING
-        putExtra("notificationId", notificationId)
+        putExtra("taskId", taskId)
     }
     val onDeletePendingIntent = PendingIntent.getService(ctx,
             0, onDeleteIntent, 0)
@@ -93,10 +91,6 @@ fun getNotificationBuilder(ctx: Context, notificationId: Int):
     return notificationBuilder.apply {
         // Set the icon for the notification
         setSmallIcon(android.R.drawable.ic_btn_speak_now)
-
-        // Set the title and text.
-        setContentTitle(ctx.getString(titleId))
-        setContentText(ctx.getString(textId))
 
         // Set pending intents.
         setContentIntent(contentPendingIntent)

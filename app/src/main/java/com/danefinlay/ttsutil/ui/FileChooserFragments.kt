@@ -51,8 +51,14 @@ abstract class FileChooserFragment : MyFragment() {
 
     protected fun onFileChosen(event: ActivityEvent.ChosenFileEvent) {
         // Set the property and display name text field.
-        var text = event.displayName
+        var text = event.firstDisplayName
         if (text.isEmpty()) text = getString(R.string.no_file_chosen_dec)
+        else if (event.displayNameList.size > 1) {
+            val fileCount = event.displayNameList.size - 1
+            val fileWord = resources.getQuantityString(R.plurals.files, fileCount)
+            text = getString(R.string.multiple_chosen_files, text, fileCount,
+                    fileWord)
+        }
         find<TextView>(R.id.chosen_filename).text = text
     }
 
@@ -60,24 +66,26 @@ abstract class FileChooserFragment : MyFragment() {
         super.handleActivityEvent(event)
         when (event) {
             is ActivityEvent.ChosenFileEvent -> {
-                if (event.fileType == 1) onFileChosen(event)
+                if (event.fileType == FILE_SELECT_CODE) onFileChosen(event)
             }
             else -> {}
         }
     }
 
-    protected fun buildInvalidFileAlertDialog(uri: Uri?): AlertDialogBuilder {
+    protected fun buildInvalidFileAlertDialog(uriList: List<Uri>?):
+            AlertDialogBuilder {
         // Use a different title and message based on whether or not a file has been
         // chosen already.
         val title: Int; val message: Int; val positive: Int; val negative: Int
-        if (uri == null) {
+        if (uriList == null || uriList.size == 0) {
             title = R.string.no_file_chosen_dialog_title
             message = R.string.no_file_chosen_dialog_message
             positive = R.string.alert_positive_message_2
             negative = R.string.alert_negative_message_2
         } else {
             title = R.string.invalid_file_dialog_title
-            message = R.string.invalid_file_dialog_message
+            if (uriList.size == 1) message = R.string.invalid_file_dialog_message_1
+            else message = R.string.invalid_file_dialog_message_2
             positive = R.string.alert_positive_message_1
             negative = R.string.alert_negative_message_1
         }
@@ -119,47 +127,67 @@ class ReadFilesFragment : FileChooserFragment() {
         find<TextView>(R.id.status_text_field).text = text
     }
 
+    override fun updateTaskCountField(count: Int) {
+        val text = getString(R.string.remaining_tasks_field, count)
+        find<TextView>(R.id.remaining_tasks_field).text = text
+    }
+
     private fun onClickPlay() {
-        // Speak from the chosen file's URI and handle the result.
-        val uri = activityInterface?.getLastFileChosenEvent()?.uri
-        when (val result = myApplication.speak(uri, QUEUE_ADD)) {
-            INVALID_FILE_URI -> buildInvalidFileAlertDialog(uri).show()
-            else -> myApplication.handleTTSOperationResult(result)
+        // Start reading from the chosen files in order, stopping on failure.
+        val event = activityInterface?.getLastFileChosenEvent()
+        val uriList = event?.uriList
+        if (uriList == null || uriList.size == 0) {
+            buildInvalidFileAlertDialog(listOf()).show()
+        } else for (uri in uriList) {
+            val result = myApplication.enqueueReadInputTask(uri, QUEUE_ADD)
+            when (result) {
+                UNAVAILABLE_INPUT_SRC -> buildInvalidFileAlertDialog(uriList).show()
+                else -> myApplication.handleTTSOperationResult(result)
+            }
+            if (result != SUCCESS) break
         }
     }
 
-    private fun synthesizeTextToFile(fileUri: Uri?, directory: Directory,
-                                     waveFilename: String, storageAccess: Boolean) {
+    private fun synthesizeTextToFile(event: ActivityEvent.ChosenFileEvent,
+                                     directory: Directory, storageAccess: Boolean) {
         if (!storageAccess) {
             // Show a dialog if we don't have read/write storage permission.
             // and return here if permission is granted.
             val permissionBlock: (Boolean) -> Unit = { granted ->
                 if (granted) {
-                    synthesizeTextToFile(fileUri, directory, waveFilename, granted)
+                    synthesizeTextToFile(event, directory, granted)
                 }
             }
             buildNoPermissionAlertDialog(permissionBlock).show()
             return
         }
 
-        // Start synthesizing the file's content into a wave file and handle the
-        // result.
-        val result = myApplication.synthesizeToFile(fileUri, directory,
-                waveFilename)
-        when (result) {
-            INVALID_FILE_URI -> buildInvalidFileAlertDialog(fileUri).show()
-            INVALID_OUT_DIR -> buildInvalidDirAlertDialog().show()
-            else -> myApplication.handleTTSOperationResult(result)
+        // Start synthesizing from the chosen files in order, stopping on failure.
+        val fileData = event.uriList.zip(event.displayNameList)
+        if (fileData.size == 0) {
+            buildInvalidFileAlertDialog(event.uriList).show()
+        } else for ((uri, displayName) in fileData) {
+            val waveFilename = "$displayName.wav"
+            val result = myApplication.enqueueFileSynthesisTasks(uri, directory,
+                    waveFilename)
+            when (result) {
+                UNAVAILABLE_INPUT_SRC -> buildInvalidFileAlertDialog(event.uriList)
+                        .show()
+                UNAVAILABLE_OUT_DIR -> buildInvalidDirAlertDialog().show()
+                else -> myApplication.handleTTSOperationResult(result)
+            }
+            if (result != SUCCESS) break
         }
     }
 
     private fun onClickSave() {
-        // Verify that the chosen file is can be read.  If it cannot, inform the
-        // user by showing an appropriate dialog.
+        // Verify that the chosen file can be read.  If it cannot, inform the user
+        // by showing an appropriate dialog.
         val event1 = activityInterface?.getLastFileChosenEvent()
-        val fileUri = event1?.uri
+        val fileUri = event1?.firstUri
         if (fileUri?.isAccessibleFile(ctx) != true) {
-            buildInvalidFileAlertDialog(fileUri).show()
+            val uriList = if (fileUri == null) null else listOf(fileUri)
+            buildInvalidFileAlertDialog(uriList).show()
             return
         }
 
@@ -167,29 +195,34 @@ class ReadFilesFragment : FileChooserFragment() {
         // "external" storage is used.
         val event2 = activityInterface?.getLastDirChosenEvent()
         val directory: Directory = if (event2 != null) {
-            Directory.DocumentTree(event2.uri)
+            Directory.DocumentFile(event2.firstUri)
         } else {
-            Directory.FileDir(Environment.getExternalStorageDirectory())
+            Directory.File(Environment.getExternalStorageDirectory())
         }
 
-        // Determine the names of the directory and wave file.
-        val filename = event1.displayName
-        val waveFilename = "$filename.wav"
-        val dirDisplayName: String = when (event2?.displayName) {
-            null -> getString(R.string.default_output_dir)
-            "" -> getString(R.string.generic_output_dir)
-            else -> event2.displayName
-        }
+        // Determine the names of the wave file and directory.
+        val filename = event1.firstDisplayName
+        val dirDisplayName: String = event2?.firstDisplayName
+                ?: getString(R.string.default_output_dir)
 
         // Build and display an appropriate alert dialog.
         AlertDialogBuilder(ctx).apply {
             title(R.string.write_to_file_alert_title)
-            message(getString(R.string.write_to_file_alert_message_1,
-                    filename, waveFilename, dirDisplayName))
+            if (event1.displayNameList.size == 1) {
+                val waveFilename = "$filename.wav"
+                message(getString(R.string.write_to_file_alert_message_1,
+                        filename, waveFilename, dirDisplayName))
+            } else {
+                val fileCount = event1.displayNameList.size - 1
+                val fileWord = resources.getQuantityString(R.plurals.files,
+                        fileCount)
+                message(getString(R.string.write_to_file_alert_message_2,
+                        filename, fileCount, fileWord, dirDisplayName))
+            }
             positiveButton(R.string.alert_positive_message_2) {
                 // Ask the user for write permission if necessary.
                 withStoragePermission { granted ->
-                    synthesizeTextToFile(fileUri, directory, waveFilename, granted)
+                    synthesizeTextToFile(event1, directory, granted)
                 }
             }
             negativeButton(R.string.alert_negative_message_2)

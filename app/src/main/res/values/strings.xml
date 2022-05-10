@@ -30,7 +30,7 @@
     <string name="read_clipboard_fragment_label">Read clipboard</string>
     <string name="read_clipboard_fragment_desc">Press the \'Play\' button to have clipboard text spoken.  The \'Save\' button may be used to synthesize and write the text to a wave file.\n\nThe text field can be updated with the current clipboard text by pressing the \'Paste\' button.</string>
     <string name="read_files_fragment_label">Read to/from files</string>
-    <string name="read_files_fragment_desc">This part of the application may be used to read text files or synthesize wave files using text-to-speech.\n\nChoose a text file from storage and press the \'Play\' button to have its content read.  Press the \'Save\' button to have it synthesized and written to a wave file instead.</string>
+    <string name="read_files_fragment_desc">This part of the application may be used to read text files and synthesize wave files using text-to-speech.\n\nChoose one or more text files from storage and press the \'Play\' button to have their contents read in order.  Press the \'Save\' button to have the text synthesized and written to wave files instead.</string>
     <string name="settings_fragment_label">Settings</string>
     <string name="edit_read_activity_label">Edit &amp; read text</string>
     <string name="about_activity_label">About TTS Util</string>
@@ -42,6 +42,7 @@
     <string name="status_text_writing_file">Writing file %1$s</string>
     <string name="status_text_processing_file">Processing file %1$s</string>
     <string name="status_text_task_stopped">stopped</string>
+    <string name="remaining_tasks_field">Remaining tasks: %1$d</string>
 
     <!--Button strings.-->
     <string name="play_button">Play text</string>
@@ -83,19 +84,18 @@
     <string name="grant_permission_positive_message">Grant permission</string>
     <string name="no_tts_data_alert_title">Missing Language TTS Data</string>
     <string name="no_tts_data_alert_message">Data for the language %1$s is missing.\n\nWould you like to open the %2$s settings screen to download it?</string>
-    <string name="tts_not_ready_message">Text-to-speech is not ready. Try again in a moment.</string>
-    <string name="tts_busy_message">Cannot perform operation: %1$s.</string>
     <string name="no_engine_available_message">No text-to-speech engine is available.</string>
     <string name="invalid_file_dialog_title">File Not Found</string>
-    <string name="invalid_file_dialog_message">The chosen file could not be found. Maybe it has been deleted or renamed?\n\nChoose another?</string>
+    <string name="invalid_file_dialog_message_1">The chosen file could not be found. Maybe it has been deleted or renamed?\n\nWould you like to choose another one?</string>
+    <string name="invalid_file_dialog_message_2">One or more of the chosen files could not be found. Maybe they have been deleted or renamed?\n\nWould you like to select other files?</string>
     <string name="no_file_chosen_dialog_title">No File Chosen</string>
     <string name="no_file_chosen_dialog_message">No file has been chosen.\n\nWould you like to choose one?</string>
     <string name="invalid_dir_dialog_title">Directory not found</string>
     <string name="invalid_dir_dialog_message">The specified output directory could not be found.  Maybe it has been deleted or renamed?\n\nChoose another?</string>
     <string name="write_to_file_alert_title">Write to Wave File</string>
     <string name="write_to_file_alert_message_1">The current file is \"%1$s\". The content of this file will be synthesized, written to \"%2$s\" and placed into %3$s.\n\nIs this okay?</string>
-    <string name="write_to_file_alert_message_2">The current content of the text field will be synthesized, written to \"%1$s\" and placed into %2$s.\n\nIs this okay?</string>
-
+    <string name="write_to_file_alert_message_2">The content of \"%1$s\" and %2$d other %3$s will be synthesized into wave files and placed into %4$s.\n\nIs this okay?</string>
+    <string name="write_to_file_alert_message_3">The current content of the text field will be synthesized, written to \"%1$s\" and placed into %2$s.\n\nIs this okay?</string>
     <string name="write_to_file_message_success">The file was successfully synthesized as \"%1$s\".</string>
     <string name="write_to_file_message_failure">Failed to create wave file \"%1$s\".</string>
     <string name="no_storage_permission_title">No Write Storage Permission</string>
@@ -103,10 +103,12 @@
 
     <!--File-related strings.-->
     <string name="output_wave_filename">output</string>
-    <string name="chosen_file_label">File to read text from:</string>
+    <string name="chosen_file_label">File(s) to read text from:</string>
     <string name="no_file_chosen_dec">*No file chosen*</string>
+    <string name="multiple_chosen_files">%1$s and %2$d other %3$s</string>
     <string name="default_output_dir">Internal shared storage</string>
     <string name="generic_output_dir">the specified directory</string>
+    <string name="fallback_filename">&lt;file&gt;</string>
     <string name="file_chooser_title">Select a File…</string>
     <string name="dir_chooser_title">Select a Directory…</string>
     <string name="no_file_manager_msg">No file manager application found.</string>
@@ -122,13 +124,15 @@
 
     <!--Notification-related strings.-->
     <string name="speaking_notification_title">Speech in Progress</string>
-    <string name="speaking_notification_text">Text-to-speech output in progress…</string>
     <string name="synthesis_notification_title">File Synthesis in Progress</string>
-    <string name="synthesis_notification_text">Text-to-speech synthesis in progress…</string>
-    <string name="post_synthesis_notification_title">Post Processing in Progress</string>
-    <string name="post_synthesis_notification_text">Processing synthesized wave file(s)…</string>
+    <string name="post_synthesis_notification_title">Processing synthesized wave file</string>
+    <string name="progress_notification_text">%1$d %2$s remaining…</string>
 
-    <!--Text-to-speech error message strings.-->
+    <!--Text-to-speech message strings.-->
+    <string name="tts_not_ready_message">Text-to-speech is not ready. Try again in a moment.</string>
+    <string name="tts_busy_message">Cannot perform operation: %1$s.</string>
+    <string name="invalid_out_dir_message">The specified output directory could not be found.</string>
+    <string name="unavailable_input_src_message">Cannot read from the selected file.</string>
     <string name="synthesis_error_msg_generic">There was an error during text synthesis.</string>
     <string name="synthesis_error_msg_synthesis">The text-to-speech engine failed to synthesize the text.</string>
     <string name="synthesis_error_msg_service">The text-to-speech service failed unexpectedly.</string>

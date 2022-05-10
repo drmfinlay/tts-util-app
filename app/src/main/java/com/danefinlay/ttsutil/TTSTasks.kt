@@ -27,7 +27,6 @@ import android.speech.tts.TextToSpeech
 import android.speech.tts.TextToSpeech.*
 import android.speech.tts.UtteranceProgressListener
 import android.support.annotation.CallSuper
-import android.util.Log
 import org.jetbrains.anko.*
 import java.io.*
 
@@ -35,9 +34,6 @@ abstract class MyUtteranceProgressListener(ctx: Context, val tts: TextToSpeech) 
         UtteranceProgressListener() {
 
     val app = ctx.applicationContext as ApplicationEx
-
-    @Volatile
-    protected var finalize: Boolean = false
 
     fun displayMessage(string: String, long: Boolean) {
         app.runOnUiThread {
@@ -54,8 +50,9 @@ abstract class MyUtteranceProgressListener(ctx: Context, val tts: TextToSpeech) 
     }
 
     @CallSuper
-    open fun begin() {
+    open fun begin(): Boolean {
         tts.setOnUtteranceProgressListener(this)
+        return true
     }
 
     override fun onError(utteranceId: String?) { // deprecated
@@ -63,23 +60,22 @@ abstract class MyUtteranceProgressListener(ctx: Context, val tts: TextToSpeech) 
     }
 
     @CallSuper
-    open fun finish(success: Boolean) {
+    open fun finish(success: Boolean): Boolean {
         tts.setOnUtteranceProgressListener(null)
-    }
-
-    open fun finalize() {
-        finalize = true
+        return success
     }
 }
 
 
-abstract class TTSEventListener(ctx: Context,
-                                tts: TextToSpeech,
-                                private val inputStream: InputStream,
-                                private val inputSize: Long,
-                                protected var taskId: Int,
-                                protected val observer: TaskProgressObserver) :
-        MyUtteranceProgressListener(ctx, tts) {
+abstract class TTSTask(ctx: Context, tts: TextToSpeech,
+                       private val inputStream: InputStream,
+                       private val inputSize: Long,
+                       private val taskId: Int,
+                       private val observer: TaskProgressObserver) :
+        MyUtteranceProgressListener(ctx, tts), Task {
+
+    @Volatile
+    protected var finalize: Boolean = false
 
     protected lateinit var reader: BufferedReader
     protected val maxInputLength = getMaxSpeechInputLength()
@@ -102,8 +98,11 @@ abstract class TTSEventListener(ctx: Context,
         }
     }
 
-    override fun begin() {
-        super.begin()
+    override fun begin(): Boolean {
+        if (!super.begin()) return false
+
+        // Notify the progress listener that work has begun.
+        observer.notifyProgress(0, taskId, 0)
 
         // Open a reader on the input stream and enqueue the first input bytes.
         // This jumpstarts the processing of the entire stream.
@@ -111,25 +110,26 @@ abstract class TTSEventListener(ctx: Context,
             reader = inputStream.bufferedReader()
             streamHasFurtherInput = enqueueNextInput()
         } catch (exception: IOException) {
-            finish(false)
+            return finish(false)
         }
 
-        // Notify the progress listener that work has begun.
-        observer.notifyProgress(0, taskId)
+        // Finish early if no bytes were enqueued.  This happens only when the input
+        // stream is empty.
+        if (utteranceBytesQueue.size == 0) return finish(false)
+        else return true
     }
 
-    override fun finish(success: Boolean) {
+    override fun finish(success: Boolean): Boolean {
         // Close the reader and input stream.
         reader.close()
         inputStream.close()
 
-        // Notify the progress observer that the task is finished or if an error
-        // occurred.
+        // Notify the progress observer that the task is finished.
         val progress = if (success) 100 else -1
-        observer.notifyProgress(progress, taskId)
+        observer.notifyProgress(progress, taskId, 0)
 
         // Call the super method.
-        super.finish(success)
+        return super.finish(success)
     }
 
     override fun onStart(utteranceId: String?) {}
@@ -180,8 +180,9 @@ abstract class TTSEventListener(ctx: Context,
         }
 
         // Calculate progress and notify the progress listener.
-        val progress = inputProcessed.toFloat() / inputSize * 100
-        observer.notifyProgress(progress.toInt(), taskId)
+        // Note: progress=[-1, 100] is dispatched by the finish() method.
+        val progress = (inputProcessed.toFloat() / inputSize * 100).toInt()
+        if (progress in 0..99) observer.notifyProgress(progress, taskId, 0)
 
         // Enqueue the next input.
         try {
@@ -189,6 +190,10 @@ abstract class TTSEventListener(ctx: Context,
         } catch (exception: IOException) {
             finish(false)
         }
+    }
+
+    override fun finalize() {
+        finalize = true
     }
 
     companion object {
@@ -203,23 +208,17 @@ abstract class TTSEventListener(ctx: Context,
 }
 
 
-class SpeakingEventListener(ctx: Context,
-                            tts: TextToSpeech,
-                            inputStream: InputStream,
-                            inputSize: Long,
-                            private val queueMode: Int,
-                            observer: TaskProgressObserver) :
-        TTSEventListener(ctx, tts, inputStream, inputSize,
-                TASK_ID_READ_TEXT, observer) {
+class ReadInputTask(ctx: Context, tts: TextToSpeech, inputStream: InputStream,
+                    inputSize: Long, private val queueMode: Int,
+                    observer: TaskProgressObserver) :
+        TTSTask(ctx, tts, inputStream, inputSize, TASK_ID_READ_TEXT,
+                observer) {
 
-    override fun begin() {
+    override fun begin(): Boolean {
         // Request audio focus.  Finish early if our request was denied.
-        if (!app.requestAudioFocus()) {
-            finish(false)
-            return
-        }
-
-        super.begin()
+        // Otherwise, call the super method.
+        if (!app.requestAudioFocus()) return finish(false)
+        return super.begin()
     }
 
     private fun enqueueSilentUtterance(durationInMs: Long) {
@@ -296,22 +295,21 @@ class SpeakingEventListener(ctx: Context,
         super.onDone(utteranceId)
     }
 
-    override fun finish(success: Boolean) {
+    override fun finish(success: Boolean): Boolean {
         app.releaseAudioFocus()
-        super.finish(success)
+        return super.finish(success)
     }
 }
 
-class FileSynthesisEventListener(ctx: Context, tts: TextToSpeech,
-                                 inputStream: InputStream, inputSize: Long,
-                                 private val outputStream: OutputStream,
-                                 private val waveFilename: String,
-                                 progressObserver: TaskProgressObserver) :
-        TTSEventListener(ctx, tts, inputStream, inputSize,
+class FileSynthesisTask(ctx: Context, tts: TextToSpeech,
+                        inputStream: InputStream, inputSize: Long,
+                        private val waveFilename: String,
+                        progressObserver: TaskProgressObserver) :
+        TTSTask(ctx, tts, inputStream, inputSize,
                 TASK_ID_WRITE_FILE, progressObserver) {
 
-    private var inWaveFiles = mutableListOf<File>()
-    private val interruptEvent = InterruptEvent()
+    var inWaveFiles = mutableListOf<File>()
+        private set
 
     private fun enqueueFileSynthesis(text: String, bytesRead: Int) {
         if (bytesRead == 0) return
@@ -371,59 +369,23 @@ class FileSynthesisEventListener(ctx: Context, tts: TextToSpeech,
         return byte >= 0
     }
 
-    override fun finalize() {
-        super.finalize()
-
-        // Set the interrupt event.
-        interruptEvent.interrupt = true
-    }
-
-    override fun finish(success: Boolean) {
-        // Handle success=true.
-        var mSuccess = success
-        if (mSuccess) {
-            // If the TTS engine has produced impossibly short wave files, filter
-            // them out.  These are typically empty files.
-            val inWaveFiles = inWaveFiles
-                    .filterNot { it.length() < WaveFileHeader.MIN_SIZE }
-
-            // Notify the progress observer that the first task has finished.
-            // This is purposefully done here because this listener has two tasks.
-            observer.notifyProgress(100, taskId)
-
-            // Notify the progress observer that post-processing has begun.
-            taskId = TASK_ID_PROCESS_FILE
-            observer.notifyProgress(0, taskId)
-
-            // Join each utterance's wave file into the output file passed to this
-            // listener.  Notify the progress observer as files are concatenated.
-            try {
-                mSuccess = joinWaveFiles(inWaveFiles, outputStream,true,
-                        interruptEvent) {
-                    p: Int -> observer.notifyProgress(p, taskId)
-                }
-            } catch (error: RuntimeException) {
-                mSuccess = false
-                Log.e(TAG, "Failed to join wave ${inWaveFiles.size} files.", error)
-            }
+    override fun finish(success: Boolean): Boolean {
+        // If the TTS engine has produced impossibly short wave files, filter
+        // them out.  These are typically empty files.
+        // If file synthesis failed, delete all files instead.
+        for (wf in inWaveFiles) {
+            if (wf.length() < WaveFileHeader.MIN_SIZE) inWaveFiles.remove(wf)
+            else if (!success && wf.isFile && wf.canWrite()) wf.delete()
         }
 
-        // Ensure all internal wave files are deleted afterwards.
-        if (!mSuccess) {
-            inWaveFiles.forEach { f ->
-                if (f.isFile && f.canWrite()) {
-                    f.delete()
-                }
-            }
+        // Display a toast message on failure.
+        if (!success) {
+            val messageId = R.string.write_to_file_message_failure
+            val message = app.getString(messageId, waveFilename)
+            displayMessage(message, true)
         }
-
-        // Display a toast message.
-        val messageId = if (mSuccess) R.string.write_to_file_message_success
-                        else R.string.write_to_file_message_failure
-        val message = app.getString(messageId, waveFilename)
-        displayMessage(message, true)
 
         // Call the super method.
-        super.finish(mSuccess)
+        return super.finish(success)
     }
 }

@@ -20,14 +20,7 @@
 
 package com.danefinlay.ttsutil
 
-import android.net.Uri
-import java.io.File
-
-/**
- * These classes constitute an adapter for working with DocumentTree and File
- * objects.
- */
-sealed class Directory {
-    class DocumentTree(val uri: Uri) : Directory()
-    class FileDir(val file: File) : Directory()
+interface Task {
+    fun begin(): Boolean
+    fun finalize()
 }

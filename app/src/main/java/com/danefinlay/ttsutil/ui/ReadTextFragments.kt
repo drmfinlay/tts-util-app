@@ -116,7 +116,7 @@ abstract class ReadTextFragmentBase : MyFragment() {
         }
 
         // Speak *text* and handle the result.
-        val result = myApplication.speak(text, QUEUE_ADD)
+        val result = myApplication.enqueueReadInputTask(text, QUEUE_ADD)
         myApplication.handleTTSOperationResult(result)
     }
 
@@ -141,36 +141,38 @@ abstract class ReadTextFragmentBase : MyFragment() {
 
         // Start synthesizing the file's content into a wave file and handle the
         // result.
-        val result = myApplication.synthesizeToFile(text, directory, waveFilename)
-        when (result) {
-            INVALID_OUT_DIR -> buildInvalidDirAlertDialog().show()
-            else -> myApplication.handleTTSOperationResult(result)
-        }
+        val result = myApplication.enqueueFileSynthesisTasks(text, directory,
+                waveFilename)
+        myApplication.handleTTSOperationResult(result)
     }
 
     private fun onClickSave() {
         // Determine the output directory.  If the user has not chosen one, the
         // "external" storage is used.
-        val chosenDirEvent = activityInterface?.getLastDirChosenEvent()
-        val directory: Directory = if (chosenDirEvent != null) {
-            Directory.DocumentTree(chosenDirEvent.uri)
+        val event = activityInterface?.getLastDirChosenEvent()
+        val directory: Directory = if (event != null) {
+            Directory.DocumentFile(event.firstUri)
         } else {
-            Directory.FileDir(Environment.getExternalStorageDirectory())
+            Directory.File(Environment.getExternalStorageDirectory())
         }
 
-        // Determine the names of the directory and wave file.
+        // Build and display an appropriate dialog if the output directory is not
+        // valid.
+        if (!directory.exists(ctx)) {
+            buildInvalidDirAlertDialog().show()
+            return
+        }
+
+        // Determine the names of the wave file and directory.
         // TODO Allow the user to change the filename.
         val waveFilename = getString(R.string.output_wave_filename) + ".wav"
-        val dirDisplayName: String = when (chosenDirEvent?.displayName) {
-            null -> getString(R.string.default_output_dir)
-            "" -> getString(R.string.generic_output_dir)
-            else -> chosenDirEvent.displayName
-        }
+        val dirDisplayName: String = event?.firstDisplayName
+                ?: getString(R.string.default_output_dir)
 
         // Build and display an appropriate alert dialog.
         AlertDialogBuilder(ctx).apply {
             title(R.string.write_to_file_alert_title)
-            message(getString(R.string.write_to_file_alert_message_2,
+            message(getString(R.string.write_to_file_alert_message_3,
                     waveFilename, dirDisplayName))
             positiveButton(R.string.alert_positive_message_2) {
                 // Ask the user for write permission if necessary.
@@ -187,6 +189,11 @@ abstract class ReadTextFragmentBase : MyFragment() {
 
     override fun updateStatusField(text: String) {
         find<TextView>(R.id.status_text_field).text = text
+    }
+
+    override fun updateTaskCountField(count: Int) {
+        val text = getString(R.string.remaining_tasks_field, count)
+        find<TextView>(R.id.remaining_tasks_field).text = text
     }
 
     protected fun attemptPlaybackOnStart() {
