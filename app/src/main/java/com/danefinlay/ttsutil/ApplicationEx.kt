@@ -419,9 +419,12 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
             notificationManager.notify(taskId, notification)
         }
 
-        // Clean up if the task is complete (progress=100) or if an error occurred
-        // (progress<0).
-        else {
+        // Cancel the notification only if the task is finished and there are no
+        // remaining tasks.
+        // Note: This is to prevent the scenario where our notification is canceled
+        // once one task is finished only for another, very similar notification to
+        // be posted a fraction of a second later!
+        else if (remainingTasks == 0) {
             notificationManager.cancel(taskId)
             notificationBuilder = null
         }
