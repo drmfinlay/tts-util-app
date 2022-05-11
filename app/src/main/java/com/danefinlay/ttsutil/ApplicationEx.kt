@@ -39,6 +39,7 @@ import org.jetbrains.anko.longToast
 import org.jetbrains.anko.notificationManager
 import org.jetbrains.anko.runOnUiThread
 import java.util.*
+import java.util.concurrent.Executors
 
 class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
 
@@ -47,6 +48,7 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
 
     var currentTask: Task? = null
     private val taskQueue = ArrayDeque<TaskData>()
+    private val executorService by lazy { Executors.newSingleThreadExecutor() }
     private var errorMessage: String? = null
     private val progressObservers = mutableSetOf<TaskProgressObserver>()
     private var notificationBuilder: NotificationCompat.Builder? = null
@@ -491,10 +493,7 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
         val task = ReadInputTask(this, tts, inputStream, inputSize,
                 taskData.queueMode, this)
         currentTask = task
-        // FIXME This doesn't look complicated enough for Android.
-        val thread = Thread { task.begin() }
-        thread.priority = Thread.NORM_PRIORITY
-        thread.start()
+        executorService.submit { task.begin() }
         return SUCCESS
     }
 
@@ -522,10 +521,7 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
         val task = FileSynthesisTask(this, tts, inputStream, inputSize,
                 waveFilename, this)
         currentTask = task
-        // FIXME This doesn't look complicated enough for Android.
-        val thread = Thread { task.begin() }
-        thread.priority = Thread.NORM_PRIORITY
-        thread.start()
+        executorService.submit { task.begin() }
         return SUCCESS
     }
 
@@ -547,10 +543,7 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
         val task = JoinWaveFilesTask(this, this, previousTask.inWaveFiles,
                 outputStream, waveFilename)
         currentTask = task
-        // FIXME This doesn't look complicated enough for Android.
-        val thread = Thread { task.begin() }
-        thread.priority = Thread.NORM_PRIORITY
-        thread.start()
+        executorService.submit { task.begin() }
         return SUCCESS
     }
 
