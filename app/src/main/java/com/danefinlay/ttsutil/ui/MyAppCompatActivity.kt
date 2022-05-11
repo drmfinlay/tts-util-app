@@ -11,13 +11,13 @@ abstract class MyAppCompatActivity : AppCompatActivity() {
         super.onPause()
 
         // Enable notifications when our activities are inactive.
-        myApplication.notificationsEnabled = true
+        myApplication.enableNotifications()
     }
 
     override fun onResume() {
         super.onResume()
 
         // Disable notifications when one of our activities is active.
-        myApplication.notificationsEnabled = false
+        myApplication.disableNotifications()
     }
 }

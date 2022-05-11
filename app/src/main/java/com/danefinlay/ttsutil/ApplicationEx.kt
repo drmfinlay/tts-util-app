@@ -51,6 +51,9 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
     private val progressObservers = mutableSetOf<TaskProgressObserver>()
     private var notificationBuilder: NotificationCompat.Builder? = null
 
+    @Volatile
+    private var notificationsEnabled: Boolean = false
+
     /**
      * Whether the TTS is ready to synthesize text into speech.
      *
@@ -92,22 +95,6 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
         get() {
             val prefs = PreferenceManager.getDefaultSharedPreferences(this)
             return prefs.getString("pref_tts_engine", mTTS?.defaultEngine)
-        }
-
-    var notificationsEnabled: Boolean = true
-        set(value) {
-            if (!field && value) {
-                // If re-enabling, post the current notification, if any.
-                val taskData = taskQueue.peek()
-                if (taskData != null) {
-                    postNotification(taskData.progress, taskData.taskId,
-                            taskQueue.size)
-                }
-            } else if (!value) {
-                // Cancel any TTS notifications present.
-                notificationTasks.forEach {notificationManager.cancel(it) }
-            }
-            field = value
         }
 
     private val audioFocusGain = AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
@@ -163,6 +150,27 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
         } else {
             audioManager.abandonAudioFocusRequest(audioFocusRequest)
         }
+    }
+
+    fun enableNotifications() {
+        if (notificationsEnabled) return
+
+        // Post the current notification, if any.
+        val taskData = taskQueue.peek()
+        if (taskData != null) {
+            postNotification(taskData.progress, taskData.taskId,
+                    unfinishedTaskCount)
+        }
+
+        notificationsEnabled = true
+    }
+
+    fun disableNotifications() {
+        if (!notificationsEnabled) return
+
+        // Cancel any TTS notifications present.
+        notificationTasks.forEach { notificationManager.cancel(it) }
+        notificationsEnabled = false
     }
 
     fun cleanupFiles() {
