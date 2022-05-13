@@ -254,6 +254,12 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
     override fun onActivityResult(requestCode: Int, resultCode: Int,
                                   data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+
+        // Disable notifications on reentry.  This prevents notifications from being
+        // posted while sample text is being read or after a file/directory is
+        // chosen.
+        myApplication.disableNotifications()
+
         when {
             requestCode == SAMPLE_TEXT_CODE -> {
                 // Note: Sample text may be available if resultCode is
