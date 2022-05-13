@@ -129,7 +129,7 @@ abstract class MyFragment : Fragment(), FragmentInterface {
             title(title)
             message(message)
             positiveButton(R.string.alert_positive_message_1) {
-                activityInterface?.showDirChooser()
+                activityInterface?.showDirChooser(DIR_SELECT_CONT_CODE)
             }
             negativeButton(R.string.alert_negative_message_1)
         }

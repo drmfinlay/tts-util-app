@@ -49,10 +49,15 @@ sealed class Directory {
     }
 
     class DocumentFile(val uri: Uri) : Directory() {
+        private fun isValidDirectory(
+                dir: android.support.v4.provider.DocumentFile): Boolean {
+            return dir.isDirectory && dir.exists()
+        }
+
         override fun exists(ctx: Context): Boolean {
             val dir = android.support.v4.provider.DocumentFile
                     .fromTreeUri(ctx, uri)
-            return dir != null && dir.exists()
+            return if (dir != null) isValidDirectory(dir) else false
         }
 
         override fun openDocumentOutputStream(ctx: Context,
@@ -60,7 +65,7 @@ sealed class Directory {
                                               mimeType: String): OutputStream? {
             // Open an output stream on the specified document.
             val dir = android.support.v4.provider.DocumentFile.fromTreeUri(ctx, uri)
-            if (dir == null || !dir.exists()) return null
+            if (dir == null || !isValidDirectory(dir)) return null
 
             // TODO Handle already existing wave files by creating new files:
             //  '<filename>.wav (1)', <filename>.wav (2), etc.

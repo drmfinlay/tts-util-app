@@ -233,10 +233,10 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
         startFileChooserActivity(intent, title, FILE_SELECT_CODE)
     }
 
-    override fun showDirChooser() {
+    override fun showDirChooser(requestCode: Int) {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
         val title = getString(R.string.dir_chooser_title)
-        startFileChooserActivity(intent, title, DIR_SELECT_CODE)
+        startFileChooserActivity(intent, title, requestCode)
     }
 
     override fun getLastStatusUpdate() = mLastStatusUpdate
@@ -274,9 +274,9 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
                 val event = ActivityEvent.SampleTextReceivedEvent(sampleText)
                 handleActivityEvent(event)
             }
-            requestCode == DIR_SELECT_CODE && resultCode == RESULT_OK -> {
-                // Get the Uri of the selected directory, returning early if it is
-                // invalid.
+            requestCode == DIR_SELECT_CODE && resultCode == RESULT_OK ||
+            requestCode == DIR_SELECT_CONT_CODE && resultCode == RESULT_OK -> {
+                // Get the Uri of the selected directory, if possible.
                 val uri = data?.data ?: return
 
                 // Determine the display name.
@@ -307,8 +307,7 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
                 handleActivityEvent(event)
             }
             requestCode == FILE_SELECT_CODE && resultCode == RESULT_OK -> {
-                // Get the Uri of the selected file(s), returning early if any are
-                // invalid.
+                // Get the Uri of the selected file(s), if possible.
                 if (data == null) return
                 val uriList = mutableListOf<Uri>()
                 val clipData = data.clipData

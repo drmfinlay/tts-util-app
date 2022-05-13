@@ -27,7 +27,7 @@ import android.os.Parcelable
 sealed class ActivityEvent : Parcelable {
     class ChosenFileEvent(val uriList: List<Uri>,
                           val displayNameList: List<String>,
-                          val fileType: Int) : ActivityEvent() {
+                          var requestCode: Int) : ActivityEvent() {
         constructor(parcel: Parcel) : this(
                 parcel.createTypedArrayList(Uri.CREATOR)!!,
                 parcel.createStringArrayList()!!,
@@ -36,7 +36,7 @@ sealed class ActivityEvent : Parcelable {
         override fun writeToParcel(parcel: Parcel, flags: Int) {
             parcel.writeTypedList(uriList)
             parcel.writeStringList(displayNameList)
-            parcel.writeInt(fileType)
+            parcel.writeInt(requestCode)
         }
 
         val firstUri: Uri = uriList.first()

@@ -66,7 +66,7 @@ abstract class FileChooserFragment : MyFragment() {
         super.handleActivityEvent(event)
         when (event) {
             is ActivityEvent.ChosenFileEvent -> {
-                if (event.fileType == FILE_SELECT_CODE) onFileChosen(event)
+                if (event.requestCode == FILE_SELECT_CODE) onFileChosen(event)
             }
             else -> {}
         }
@@ -120,7 +120,7 @@ class ReadFilesFragment : FileChooserFragment() {
         find<ImageButton>(R.id.choose_file_button)
                 .onClick { activityInterface?.showFileChooser() }
         find<ImageButton>(R.id.choose_dir_button)
-                .onClick { activityInterface?.showDirChooser() }
+                .onClick { activityInterface?.showDirChooser(DIR_SELECT_CODE) }
     }
 
     override fun updateStatusField(text: String) {
@@ -130,6 +130,33 @@ class ReadFilesFragment : FileChooserFragment() {
     override fun updateTaskCountField(count: Int) {
         val text = getString(R.string.remaining_tasks_field, count)
         find<TextView>(R.id.remaining_tasks_field).text = text
+    }
+
+    private fun onDirChosen(event: ActivityEvent.ChosenFileEvent) {
+        // Return if this callback is not for continuing a previous request after a
+        // valid directory has been chosen.
+        if (event.requestCode != DIR_SELECT_CONT_CODE) return
+
+        // Ensure this is only done once.
+        event.requestCode = DIR_SELECT_CODE
+
+        // Attempt to start file synthesis, asking the user for write permission if
+        // necessary.
+        val chosenFileEvent = activityInterface?.getLastFileChosenEvent() ?: return
+        val directory = Directory.DocumentFile(event.firstUri)
+        withStoragePermission { granted ->
+            synthesizeTextToFile(chosenFileEvent, directory, granted)
+        }
+    }
+
+    override fun handleActivityEvent(event: ActivityEvent) {
+        super.handleActivityEvent(event)
+        if (event is ActivityEvent.ChosenFileEvent) {
+            val code = event.requestCode
+            if (code == DIR_SELECT_CODE || code == DIR_SELECT_CONT_CODE) {
+                onDirChosen(event)
+            }
+        }
     }
 
     private fun onClickPlay() {

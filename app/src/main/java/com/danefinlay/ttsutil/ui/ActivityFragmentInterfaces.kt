@@ -42,7 +42,7 @@ interface ActivityInterface {
     /**
      * Show a screen where the user can choose a directory.
      */
-    fun showDirChooser()
+    fun showDirChooser(requestCode: Int)
 
     /**
      * Function to request sample TTS text from the current TTS engine.

@@ -62,7 +62,7 @@ abstract class ReadTextFragmentBase : MyFragment() {
         find<ImageButton>(R.id.save_button).onClick { onClickSave() }
         find<ImageButton>(R.id.stop_button).onClick { myApplication.stopSpeech() }
         find<ImageButton>(R.id.choose_dir_button)
-                .onClick { activityInterface?.showDirChooser() }
+                .onClick { activityInterface?.showDirChooser(DIR_SELECT_CODE) }
 
         // Re-process last updates.
         val event = activityInterface?.getLastStatusUpdate()
@@ -94,6 +94,26 @@ abstract class ReadTextFragmentBase : MyFragment() {
         }
     }
 
+    private fun onDirChosen(event: ActivityEvent.ChosenFileEvent) {
+        // Return if this callback is not for continuing a previous request after a
+        // valid directory has been chosen.
+        if (event.requestCode != DIR_SELECT_CONT_CODE) return
+
+        // Ensure this is only done once.
+        event.requestCode = DIR_SELECT_CODE
+
+        // Set the output wave filename.
+        // TODO Allow the user to change the filename.
+        val waveFilename = getString(R.string.output_wave_filename) + ".wav"
+
+        // Attempt to start file synthesis, asking the user for write permission if
+        // necessary.
+        val directory = Directory.DocumentFile(event.firstUri)
+        withStoragePermission { granted ->
+            synthesizeTextToFile(waveFilename, directory, granted)
+        }
+    }
+
     override fun handleActivityEvent(event: ActivityEvent) {
         super.handleActivityEvent(event)
         when (event) {
@@ -101,6 +121,12 @@ abstract class ReadTextFragmentBase : MyFragment() {
                 // If playback on start was requested, begin playback, since TTS is
                 // now ready.
                 if (playbackOnStart) attemptPlaybackOnStart()
+            }
+            is ActivityEvent.ChosenFileEvent -> {
+                val code = event.requestCode
+                if (code == DIR_SELECT_CODE || code == DIR_SELECT_CONT_CODE) {
+                    onDirChosen(event)
+                }
             }
             else -> {}
         }
@@ -120,13 +146,13 @@ abstract class ReadTextFragmentBase : MyFragment() {
         myApplication.handleTTSOperationResult(result)
     }
 
-    private fun synthesizeTextToFile(directory: Directory, waveFilename: String,
+    private fun synthesizeTextToFile(waveFilename: String, directory: Directory,
                                      storageAccess: Boolean) {
         if (!storageAccess) {
             // Show a dialog if we don't have read/write storage permission.
             // and return here if permission is granted.
             val permissionBlock: (Boolean) -> Unit = { granted ->
-                if (granted) synthesizeTextToFile(directory, waveFilename, granted)
+                if (granted) synthesizeTextToFile(waveFilename, directory, granted)
             }
             buildNoPermissionAlertDialog(permissionBlock).show()
             return
@@ -143,7 +169,10 @@ abstract class ReadTextFragmentBase : MyFragment() {
         // result.
         val result = myApplication.enqueueFileSynthesisTasks(text, directory,
                 waveFilename)
-        myApplication.handleTTSOperationResult(result)
+        when (result) {
+            UNAVAILABLE_OUT_DIR -> buildInvalidDirAlertDialog().show()
+            else -> myApplication.handleTTSOperationResult(result)
+        }
     }
 
     private fun onClickSave() {
@@ -154,13 +183,6 @@ abstract class ReadTextFragmentBase : MyFragment() {
             Directory.DocumentFile(event.firstUri)
         } else {
             Directory.File(Environment.getExternalStorageDirectory())
-        }
-
-        // Build and display an appropriate dialog if the output directory is not
-        // valid.
-        if (!directory.exists(ctx)) {
-            buildInvalidDirAlertDialog().show()
-            return
         }
 
         // Determine the names of the wave file and directory.
@@ -177,7 +199,7 @@ abstract class ReadTextFragmentBase : MyFragment() {
             positiveButton(R.string.alert_positive_message_2) {
                 // Ask the user for write permission if necessary.
                 withStoragePermission { granted ->
-                    synthesizeTextToFile(directory, waveFilename, granted)
+                    synthesizeTextToFile(waveFilename, directory, granted)
                 }
             }
             negativeButton(R.string.alert_negative_message_2)
