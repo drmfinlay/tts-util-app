@@ -170,7 +170,7 @@ abstract class ReadTextFragmentBase : MyFragment() {
         val result = myApplication.enqueueFileSynthesisTasks(text, directory,
                 waveFilename)
         when (result) {
-            UNAVAILABLE_OUT_DIR -> buildInvalidDirAlertDialog().show()
+            UNAVAILABLE_OUT_DIR -> buildUnavailableDirAlertDialog().show()
             else -> myApplication.handleTTSOperationResult(result)
         }
     }

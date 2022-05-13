@@ -72,7 +72,7 @@ abstract class FileChooserFragment : MyFragment() {
         }
     }
 
-    protected fun buildInvalidFileAlertDialog(uriList: List<Uri>?):
+    protected fun buildUnavailableFileAlertDialog(uriList: List<Uri>?):
             AlertDialogBuilder {
         // Use a different title and message based on whether or not a file has been
         // chosen already.
@@ -83,9 +83,9 @@ abstract class FileChooserFragment : MyFragment() {
             positive = R.string.alert_positive_message_2
             negative = R.string.alert_negative_message_2
         } else {
-            title = R.string.invalid_file_dialog_title
-            if (uriList.size == 1) message = R.string.invalid_file_dialog_message_1
-            else message = R.string.invalid_file_dialog_message_2
+            title = R.string.unavailable_file_dialog_title
+            if (uriList.size == 1) message = R.string.unavailable_file_dialog_message_1
+            else message = R.string.unavailable_file_dialog_message_2
             positive = R.string.alert_positive_message_1
             negative = R.string.alert_negative_message_1
         }
@@ -164,11 +164,12 @@ class ReadFilesFragment : FileChooserFragment() {
         val event = activityInterface?.getLastFileChosenEvent()
         val uriList = event?.uriList
         if (uriList == null || uriList.size == 0) {
-            buildInvalidFileAlertDialog(listOf()).show()
+            buildUnavailableFileAlertDialog(listOf()).show()
         } else for (uri in uriList) {
             val result = myApplication.enqueueReadInputTask(uri, QUEUE_ADD)
             when (result) {
-                UNAVAILABLE_INPUT_SRC -> buildInvalidFileAlertDialog(uriList).show()
+                UNAVAILABLE_INPUT_SRC ->
+                    buildUnavailableFileAlertDialog(uriList).show()
                 else -> myApplication.handleTTSOperationResult(result)
             }
             if (result != SUCCESS) break
@@ -192,15 +193,15 @@ class ReadFilesFragment : FileChooserFragment() {
         // Start synthesizing from the chosen files in order, stopping on failure.
         val fileData = event.uriList.zip(event.displayNameList)
         if (fileData.size == 0) {
-            buildInvalidFileAlertDialog(event.uriList).show()
+            buildUnavailableFileAlertDialog(event.uriList).show()
         } else for ((uri, displayName) in fileData) {
             val waveFilename = "$displayName.wav"
             val result = myApplication.enqueueFileSynthesisTasks(uri, directory,
                     waveFilename)
             when (result) {
-                UNAVAILABLE_INPUT_SRC -> buildInvalidFileAlertDialog(event.uriList)
-                        .show()
-                UNAVAILABLE_OUT_DIR -> buildInvalidDirAlertDialog().show()
+                UNAVAILABLE_INPUT_SRC ->
+                    buildUnavailableFileAlertDialog(event.uriList).show()
+                UNAVAILABLE_OUT_DIR -> buildUnavailableDirAlertDialog().show()
                 else -> myApplication.handleTTSOperationResult(result)
             }
             if (result != SUCCESS) break
@@ -214,7 +215,7 @@ class ReadFilesFragment : FileChooserFragment() {
         val fileUri = event1?.firstUri
         if (fileUri?.isAccessibleFile(ctx) != true) {
             val uriList = if (fileUri == null) null else listOf(fileUri)
-            buildInvalidFileAlertDialog(uriList).show()
+            buildUnavailableFileAlertDialog(uriList).show()
             return
         }
 

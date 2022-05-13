@@ -122,9 +122,9 @@ abstract class MyFragment : Fragment(), FragmentInterface {
         }
     }
 
-    protected fun buildInvalidDirAlertDialog(): AlertDialogBuilder {
-        val title = R.string.invalid_dir_dialog_title
-        val message = R.string.invalid_dir_dialog_message
+    protected fun buildUnavailableDirAlertDialog(): AlertDialogBuilder {
+        val title = R.string.unavailable_dir_dialog_title
+        val message = R.string.unavailable_dir_dialog_message
         return AlertDialogBuilder(ctx).apply {
             title(title)
             message(message)

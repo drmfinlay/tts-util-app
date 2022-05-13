@@ -85,13 +85,13 @@
     <string name="no_tts_data_alert_title">Missing Language TTS Data</string>
     <string name="no_tts_data_alert_message">Data for the language %1$s is missing.\n\nWould you like to open the %2$s settings screen to download it?</string>
     <string name="no_engine_available_message">No text-to-speech engine is available.</string>
-    <string name="invalid_file_dialog_title">File Not Found</string>
-    <string name="invalid_file_dialog_message_1">The chosen file could not be found. Maybe it has been deleted or renamed?\n\nWould you like to choose another one?</string>
-    <string name="invalid_file_dialog_message_2">One or more of the chosen files could not be found. Maybe they have been deleted or renamed?\n\nWould you like to select other files?</string>
+    <string name="unavailable_file_dialog_title">File Not Found</string>
+    <string name="unavailable_file_dialog_message_1">The chosen file could not be found. Maybe it has been deleted or renamed?\n\nWould you like to choose another one?</string>
+    <string name="unavailable_file_dialog_message_2">One or more of the chosen files could not be found. Maybe they have been deleted or renamed?\n\nWould you like to select other files?</string>
     <string name="no_file_chosen_dialog_title">No File Chosen</string>
     <string name="no_file_chosen_dialog_message">No file has been chosen.\n\nWould you like to choose one?</string>
-    <string name="invalid_dir_dialog_title">Directory not found</string>
-    <string name="invalid_dir_dialog_message">The specified output directory could not be found.  Maybe it has been deleted or renamed?\n\nChoose another?</string>
+    <string name="unavailable_dir_dialog_title">Directory not found</string>
+    <string name="unavailable_dir_dialog_message">The specified output directory could not be found.  Maybe it has been deleted or renamed?\n\nChoose another?</string>
     <string name="write_to_file_alert_title">Write to Wave File</string>
     <string name="write_to_file_alert_message_1">The current file is \"%1$s\". The content of this file will be synthesized, written to \"%2$s\" and placed into %3$s.\n\nIs this okay?</string>
     <string name="write_to_file_alert_message_2">The content of \"%1$s\" and %2$d other %3$s will be synthesized into wave files and placed into %4$s.\n\nIs this okay?</string>
@@ -131,7 +131,7 @@
     <!--Text-to-speech message strings.-->
     <string name="tts_not_ready_message">Text-to-speech is not ready. Try again in a moment.</string>
     <string name="tts_busy_message">Cannot perform operation: %1$s.</string>
-    <string name="invalid_out_dir_message">The specified output directory could not be found.</string>
+    <string name="unavailable_out_dir_message">The specified output directory could not be found.</string>
     <string name="unavailable_input_src_message">Cannot read from the selected file.</string>
     <string name="synthesis_error_msg_generic">There was an error during text synthesis.</string>
     <string name="synthesis_error_msg_synthesis">The text-to-speech engine failed to synthesize the text.</string>

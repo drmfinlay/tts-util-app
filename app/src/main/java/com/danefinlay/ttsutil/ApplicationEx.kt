@@ -358,7 +358,7 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
                 runOnUiThread { longToast(message) }
             }
             UNAVAILABLE_OUT_DIR -> {
-                val message = getString(R.string.invalid_out_dir_message)
+                val message = getString(R.string.unavailable_out_dir_message)
                 runOnUiThread { longToast(message) }
             }
             UNAVAILABLE_INPUT_SRC -> {
