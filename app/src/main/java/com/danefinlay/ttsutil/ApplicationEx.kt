@@ -38,6 +38,7 @@ import org.jetbrains.anko.audioManager
 import org.jetbrains.anko.longToast
 import org.jetbrains.anko.notificationManager
 import org.jetbrains.anko.runOnUiThread
+import java.io.InputStream
 import java.util.*
 import java.util.concurrent.Executors
 
@@ -464,12 +465,7 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
         // queue.
         if (progress == 100 && taskQueue.size > 0) {
             val nextTaskData = taskQueue.peek()
-            val result = when (nextTaskData) {
-                is TaskData.ReadInputTaskData -> speak(nextTaskData)
-                is TaskData.FileSynthesisTaskData -> synthesizeToFile(nextTaskData)
-                is TaskData.JoinWaveFilesTaskData ->
-                    joinWaveFiles(nextTaskData, currentTask)
-            }
+            val result = beginTaskOrNotify(nextTaskData)
             handleTTSOperationResult(result)
         } else if (progress == -1) {
             taskQueue.clear()
@@ -487,9 +483,12 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
         // Use the input source to open an input stream and retrieve the content
         // size in bytes.  Return early if this is not possible.
         val inputSource = taskData.inputSource
-        if (!inputSource.isSourceAvailable(this)) return UNAVAILABLE_INPUT_SRC
-        val inputStream = inputSource.openInputStream(this)
-        val inputSize = inputSource.getSize(this)
+        var inputStream: InputStream? = null
+        var inputSize: Long? = null
+        if (inputSource.isSourceAvailable(this)) {
+            inputStream = inputSource.openInputStream(this)
+            inputSize = inputSource.getSize(this)
+        }
         if (inputStream == null || inputSize == null) return UNAVAILABLE_INPUT_SRC
 
         // Initialize the task, begin it asynchronously and return.
@@ -504,15 +503,19 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
     private fun synthesizeToFile(taskData: TaskData.FileSynthesisTaskData): Int {
         val tts = mTTS
 
-        // Return early if TTS is not ready yet.
+        // Return early if it is not possible or not appropriate to proceed.
         if (!ttsReady || tts == null) return TTS_NOT_READY
+        if (readingTaskInProgress) return TTS_BUSY
 
         // Use the input source to open an input stream and retrieve the content
         // size in bytes.  Return early if this is not possible.
         val inputSource = taskData.inputSource
-        if (!inputSource.isSourceAvailable(this)) return UNAVAILABLE_INPUT_SRC
-        val inputStream = inputSource.openInputStream(this)
-        val inputSize = inputSource.getSize(this)
+        var inputStream: InputStream? = null
+        var inputSize: Long? = null
+        if (inputSource.isSourceAvailable(this)) {
+            inputStream = inputSource.openInputStream(this)
+            inputSize = inputSource.getSize(this)
+        }
         if (inputStream == null || inputSize == null) return UNAVAILABLE_INPUT_SRC
 
         // Verify that the out directory exists.  Return early if it does not.
@@ -529,9 +532,9 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
     }
 
     @Synchronized
-    private fun joinWaveFiles(taskData: TaskData.JoinWaveFilesTaskData,
-                              previousTask: Task?): Int {
+    private fun joinWaveFiles(taskData: TaskData.JoinWaveFilesTaskData): Int {
         // Check that the wave file list from the previous task is available.
+        val previousTask = currentTask
         if (previousTask !is FileSynthesisTask) return FAILURE
 
         // Use the out directory to create and open an output stream on the
@@ -550,20 +553,40 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
         return SUCCESS
     }
 
-    private inline fun processTaskOrNotify(taskData: TaskData,
-                                           block: () -> Int): Int {
-        // Invoke the given function if *taskData* is at the head of the queue.
-        // Otherwise, notify progress observers.
-        if (taskQueue.peek() === taskData) return block()
-        else {
+    private fun beginTaskOrNotify(taskData: TaskData): Int {
+        // If *taskData* is at the head of the queue, begin the task it is
+        // associated with.  Otherwise, notify progress observers.
+        val result: Int
+        if (taskQueue.peek() === taskData) {
+            result = when (taskData) {
+                is TaskData.ReadInputTaskData -> speak(taskData)
+                is TaskData.FileSynthesisTaskData -> synthesizeToFile(taskData)
+                is TaskData.JoinWaveFilesTaskData -> joinWaveFiles(taskData)
+            }
+
+            // If the task failed to start, remove the appropriate number of tasks
+            // from the queue.
+            if (result != SUCCESS) {
+                val taskCount = when (taskData) {
+                    is TaskData.ReadInputTaskData -> 1
+                    is TaskData.FileSynthesisTaskData -> 2
+                    is TaskData.JoinWaveFilesTaskData -> 1
+                }
+                for (i in 0 until taskCount) taskQueue.pop()
+            }
+        } else {
             val item1 = taskQueue.peek()
             notifyProgress(item1.progress, item1.taskId, 0)
-            return SUCCESS
+            result = SUCCESS
         }
+        return result
     }
 
     fun enqueueReadInputTask(inputSource: InputSource, queueMode: Int): Int {
-        // If file synthesis is in process, refuse to enqueue the task; the user
+        // Do not continue unless TTS is ready.
+        if (!ttsReady || mTTS == null) return TTS_NOT_READY
+
+        // If file synthesis is in progress, refuse to enqueue the task; the user
         // must stop the current operation manually.
         if (fileSynthesisTaskInProgress) return TTS_BUSY
 
@@ -582,11 +605,14 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
 
         // Process the task if it is at the head of the queue.  Otherwise, notify
         // progress observers.
-        return processTaskOrNotify(taskData) { speak(taskData) }
+        return beginTaskOrNotify(taskData)
     }
 
     fun enqueueFileSynthesisTasks(inputSource: InputSource, outDirectory: Directory,
                                   waveFilename: String): Int {
+        // Do not continue unless TTS is ready.
+        if (!ttsReady || mTTS == null) return TTS_NOT_READY
+
         // If text is currently being read, refuse to enqueue this task; the user
         // must stop the current operation manually.
         if (readingTaskInProgress) return TTS_BUSY
@@ -604,7 +630,7 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
 
         // Process the task if it is at the head of the queue.  Otherwise, notify
         // progress observers.
-        return processTaskOrNotify(taskData1) { synthesizeToFile(taskData1) }
+        return beginTaskOrNotify(taskData1)
     }
 
     fun enqueueReadInputTask(text: String, queueMode: Int): Int {
