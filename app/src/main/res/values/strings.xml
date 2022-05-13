@@ -163,7 +163,8 @@
     <string name="sample_tts_sentence">This is a sample sentence using text to speech.</string>
     <string name="voice_not_installed">"This voice is not yet installed."</string>
     <string name="no_tts_voices_msg">The TTS engine reported no voice selection.</string>
-    <string name="cannot_speak_empty_text_msg">Cannot speak empty text.</string>
+    <string name="cannot_read_empty_input_message">Cannot read zero-length input.</string>
+    <string name="cannot_synthesize_empty_input_message">Cannot synthesize zero-length input.</string>
     <string name="clipboard_is_empty_msg">Clipboard is empty.</string>
     <string name="read_clipboard_android_10_warning_message">Opening edit screen.</string>
     <string name="nav_header_desc">Navigation header</string>

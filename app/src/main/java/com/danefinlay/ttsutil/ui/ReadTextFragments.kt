@@ -137,7 +137,7 @@ abstract class ReadTextFragmentBase : MyFragment() {
         // and display an alert message.
         var text = inputLayoutContent ?: ""
         if (text.isBlank()) {
-            ctx.toast(R.string.cannot_speak_empty_text_msg)
+            ctx.toast(R.string.cannot_read_empty_input_message)
             text = inputLayout.hint?.toString() ?: return
         }
 
@@ -161,7 +161,7 @@ abstract class ReadTextFragmentBase : MyFragment() {
         // Retrieve input field text.  If blank, display an alert message.
         val text = inputLayoutContent ?: ""
         if (text.isBlank()) {
-            ctx.toast(R.string.cannot_speak_empty_text_msg)
+            ctx.toast(R.string.cannot_read_empty_input_message)
             return
         }
 

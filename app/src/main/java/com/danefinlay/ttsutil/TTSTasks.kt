@@ -112,11 +112,7 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
         } catch (exception: IOException) {
             return finish(false)
         }
-
-        // Finish early if no bytes were enqueued.  This happens only when the input
-        // stream is empty.
-        if (utteranceBytesQueue.size == 0) return finish(false)
-        else return true
+        return true
     }
 
     override fun finish(success: Boolean): Boolean {

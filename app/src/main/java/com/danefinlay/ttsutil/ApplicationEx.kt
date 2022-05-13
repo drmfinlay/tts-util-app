@@ -47,7 +47,8 @@ class ApplicationEx : Application(), OnInitListener {
     var mTTS: TextToSpeech? = null
         private set
 
-    var currentTask: Task? = null
+    private var lastAttemptedTaskId: Int? = null
+    private var currentTask: Task? = null
     private val taskQueue = ArrayDeque<TaskData>()
     private val userTaskExecService by lazy { Executors.newSingleThreadExecutor() }
     private val notifyingExecService by lazy { Executors.newSingleThreadExecutor() }
@@ -377,6 +378,15 @@ class ApplicationEx : Application(), OnInitListener {
                 val message = getString(R.string.unavailable_input_src_message)
                 runOnUiThread { longToast(message) }
             }
+            ZERO_LENGTH_INPUT -> {
+                val messageId = when (lastAttemptedTaskId) {
+                    TASK_ID_READ_TEXT -> R.string.cannot_read_empty_input_message
+                    TASK_ID_WRITE_FILE -> R.string.cannot_synthesize_empty_input_message
+                    else -> return
+                }
+                val message = getString(messageId)
+                runOnUiThread { longToast(message) }
+            }
         }
     }
 
@@ -487,6 +497,9 @@ class ApplicationEx : Application(), OnInitListener {
     private fun speak(taskData: TaskData.ReadInputTaskData): Int {
         val tts = mTTS
 
+        // Set this task as under consideration.
+        lastAttemptedTaskId = taskData.taskId
+
         // Return early if it is not possible or not appropriate to proceed.
         if (!ttsReady || tts == null) return TTS_NOT_READY
         if (fileSynthesisTaskInProgress) return TTS_BUSY
@@ -502,6 +515,9 @@ class ApplicationEx : Application(), OnInitListener {
         }
         if (inputStream == null || inputSize == null) return UNAVAILABLE_INPUT_SRC
 
+        // Verify that the input stream is at least one byte long.
+        if (inputSize == 0L) return ZERO_LENGTH_INPUT
+
         // Initialize the task, begin it asynchronously and return.
         val task = ReadInputTask(this, tts, inputStream, inputSize,
                 taskData.queueMode, asyncProgressObserver)
@@ -513,6 +529,9 @@ class ApplicationEx : Application(), OnInitListener {
     @Synchronized
     private fun synthesizeToFile(taskData: TaskData.FileSynthesisTaskData): Int {
         val tts = mTTS
+
+        // Set this task as under consideration.
+        lastAttemptedTaskId = taskData.taskId
 
         // Return early if it is not possible or not appropriate to proceed.
         if (!ttsReady || tts == null) return TTS_NOT_READY
@@ -529,6 +548,9 @@ class ApplicationEx : Application(), OnInitListener {
         }
         if (inputStream == null || inputSize == null) return UNAVAILABLE_INPUT_SRC
 
+        // Verify that the input stream is at least one byte long.
+        if (inputSize == 0L) return ZERO_LENGTH_INPUT
+
         // Verify that the out directory exists.  Return early if it does not.
         val outDirectory = taskData.outDirectory
         val waveFilename = taskData.waveFilename
@@ -544,6 +566,9 @@ class ApplicationEx : Application(), OnInitListener {
 
     @Synchronized
     private fun joinWaveFiles(taskData: TaskData.JoinWaveFilesTaskData): Int {
+        // Set this task as under consideration.
+        lastAttemptedTaskId = taskData.taskId
+
         // Check that the wave file list from the previous task is available.
         val previousTask = currentTask
         if (previousTask !is FileSynthesisTask) return FAILURE

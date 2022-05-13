@@ -74,7 +74,7 @@ class TTSIntentService : IntentService("TTSIntentService") {
         // Display a message if 'text' is blank/empty.
         if (text == null || text.isBlank()) {
             runOnUiThread {
-                longToast(R.string.cannot_speak_empty_text_msg)
+                longToast(R.string.cannot_read_empty_input_message)
             }
             return
         }

@@ -40,6 +40,7 @@ const val TTS_NOT_READY = -2
 const val UNAVAILABLE_INPUT_SRC = -3
 const val UNAVAILABLE_OUT_DIR = -4
 const val TTS_BUSY = -5
+const val ZERO_LENGTH_INPUT = -6
 
 // Task identifiers.
 const val TASK_ID_IDLE = 0
