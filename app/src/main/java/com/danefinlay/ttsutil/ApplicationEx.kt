@@ -42,14 +42,15 @@ import java.io.InputStream
 import java.util.*
 import java.util.concurrent.Executors
 
-class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
+class ApplicationEx : Application(), OnInitListener {
 
     var mTTS: TextToSpeech? = null
         private set
 
     var currentTask: Task? = null
     private val taskQueue = ArrayDeque<TaskData>()
-    private val executorService by lazy { Executors.newSingleThreadExecutor() }
+    private val userTaskExecService by lazy { Executors.newSingleThreadExecutor() }
+    private val notifyingExecService by lazy { Executors.newSingleThreadExecutor() }
     private var errorMessage: String? = null
     private val progressObservers = mutableSetOf<TaskProgressObserver>()
     private var notificationBuilder: NotificationCompat.Builder? = null
@@ -64,6 +65,17 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
      * */
     var ttsReady = false
         private set
+
+    private val asyncProgressObserver = object : TaskProgressObserver {
+        override fun notifyProgress(progress: Int, taskId: Int,
+                                    remainingTasks: Int) {
+            // Submit a executor task to call the application's notifyProgress()
+            // procedure.
+            notifyingExecService.submit {
+                this@ApplicationEx.notifyProgress(progress, taskId, remainingTasks)
+            }
+        }
+    }
 
     val readingTaskInProgress: Boolean
         get () {
@@ -319,7 +331,7 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
         currentTask?.finalize()
         currentTask = null
         if (idle) {
-            notifyProgress(100, TASK_ID_IDLE, 0)
+            asyncProgressObserver.notifyProgress(100, TASK_ID_IDLE, 0)
         }
         return success
     }
@@ -431,8 +443,7 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
         }
     }
 
-    @Synchronized
-    override fun notifyProgress(progress: Int, taskId: Int, remainingTasks: Int) {
+    private fun notifyProgress(progress: Int, taskId: Int, remainingTasks: Int) {
         // Note: The size of the taskQueue should not be assumed here.
         // Retrieve the current task data and update its progress attribute, if
         // necessary.
@@ -493,9 +504,9 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
 
         // Initialize the task, begin it asynchronously and return.
         val task = ReadInputTask(this, tts, inputStream, inputSize,
-                taskData.queueMode, this)
+                taskData.queueMode, asyncProgressObserver)
         currentTask = task
-        executorService.submit { task.begin() }
+        userTaskExecService.submit { task.begin() }
         return SUCCESS
     }
 
@@ -525,9 +536,9 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
 
         // Initialize the task, begin it asynchronously and return.
         val task = FileSynthesisTask(this, tts, inputStream, inputSize,
-                waveFilename, this)
+                waveFilename, asyncProgressObserver)
         currentTask = task
-        executorService.submit { task.begin() }
+        userTaskExecService.submit { task.begin() }
         return SUCCESS
     }
 
@@ -546,16 +557,17 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
                 waveFilename, "audio/x-wav") ?: return UNAVAILABLE_OUT_DIR
 
         // Initialize the task, begin it asynchronously and return.
-        val task = JoinWaveFilesTask(this, this, previousTask.inWaveFiles,
-                outputStream, waveFilename)
+        val task = JoinWaveFilesTask(this, asyncProgressObserver,
+                previousTask.inWaveFiles, outputStream, waveFilename)
         currentTask = task
-        executorService.submit { task.begin() }
+        userTaskExecService.submit { task.begin() }
         return SUCCESS
     }
 
     private fun beginTaskOrNotify(taskData: TaskData): Int {
         // If *taskData* is at the head of the queue, begin the task it is
-        // associated with.  Otherwise, notify progress observers.
+        // associated with.  Otherwise, notify the observer.
+        val observer = asyncProgressObserver
         val result: Int
         if (taskQueue.peek() === taskData) {
             result = when (taskData) {
@@ -565,7 +577,7 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
             }
 
             // If the task failed to start, remove the appropriate number of tasks
-            // from the queue.
+            // from the queue and notify the observer.
             if (result != SUCCESS) {
                 val taskCount = when (taskData) {
                     is TaskData.ReadInputTaskData -> 1
@@ -573,10 +585,11 @@ class ApplicationEx : Application(), OnInitListener, TaskProgressObserver {
                     is TaskData.JoinWaveFilesTaskData -> 1
                 }
                 for (i in 0 until taskCount) taskQueue.pop()
+                observer.notifyProgress(-1, taskData.taskId, 0)
             }
         } else {
             val item1 = taskQueue.peek()
-            notifyProgress(item1.progress, item1.taskId, 0)
+            observer.notifyProgress(item1.progress, item1.taskId, 0)
             result = SUCCESS
         }
         return result
