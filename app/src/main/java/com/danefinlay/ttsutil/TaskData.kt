@@ -20,6 +20,8 @@
 
 package com.danefinlay.ttsutil
 
+import java.io.File
+
 sealed class TaskData(var taskId: Int, var progress: Int) {
     class ReadInputTaskData(taskId: Int, progress: Int,
                             val inputSource: InputSource,
@@ -28,10 +30,10 @@ sealed class TaskData(var taskId: Int, var progress: Int) {
     class FileSynthesisTaskData(taskId: Int, progress: Int,
                                 val inputSource: InputSource,
                                 val outDirectory: Directory,
-                                val waveFilename: String) :
+                                val waveFilename: String,
+                                val inWaveFiles: MutableList<File>) :
             TaskData(taskId, progress)
     class JoinWaveFilesTaskData(taskId: Int, progress: Int,
-                                val outDirectory: Directory,
-                                val waveFilename: String) :
+                                val prevTaskData: FileSynthesisTaskData) :
             TaskData(taskId, progress)
 }

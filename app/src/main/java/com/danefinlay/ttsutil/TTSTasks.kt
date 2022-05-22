@@ -300,12 +300,10 @@ class ReadInputTask(ctx: Context, tts: TextToSpeech, inputStream: InputStream,
 class FileSynthesisTask(ctx: Context, tts: TextToSpeech,
                         inputStream: InputStream, inputSize: Long,
                         private val waveFilename: String,
+                        private val inWaveFiles: MutableList<File>,
                         progressObserver: TaskProgressObserver) :
         TTSTask(ctx, tts, inputStream, inputSize,
                 TASK_ID_WRITE_FILE, progressObserver) {
-
-    var inWaveFiles = mutableListOf<File>()
-        private set
 
     private fun enqueueFileSynthesis(text: String, bytesRead: Int) {
         if (bytesRead == 0) return

@@ -556,9 +556,13 @@ class ApplicationEx : Application(), OnInitListener {
         val waveFilename = taskData.waveFilename
         if (!outDirectory.exists(this)) return UNAVAILABLE_OUT_DIR
 
+        // Retrieve the mutable file list initialized earlier on.  This list will
+        // be used by the next task if this one is successful.
+        val inWaveFiles = taskData.inWaveFiles
+
         // Initialize the task, begin it asynchronously and return.
         val task = FileSynthesisTask(this, tts, inputStream, inputSize,
-                waveFilename, asyncProgressObserver)
+                waveFilename, inWaveFiles, asyncProgressObserver)
         currentTask = task
         userTaskExecService.submit { task.begin() }
         return SUCCESS
@@ -569,21 +573,20 @@ class ApplicationEx : Application(), OnInitListener {
         // Set this task as under consideration.
         lastAttemptedTaskId = taskData.taskId
 
-        // Check that the wave file list from the previous task is available.
-        val previousTask = currentTask
-        if (previousTask !is FileSynthesisTask) return FAILURE
+        // Retrieve the previous task's data.
+        val prevTaskData = taskData.prevTaskData
 
         // Use the out directory to create and open an output stream on the
         // specified document.  Return early if this is not possible.
-        val outDirectory = taskData.outDirectory
-        val waveFilename = taskData.waveFilename
+        val outDirectory = prevTaskData.outDirectory
+        val waveFilename = prevTaskData.waveFilename
         if (!outDirectory.exists(this)) return UNAVAILABLE_OUT_DIR
         val outputStream = outDirectory.openDocumentOutputStream(this,
                 waveFilename, "audio/x-wav") ?: return UNAVAILABLE_OUT_DIR
 
         // Initialize the task, begin it asynchronously and return.
         val task = JoinWaveFilesTask(this, asyncProgressObserver,
-                previousTask.inWaveFiles, outputStream, waveFilename)
+                prevTaskData.inWaveFiles, outputStream, waveFilename)
         currentTask = task
         userTaskExecService.submit { task.begin() }
         return SUCCESS
@@ -657,13 +660,13 @@ class ApplicationEx : Application(), OnInitListener {
 
         // Encapsulate the file synthesis task data and add it to the queue.
         val taskData1 = TaskData.FileSynthesisTaskData(TASK_ID_WRITE_FILE, 0,
-                inputSource, outDirectory, waveFilename)
+                inputSource, outDirectory, waveFilename, mutableListOf())
         taskQueue.add(taskData1)
 
         // TODO Handle creation of MP3 files here with a separate task.
         // Encapsulate the join wave files task data and add it to the queue.
         val taskData2 = TaskData.JoinWaveFilesTaskData(TASK_ID_PROCESS_FILE, 0,
-                outDirectory, waveFilename)
+                taskData1)
         taskQueue.add(taskData2)
 
         // Process the task if it is at the head of the queue.  Otherwise, notify

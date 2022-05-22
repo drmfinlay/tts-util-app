@@ -35,12 +35,11 @@ const val REQUEST_EXTERNAL_STORAGE = 4
 
 // TTS operation result flags.
 const val SUCCESS = 0
-const val FAILURE = -1
-const val TTS_NOT_READY = -2
-const val UNAVAILABLE_INPUT_SRC = -3
-const val UNAVAILABLE_OUT_DIR = -4
-const val TTS_BUSY = -5
-const val ZERO_LENGTH_INPUT = -6
+const val TTS_NOT_READY = -1
+const val UNAVAILABLE_INPUT_SRC = -2
+const val UNAVAILABLE_OUT_DIR = -3
+const val TTS_BUSY = -4
+const val ZERO_LENGTH_INPUT = -5
 
 // Task identifiers.
 const val TASK_ID_IDLE = 0
