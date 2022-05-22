@@ -22,7 +22,7 @@ package com.danefinlay.ttsutil
 
 import java.io.File
 
-sealed class TaskData(var taskId: Int, var progress: Int) {
+sealed class TaskData(val taskId: Int, var progress: Int) {
     class ReadInputTaskData(taskId: Int, progress: Int,
                             val inputSource: InputSource,
                             val queueMode: Int) :

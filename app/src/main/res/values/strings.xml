@@ -130,10 +130,12 @@
     <string name="reading_notification_title">Speech in Progress</string>
     <string name="synthesis_notification_title">File Synthesis in Progress</string>
     <string name="post_synthesis_notification_title">Processing synthesized wave file</string>
-    <string name="progress_notification_text">%1$d %2$s remaining…</string>
     <string name="begin_reading_source_message">Reading from %1$s…</string>
     <string name="begin_synthesizing_source_message">Synthesizing wave file from %1$s…</string>
     <string name="begin_processing_source_message">Processing synthesized %1$s wave files…</string>
+    <!--Example: "Reading from abc.txt…
+                  2 tasks remaining."-->
+    <string name="progress_notification_text">%1$s\n%2$d %3$s remaining.</string>
 
     <!--Text-to-speech message strings.-->
     <string name="tts_not_ready_message">Text-to-speech is not ready. Try again in a moment.</string>

@@ -29,28 +29,46 @@ import android.os.Build
 import android.support.v4.app.NotificationCompat
 import com.danefinlay.ttsutil.ui.MainActivity
 import org.jetbrains.anko.notificationManager
-import java.lang.RuntimeException
 
 val notificationTasks = listOf(TASK_ID_READ_TEXT, TASK_ID_WRITE_FILE,
         TASK_ID_PROCESS_FILE)
 
-fun getNotificationTitle(ctx: Context, taskId: Int): String {
-    val stringId = when (taskId) {
-        TASK_ID_READ_TEXT -> R.string.reading_notification_title
-        TASK_ID_WRITE_FILE -> R.string.synthesis_notification_title
-        TASK_ID_PROCESS_FILE -> R.string.post_synthesis_notification_title
-        else -> throw RuntimeException("Invalid task ID $taskId")
+
+fun getNotificationTitle(ctx: Context, taskData: TaskData): String {
+    val titleId = when (taskData) {
+        is TaskData.ReadInputTaskData ->
+            R.string.reading_notification_title
+        is TaskData.FileSynthesisTaskData ->
+            R.string.synthesis_notification_title
+        is TaskData.JoinWaveFilesTaskData ->
+            R.string.post_synthesis_notification_title
     }
-    return ctx.getString(stringId)
+    return ctx.getString(titleId)
 }
 
-fun getNotificationText(ctx: Context, taskId: Int, remainingTasks: Int): String {
-    val textId = when (taskId) {
-        TASK_ID_READ_TEXT, TASK_ID_WRITE_FILE, TASK_ID_PROCESS_FILE ->
-            R.string.progress_notification_text
-        else -> throw RuntimeException("Invalid task ID $taskId")
+fun getNotificationText(ctx: Context, taskData: TaskData,
+                        remainingTasks: Int): String {
+    // Example: "Reading from abc.txt…
+    //           2 tasks remaining."
+    val textId = R.string.progress_notification_text
+    val beginTextId: Int
+    val srcDescription: String
+    when (taskData) {
+        is TaskData.ReadInputTaskData -> {
+            beginTextId = R.string.begin_reading_source_message
+            srcDescription = taskData.inputSource.description
+        }
+        is TaskData.FileSynthesisTaskData -> {
+            beginTextId = R.string.begin_synthesizing_source_message
+            srcDescription = taskData.inputSource.description
+        }
+        is TaskData.JoinWaveFilesTaskData -> {
+            beginTextId = R.string.begin_processing_source_message
+            srcDescription = taskData.prevTaskData.inputSource.description
+        }
     }
-    return ctx.getString(textId, remainingTasks,
+    val beginText = ctx.getString(beginTextId, srcDescription)
+    return ctx.getString(textId, beginText, remainingTasks,
             ctx.resources.getQuantityString(R.plurals.tasks, remainingTasks))
 }
 
@@ -91,6 +109,9 @@ fun getNotificationBuilder(ctx: Context, taskId: Int): NotificationCompat.Builde
     return notificationBuilder.apply {
         // Set the icon for the notification
         setSmallIcon(android.R.drawable.ic_btn_speak_now)
+
+        // Set the ticker name.
+        setTicker(ctx.getString(R.string.app_name))
 
         // Set pending intents.
         setContentIntent(contentPendingIntent)

@@ -169,11 +169,9 @@ class ApplicationEx : Application(), OnInitListener {
 
         // Post the current notification, if any.
         val taskData = taskQueue.peek()
-        if (taskData != null) {
-            postNotification(taskData.progress, taskData.taskId,
-                    unfinishedTaskCount)
-        }
+        if (taskData != null) postNotification(taskData, unfinishedTaskCount)
 
+        // Set notifications as enabled.
         notificationsEnabled = true
     }
 
@@ -182,6 +180,8 @@ class ApplicationEx : Application(), OnInitListener {
 
         // Cancel any TTS notifications present.
         notificationTasks.forEach { notificationManager.cancel(it) }
+
+        // Set notifications as disabled.
         notificationsEnabled = false
     }
 
@@ -414,8 +414,10 @@ class ApplicationEx : Application(), OnInitListener {
         progressObservers.remove(observer)
     }
 
-    private fun postNotification(progress: Int, taskId: Int, remainingTasks: Int) {
+    private fun postNotification(taskData: TaskData, remainingTasks: Int) {
         // Do nothing if the given task ID is, e.g., TASK_ID_IDLE.
+        val taskId = taskData.taskId
+        val progress = taskData.progress
         if (taskId !in notificationTasks) return
 
         // Initialize the notification builder using the given task ID.
@@ -428,11 +430,11 @@ class ApplicationEx : Application(), OnInitListener {
         // Build (or re-build) the notification with the specified progress if the
         // task has not yet been completed.
         if (progress in 0..99) {
-            val title = getNotificationTitle(this, taskId)
-            val text = getNotificationText(this, taskId, remainingTasks)
+            val title = getNotificationTitle(this, taskData)
+            val text = getNotificationText(this, taskData, remainingTasks)
             val notification = builder
                     .setContentTitle(title)
-                    .setContentText(text)
+                    .setStyle(NotificationCompat.BigTextStyle().bigText(text))
                     .setProgress(100, progress, false)
                     .build()
             notificationManager.notify(taskId, notification)
@@ -463,7 +465,7 @@ class ApplicationEx : Application(), OnInitListener {
 
         // Post a progress notification, if necessary.
         if (notificationsEnabled) {
-            postNotification(progress, taskId, totalUnfinishedTasks)
+            postNotification(taskData, totalUnfinishedTasks)
         }
 
         // Notify other observers.
