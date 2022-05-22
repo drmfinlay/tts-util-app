@@ -29,19 +29,21 @@ import java.io.InputStream
  * These classes constitute an adapter for working with text-to-speech input
  * sources.
  */
-sealed class InputSource {
+sealed class InputSource(val description: kotlin.String) {
     abstract fun isSourceAvailable(ctx: Context): Boolean
     abstract fun getSize(ctx: Context): Long?
     abstract fun openInputStream(ctx: Context): InputStream?
 
-    class String(val text: kotlin.String): InputSource() {
+    class String(val text: kotlin.String, description: kotlin.String) :
+            InputSource(description) {
         override fun isSourceAvailable(ctx: Context): Boolean = true
         override fun getSize(ctx: Context): Long = text.length.toLong()
         override fun openInputStream(ctx: Context): InputStream =
                 ByteArrayInputStream(text.toByteArray())
     }
 
-    class ContentUri(val uri: Uri?) : InputSource() {
+    class ContentUri(val uri: Uri?, description: kotlin.String) :
+            InputSource(description) {
         override fun isSourceAvailable(ctx: Context) =
                 uri?.isAccessibleFile(ctx) == true
 

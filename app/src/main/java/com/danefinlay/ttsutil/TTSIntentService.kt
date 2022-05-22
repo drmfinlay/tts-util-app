@@ -62,7 +62,10 @@ class TTSIntentService : IntentService("TTSIntentService") {
             ACTION_READ_CLIPBOARD -> handleActionReadClipboard()
             ACTION_EDIT_READ_CLIPBOARD -> handleActionEditReadClipboard(false)
             ACTION_STOP_SPEAKING -> handleActionStopSpeaking(intent)
-            ACTION_READ_TEXT -> handleActionReadText(text)
+            ACTION_READ_TEXT -> {
+                val description = getString(R.string.read_text_source_description)
+                handleActionReadText(text, description)
+            }
         }
     }
 
@@ -70,7 +73,7 @@ class TTSIntentService : IntentService("TTSIntentService") {
      * Handle action ReadText in the provided background thread with the provided
      * parameters.
      */
-    private fun handleActionReadText(text: String?) {
+    private fun handleActionReadText(text: String?, sourceDescription: String) {
         // Display a message if 'text' is blank/empty.
         if (text == null || text.isBlank()) {
             runOnUiThread {
@@ -80,7 +83,8 @@ class TTSIntentService : IntentService("TTSIntentService") {
         }
 
         // Speak *text* and handle the result.
-        val result = myApplication.enqueueReadInputTask(text, QUEUE_ADD)
+        val inputSource = InputSource.String(text, sourceDescription)
+        val result = myApplication.enqueueReadInputTask(inputSource, QUEUE_ADD)
         myApplication.handleTTSOperationResult(result)
     }
 
@@ -113,7 +117,8 @@ class TTSIntentService : IntentService("TTSIntentService") {
         }
 
         // Read clipboard text.
-        handleActionReadText(ctx.getClipboardText())
+        val description = getString(R.string.read_clipboard_source_description)
+        handleActionReadText(ctx.getClipboardText(), description)
     }
 
     /**

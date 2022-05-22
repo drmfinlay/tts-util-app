@@ -674,28 +674,6 @@ class ApplicationEx : Application(), OnInitListener {
         return beginTaskOrNotify(taskData1)
     }
 
-    fun enqueueReadInputTask(text: String, queueMode: Int): Int {
-        val inputSource = InputSource.String(text)
-        return enqueueReadInputTask(inputSource, queueMode)
-    }
-
-    fun enqueueFileSynthesisTasks(text: String, outDirectory: Directory,
-                                  waveFilename: String): Int {
-        val inputSource = InputSource.String(text)
-        return enqueueFileSynthesisTasks(inputSource, outDirectory, waveFilename)
-    }
-
-    fun enqueueReadInputTask(contentUri: Uri?, queueMode: Int): Int {
-        val inputSource = InputSource.ContentUri(contentUri)
-        return enqueueReadInputTask(inputSource, queueMode)
-    }
-
-    fun enqueueFileSynthesisTasks(contentUri: Uri?, outDirectory: Directory,
-                                  waveFilename: String): Int {
-        val inputSource = InputSource.ContentUri(contentUri)
-        return enqueueFileSynthesisTasks(inputSource, outDirectory, waveFilename)
-    }
-
     override fun onLowMemory() {
         super.onLowMemory()
 

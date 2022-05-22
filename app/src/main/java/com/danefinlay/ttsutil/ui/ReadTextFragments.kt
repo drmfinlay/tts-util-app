@@ -54,6 +54,8 @@ abstract class ReadTextFragmentBase : MyFragment() {
             return inputLayout.editText?.text?.toString()
         }
 
+    protected abstract val textSourceDescription: String
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -142,7 +144,8 @@ abstract class ReadTextFragmentBase : MyFragment() {
         }
 
         // Speak *text* and handle the result.
-        val result = myApplication.enqueueReadInputTask(text, QUEUE_ADD)
+        val inputSource = InputSource.String(text, textSourceDescription)
+        val result = myApplication.enqueueReadInputTask(inputSource, QUEUE_ADD)
         myApplication.handleTTSOperationResult(result)
     }
 
@@ -167,7 +170,8 @@ abstract class ReadTextFragmentBase : MyFragment() {
 
         // Start synthesizing the file's content into a wave file and handle the
         // result.
-        val result = myApplication.enqueueFileSynthesisTasks(text, directory,
+        val inputSource = InputSource.String(text, textSourceDescription)
+        val result = myApplication.enqueueFileSynthesisTasks(inputSource, directory,
                 waveFilename)
         when (result) {
             UNAVAILABLE_OUT_DIR -> buildUnavailableDirAlertDialog().show()
@@ -265,6 +269,9 @@ class ReadTextFragment : ReadTextFragmentBase() {
 
     private var persistentContent: Boolean = false
 
+    override val textSourceDescription: String
+        get() = getString(R.string.read_text_source_description)
+
     override fun onCreateView(
             inflater: LayoutInflater,
             container: ViewGroup?,
@@ -333,6 +340,9 @@ class ReadTextFragment : ReadTextFragmentBase() {
 }
 
 class ReadClipboardFragment : ReadTextFragmentBase() {
+
+    override val textSourceDescription: String
+        get() = getString(R.string.read_clipboard_source_description)
 
     override fun onCreateView(
             inflater: LayoutInflater,

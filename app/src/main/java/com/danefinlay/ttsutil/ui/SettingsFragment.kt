@@ -82,7 +82,10 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
 
                 // Speak sample text and handle the result.
                 // We use QUEUE_FLUSH because it is more appropriate.
-                val result = app.enqueueReadInputTask(event.sampleText, QUEUE_FLUSH)
+                // Note: The input source description won't be used.
+                val inputSource = InputSource.String(event.sampleText,
+                        "sample text")
+                val result = app.enqueueReadInputTask(inputSource, QUEUE_FLUSH)
                 if (result == SUCCESS) {
                     sampleInProgress = true
                 } else if (result == TTS_NOT_READY) {

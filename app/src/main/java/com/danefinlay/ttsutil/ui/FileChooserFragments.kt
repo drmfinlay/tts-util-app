@@ -165,8 +165,9 @@ class ReadFilesFragment : FileChooserFragment() {
         val uriList = event?.uriList
         if (uriList == null || uriList.size == 0) {
             buildUnavailableFileAlertDialog(listOf()).show()
-        } else for (uri in uriList) {
-            val result = myApplication.enqueueReadInputTask(uri, QUEUE_ADD)
+        } else for ((uri, displayName) in uriList.zip(event.displayNameList)) {
+            val inputSource = InputSource.ContentUri(uri, displayName)
+            val result = myApplication.enqueueReadInputTask(inputSource, QUEUE_ADD)
             when (result) {
                 UNAVAILABLE_INPUT_SRC ->
                     buildUnavailableFileAlertDialog(uriList).show()
@@ -196,8 +197,9 @@ class ReadFilesFragment : FileChooserFragment() {
             buildUnavailableFileAlertDialog(event.uriList).show()
         } else for ((uri, displayName) in fileData) {
             val waveFilename = "$displayName.wav"
-            val result = myApplication.enqueueFileSynthesisTasks(uri, directory,
-                    waveFilename)
+            val inputSource = InputSource.ContentUri(uri, displayName)
+            val result = myApplication.enqueueFileSynthesisTasks(inputSource,
+                    directory, waveFilename)
             when (result) {
                 UNAVAILABLE_INPUT_SRC ->
                     buildUnavailableFileAlertDialog(event.uriList).show()

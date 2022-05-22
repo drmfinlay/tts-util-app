@@ -122,6 +122,10 @@
     <string name="read_clipboard_shortcut">Read from clipboard</string>
     <string name="edit_read_clipboard_shortcut">Edit &amp; read from clipboard</string>
 
+    <!--Text source descriptions.-->
+    <string name="read_text_source_description">text content</string>
+    <string name="read_clipboard_source_description">clipboard content</string>
+
     <!--Notification-related strings.-->
     <string name="speaking_notification_title">Speech in Progress</string>
     <string name="synthesis_notification_title">File Synthesis in Progress</string>
