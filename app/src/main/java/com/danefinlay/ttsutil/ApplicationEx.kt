@@ -168,8 +168,10 @@ class ApplicationEx : Application(), OnInitListener {
         if (notificationsEnabled) return
 
         // Post the current notification, if any.
-        val taskData = taskQueue.peek()
-        if (taskData != null) postNotification(taskData, unfinishedTaskCount)
+        if (taskQueue.size > 0) notifyingExecService.submit {
+            val taskData = taskQueue.peek()
+            if (taskData != null) postNotification(taskData, unfinishedTaskCount)
+        }
 
         // Set notifications as enabled.
         notificationsEnabled = true
@@ -178,8 +180,10 @@ class ApplicationEx : Application(), OnInitListener {
     fun disableNotifications() {
         if (!notificationsEnabled) return
 
-        // Cancel any TTS notifications present.
-        notificationTasks.forEach { notificationManager.cancel(it) }
+        // Cancel any TTS notifications present, if necessary.
+        if (taskQueue.size > 0) notifyingExecService.submit {
+            notificationTasks.forEach { notificationManager.cancel(it) }
+        }
 
         // Set notifications as disabled.
         notificationsEnabled = false

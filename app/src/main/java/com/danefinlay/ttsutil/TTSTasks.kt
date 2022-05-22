@@ -77,7 +77,7 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
     @Volatile
     protected var finalize: Boolean = false
 
-    protected lateinit var reader: BufferedReader
+    protected val reader by lazy { inputStream.bufferedReader() }
     protected val maxInputLength = getMaxSpeechInputLength()
     private var inputProcessed: Long = 0
     protected var streamHasFurtherInput: Boolean = true
@@ -104,10 +104,11 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
         // Notify the progress listener that work has begun.
         observer.notifyProgress(0, taskId, 0)
 
-        // Open a reader on the input stream and enqueue the first input bytes.
-        // This jumpstarts the processing of the entire stream.
+        // Initialize the input stream reader and enqueue the first input bytes,
+        // catching any IO exceptions.  This jumpstarts the processing of the
+        // entire stream.
         try {
-            reader = inputStream.bufferedReader()
+            reader
             streamHasFurtherInput = enqueueNextInput()
         } catch (exception: IOException) {
             return finish(false)
@@ -131,15 +132,6 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
     override fun onStart(utteranceId: String?) {}
 
     override fun onError(utteranceId: String?, errorCode: Int) {
-        // Schedule the finish(false) to be invoked in  roughly 300 ms.
-        // This is done asynchronously because it is possible that neither the
-        // notification has been started nor the audio focus has been acquired by
-        // the time this is run.
-        app.doAsync {
-            Thread.sleep(300)
-            finish(false)
-        }
-
         // Get the matching error message string for errorCode.
         val errorMsg =  when (errorCode) {
             ERROR_SYNTHESIS -> R.string.synthesis_error_msg_synthesis
@@ -154,6 +146,10 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
 
         // Display the error message.
         displayMessage(errorMsg, true)
+
+        // Finish.
+        finalize()
+        finish(false)
     }
 
     override fun onStop(utteranceId: String?, interrupted: Boolean) {
