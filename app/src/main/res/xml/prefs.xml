@@ -57,5 +57,15 @@
             android:icon="@android:drawable/ic_menu_preferences" />
 
     </PreferenceCategory>
+    <PreferenceCategory
+        android:title="@string/pref_messages_category">
+
+        <SwitchPreference
+            android:key="pref_messages_next_task"
+            android:title="@string/pref_messages_next_task"
+            android:summary="@string/pref_messages_next_task_summary"
+            android:defaultValue="true" />
+
+    </PreferenceCategory>
 
 </PreferenceScreen>

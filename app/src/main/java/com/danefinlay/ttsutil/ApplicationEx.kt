@@ -109,6 +109,12 @@ class ApplicationEx : Application(), OnInitListener {
             return prefs.getString("pref_tts_engine", mTTS?.defaultEngine)
         }
 
+    private val nextTaskMessagesEnabled: Boolean
+        get() {
+            val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+            return prefs.getBoolean("pref_messages_next_task", true)
+        }
+
     private val audioFocusGain = AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
     private val audioFocusRequest: AudioFocusRequest by lazy {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -623,9 +629,8 @@ class ApplicationEx : Application(), OnInitListener {
                 }
             }
 
-            // Display an info message if the task was started successfully and
-            // there was a previous task.
-            if (result == SUCCESS && wasPriorTask) {
+            // If it is appropriate, display an info message.
+            if (result == SUCCESS && wasPriorTask && nextTaskMessagesEnabled) {
                 val message = getString(infoMessageId, srcDescription)
                 runOnUiThread { toast(message) }
             }
