@@ -501,7 +501,6 @@ class ApplicationEx : Application(), OnInitListener {
 
         // Return early if it is not possible or not appropriate to proceed.
         if (!ttsReady || tts == null) return TTS_NOT_READY
-        if (fileSynthesisTaskInProgress) return TTS_BUSY
 
         // Use the input source to open an input stream and retrieve the content
         // size in bytes.  Return early if this is not possible.
@@ -534,7 +533,6 @@ class ApplicationEx : Application(), OnInitListener {
 
         // Return early if it is not possible or not appropriate to proceed.
         if (!ttsReady || tts == null) return TTS_NOT_READY
-        if (readingTaskInProgress) return TTS_BUSY
 
         // Use the input source to open an input stream and retrieve the content
         // size in bytes.  Return early if this is not possible.
@@ -649,10 +647,6 @@ class ApplicationEx : Application(), OnInitListener {
         // Do not continue unless TTS is ready.
         if (!ttsReady || mTTS == null) return TTS_NOT_READY
 
-        // If file synthesis is in progress, refuse to enqueue the task; the user
-        // must stop the current operation manually.
-        if (fileSynthesisTaskInProgress) return TTS_BUSY
-
         // Handle QUEUE_FLUSH and QUEUE_DESTROY by clearing the task queue and
         // finalizing the current task.
         // Note: There should be no need to call tts.stop().
@@ -676,10 +670,6 @@ class ApplicationEx : Application(), OnInitListener {
                                   waveFilename: String): Int {
         // Do not continue unless TTS is ready.
         if (!ttsReady || mTTS == null) return TTS_NOT_READY
-
-        // If text is currently being read, refuse to enqueue this task; the user
-        // must stop the current operation manually.
-        if (readingTaskInProgress) return TTS_BUSY
 
         // Encapsulate the file synthesis task data and add it to the queue.
         val taskData1 = TaskData.FileSynthesisTaskData(TASK_ID_WRITE_FILE, 0,
