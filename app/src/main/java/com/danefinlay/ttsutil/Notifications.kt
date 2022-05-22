@@ -36,7 +36,7 @@ val notificationTasks = listOf(TASK_ID_READ_TEXT, TASK_ID_WRITE_FILE,
 
 fun getNotificationTitle(ctx: Context, taskId: Int): String {
     val stringId = when (taskId) {
-        TASK_ID_READ_TEXT -> R.string.speaking_notification_title
+        TASK_ID_READ_TEXT -> R.string.reading_notification_title
         TASK_ID_WRITE_FILE -> R.string.synthesis_notification_title
         TASK_ID_PROCESS_FILE -> R.string.post_synthesis_notification_title
         else -> throw RuntimeException("Invalid task ID $taskId")

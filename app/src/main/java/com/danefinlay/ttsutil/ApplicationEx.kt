@@ -27,17 +27,13 @@ import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.media.AudioManager.OnAudioFocusChangeListener
-import android.net.Uri
 import android.os.Build
 import android.speech.tts.TextToSpeech
 import android.speech.tts.TextToSpeech.OnInitListener
 import android.speech.tts.TextToSpeech.QUEUE_FLUSH
 import android.support.v4.app.NotificationCompat
 import android.support.v7.preference.PreferenceManager
-import org.jetbrains.anko.audioManager
-import org.jetbrains.anko.longToast
-import org.jetbrains.anko.notificationManager
-import org.jetbrains.anko.runOnUiThread
+import org.jetbrains.anko.*
 import java.io.InputStream
 import java.util.*
 import java.util.concurrent.Executors
@@ -359,7 +355,7 @@ class ApplicationEx : Application(), OnInitListener {
                 val taskId = taskQueue.peek()?.taskId
                 val currentTaskTextId = when (taskId) {
                     TASK_ID_READ_TEXT ->
-                        R.string.speaking_notification_title
+                        R.string.reading_notification_title
                     TASK_ID_WRITE_FILE ->
                         R.string.synthesis_notification_title
                     TASK_ID_PROCESS_FILE ->
@@ -476,9 +472,11 @@ class ApplicationEx : Application(), OnInitListener {
         }
 
         // If the task has finished, finalize it and remove it from the queue.
+        // Clear the current task if this is the last one.
         if (progress == 100 || progress == -1) {
             currentTask?.finalize()
             if (taskQueue.size > 0) taskQueue.pop()
+            if (taskQueue.size == 0) currentTask = null
         }
 
         // If the task finished successfully and there are more tasks in the queue,
@@ -490,6 +488,7 @@ class ApplicationEx : Application(), OnInitListener {
             handleTTSOperationResult(result)
         } else if (progress == -1) {
             taskQueue.clear()
+            currentTask = null
         }
     }
 
@@ -595,18 +594,41 @@ class ApplicationEx : Application(), OnInitListener {
     private fun beginTaskOrNotify(taskData: TaskData): Int {
         // If *taskData* is at the head of the queue, begin the task it is
         // associated with.  Otherwise, notify the observer.
+        val wasPriorTask = currentTask != null
         val observer = asyncProgressObserver
         val result: Int
         if (taskQueue.peek() === taskData) {
-            result = when (taskData) {
-                is TaskData.ReadInputTaskData -> speak(taskData)
-                is TaskData.FileSynthesisTaskData -> synthesizeToFile(taskData)
-                is TaskData.JoinWaveFilesTaskData -> joinWaveFiles(taskData)
+            // Begin the task, taking note of information that might be used later.
+            val infoMessageId: Int
+            val srcDescription: String
+            when (taskData) {
+                is TaskData.ReadInputTaskData -> {
+                    result = speak(taskData)
+                    infoMessageId = R.string.begin_reading_source_message
+                    srcDescription = taskData.inputSource.description
+                }
+                is TaskData.FileSynthesisTaskData -> {
+                    result = synthesizeToFile(taskData)
+                    infoMessageId = R.string.begin_synthesizing_source_message
+                    srcDescription = taskData.inputSource.description
+                }
+                is TaskData.JoinWaveFilesTaskData -> {
+                    result = joinWaveFiles(taskData)
+                    infoMessageId = R.string.begin_processing_source_message
+                    srcDescription = taskData.prevTaskData.inputSource.description
+                }
+            }
+
+            // Display an info message if the task was started successfully and
+            // there was a previous task.
+            if (result == SUCCESS && wasPriorTask) {
+                val message = getString(infoMessageId, srcDescription)
+                runOnUiThread { toast(message) }
             }
 
             // If the task failed to start, remove the appropriate number of tasks
             // from the queue and notify the observer.
-            if (result != SUCCESS) {
+            else if (result != SUCCESS) {
                 val taskCount = when (taskData) {
                     is TaskData.ReadInputTaskData -> 1
                     is TaskData.FileSynthesisTaskData -> 2
@@ -637,6 +659,7 @@ class ApplicationEx : Application(), OnInitListener {
         if (queueMode in listOf(QUEUE_FLUSH, -2)) {
             taskQueue.clear()
             currentTask?.finalize()
+            currentTask = null
         }
 
         // Encapsulate task data and add it to the queue.
