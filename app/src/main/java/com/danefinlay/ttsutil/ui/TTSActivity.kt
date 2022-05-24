@@ -83,6 +83,18 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
                 .apply()  // apply() is asynchronous.
     }
 
+    private fun restoreLastStatusUpdate(savedInstanceState: Bundle):
+            ActivityEvent.StatusUpdateEvent {
+        // Restore the last status update event, falling back on the idle status
+        // if it is out-of-date or unavailable.
+        // Note: This preserves task success/failure statuses.
+        var result: ActivityEvent.StatusUpdateEvent? =
+                savedInstanceState.getParcelable("mLastStatusUpdate")
+        if (result == null || result.progress in 0..99 &&
+                        !myApplication.taskInProgress) result = idleStatusEvent
+        return result
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -110,8 +122,7 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
 
         // Restore instance data.
         savedInstanceState.run {
-            mLastStatusUpdate = getParcelable("mLastStatusUpdate")
-                    ?: idleStatusEvent
+            mLastStatusUpdate = restoreLastStatusUpdate(savedInstanceState)
             mLastChosenFileEvent = getParcelable("mLastChosenFileEvent")
             mLastChosenDirEvent = getParcelable("mLastChosenDirEvent")
         }
