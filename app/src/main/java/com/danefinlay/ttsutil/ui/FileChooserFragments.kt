@@ -159,7 +159,9 @@ class ReadFilesFragment : FileChooserFragment() {
         }
     }
 
-    private fun onClickPlay() {
+    override fun onClickPlay() {
+        super.onClickPlay()
+
         // Start reading from the chosen files in order, stopping on failure.
         val event = activityInterface?.getLastFileChosenEvent()
         val uriList = event?.uriList
@@ -210,7 +212,9 @@ class ReadFilesFragment : FileChooserFragment() {
         }
     }
 
-    private fun onClickSave() {
+    override fun onClickSave() {
+        super.onClickSave()
+
         // Verify that the chosen file can be read.  If it cannot, inform the user
         // by showing an appropriate dialog.
         val event1 = activityInterface?.getLastFileChosenEvent()

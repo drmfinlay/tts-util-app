@@ -49,6 +49,8 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
     protected var mLastChosenDirEvent: ActivityEvent.ChosenFileEvent? = null
     protected var mLastChosenFileEvent: ActivityEvent.ChosenFileEvent? = null
 
+    protected var ttsInitAttempted: Boolean = false
+
     private fun retrieveChosenFileData(prefs: SharedPreferences, uriKey: String,
                                        nameKey: String, fileType: Int):
             ActivityEvent.ChosenFileEvent? {
@@ -98,13 +100,6 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Setup TTS, if necessary.
-        // Note: It would be nice if this could be done in the background; this
-        // causes a noticeable delay when the application starts.
-        if (savedInstanceState == null && !myApplication.ttsReady) {
-            myApplication.setupTTS(this, null)
-        }
-
         // Register as a task progress observer.
         myApplication.addProgressObserver(this)
 
@@ -144,6 +139,20 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
         for (fragment in fragments) {
             if (fragment !is FragmentInterface) continue
             fragment.handleActivityEvent(event)
+        }
+    }
+
+    override fun initializeTTS(initListener: TextToSpeech.OnInitListener?) {
+        // Initialize TTS, if necessary.  Since this may take some time, inform the
+        // user with a short message.
+        if (!ttsInitAttempted && myApplication.mTTS == null) {
+            runOnUiThread { toast(R.string.tts_initializing_message) }
+            val wrappedListener = TextToSpeech.OnInitListener { status ->
+                this.onInit(status)
+                initListener?.onInit(status)
+            }
+            myApplication.setupTTS(wrappedListener, null)
+            ttsInitAttempted = true
         }
     }
 

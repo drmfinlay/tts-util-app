@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
+import android.support.annotation.CallSuper
 import android.support.v4.app.Fragment
 import com.danefinlay.ttsutil.R
 import com.danefinlay.ttsutil.*
@@ -107,6 +108,18 @@ abstract class MyFragment : Fragment(), FragmentInterface {
             tempStoragePermissionBlock(allGranted)
             tempStoragePermissionBlock = {}
         }
+    }
+
+    @CallSuper
+    protected open fun onClickPlay() {
+        // Attempt to initialize TTS.
+        activityInterface?.initializeTTS(null)
+    }
+
+    @CallSuper
+    protected open fun onClickSave() {
+        // Attempt to initialize TTS.
+        activityInterface?.initializeTTS(null)
     }
 
     protected fun buildNoPermissionAlertDialog(block: (granted: Boolean) -> Unit):

@@ -134,7 +134,9 @@ abstract class ReadTextFragmentBase : MyFragment() {
         }
     }
 
-    private fun onClickPlay() {
+    override fun onClickPlay() {
+        super.onClickPlay()
+
         // Retrieve input field text.  If blank, use the hint text
         // and display an alert message.
         var text = inputLayoutContent ?: ""
@@ -179,7 +181,9 @@ abstract class ReadTextFragmentBase : MyFragment() {
         }
     }
 
-    private fun onClickSave() {
+    override fun onClickSave() {
+        super.onClickSave()
+
         // Determine the output directory.  If the user has not chosen one, the
         // "external" storage is used.
         val event = activityInterface?.getLastDirChosenEvent()
@@ -223,7 +227,7 @@ abstract class ReadTextFragmentBase : MyFragment() {
     }
 
     protected fun attemptPlaybackOnStart() {
-        if (!myApplication.ttsReady) {
+        if (myApplication.mTTS == null) {
             myApplication.handleTTSOperationResult(TTS_NOT_READY)
         } else {
             onClickPlay()

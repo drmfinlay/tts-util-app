@@ -20,6 +20,8 @@
 
 package com.danefinlay.ttsutil.ui
 
+import android.speech.tts.TextToSpeech
+
 /**
  * Interface between fragments and their activity.
  */
@@ -43,6 +45,11 @@ interface ActivityInterface {
      * Show a screen where the user can choose a directory.
      */
     fun showDirChooser(requestCode: Int)
+
+    /**
+     * Request that TTS be (re-)initialized.
+     */
+    fun initializeTTS(initListener: TextToSpeech.OnInitListener?)
 
     /**
      * Function to request sample TTS text from the current TTS engine.

@@ -31,6 +31,7 @@ import android.support.v7.preference.Preference
 import android.support.v7.preference.PreferenceFragmentCompat
 import android.support.v7.view.ContextThemeWrapper
 import com.danefinlay.ttsutil.*
+import org.jetbrains.anko.runOnUiThread
 import org.jetbrains.anko.toast
 
 /**
@@ -40,6 +41,9 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
 
     private val Fragment.myApplication: ApplicationEx
         get() = requireContext().applicationContext as ApplicationEx
+
+    private val activityInterface: ActivityInterface?
+        get() = context as? ActivityInterface
 
     private var sampleTextEvent: ActivityEvent.SampleTextReceivedEvent? = null
     private var onFinishSample: (() -> Unit)? = null
@@ -122,7 +126,7 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
         // spoken.
         val event = sampleTextEvent
         if (event != null) handleActivityEvent(event)
-        else (activity as? ActivityInterface)?.requestSampleTTSText()
+        else activityInterface?.requestSampleTTSText()
     }
 
     private fun playSampleWithVoice(tts: TextToSpeech, currentVoice: Voice?,
@@ -151,29 +155,36 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
         val key = preference?.key
 
         // Handle opening the system settings.
-        val app = myApplication
-        val ctx = requireContext()
         if (key == "pref_tts_system_settings") {
-            app.openSystemTTSSettings(ctx)
+            myApplication.openSystemTTSSettings(requireContext())
             return true
         }
 
-        val tts = app.mTTS
-        if (tts == null || !app.ttsReady) {
-            app.handleTTSOperationResult(TTS_NOT_READY)
-            return true
-        }
-
-        // Handle setting preferences.
+        // Handle setting preferences.  If necessary, initialize TTS and handle the
+        // preference change afterwards.
         // It is here noted that these selection menus may be used to change the TTS
         // voice, pitch and/or speech rate during long-running reading or file
         // synthesis tasks.
-        return when (key) {
-            "pref_tts_engine" -> handleSetTtsEngine(key, tts)
-            "pref_tts_voice" -> handleSetTtsVoice(key, tts)
-            "pref_tts_pitch" -> handleSetTtsPitch(key, tts)
-            "pref_tts_speech_rate" -> handleSetTtsSpeechRate(key, tts)
-            else -> false  // not a TTS engine preference.
+        val block: (TextToSpeech?) -> Boolean = { tts ->
+            if (tts != null) when (key) {
+                "pref_tts_engine" -> handleSetTtsEngine(key, tts)
+                "pref_tts_voice" -> handleSetTtsVoice(key, tts)
+                "pref_tts_pitch" -> handleSetTtsPitch(key, tts)
+                "pref_tts_speech_rate" -> handleSetTtsSpeechRate(key, tts)
+                else -> false  // not a TTS engine preference.
+            }
+            else {
+                myApplication.handleTTSOperationResult(TTS_NOT_READY)
+                true
+            }
+        }
+        if (myApplication.mTTS != null) {
+            return block(myApplication.mTTS)
+        } else {
+            activityInterface?.initializeTTS {
+                context?.runOnUiThread { block(myApplication.mTTS) }
+            }
+            return true
         }
     }
 

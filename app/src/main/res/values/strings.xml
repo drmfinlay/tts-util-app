@@ -139,6 +139,7 @@
 
     <!--Text-to-speech message strings.-->
     <string name="tts_not_ready_message">Text-to-speech is not ready. Try again in a moment.</string>
+    <string name="tts_initializing_message">Initializing text-to-speech…</string>
     <string name="tts_busy_message">Cannot perform operation: %1$s.</string>
     <string name="unavailable_out_dir_message">The specified output directory could not be found.</string>
     <string name="unavailable_input_src_message">Cannot read from the selected file.</string>

@@ -42,7 +42,7 @@ abstract class QuickShareActivity : TTSActivity() {
 
         // If TTS is ready, start the appropriate service action and finish the
         // activity.  Otherwise, wait until TTS is ready.
-        if (myApplication.ttsReady) {
+        if (myApplication.mTTS != null) {
             startServiceAction()
             finish()
         }

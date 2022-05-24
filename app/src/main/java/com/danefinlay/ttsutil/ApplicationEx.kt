@@ -43,6 +43,9 @@ class ApplicationEx : Application(), OnInitListener {
     var mTTS: TextToSpeech? = null
         private set
 
+    var ttsInitializing: Boolean = false
+        private set
+
     private var lastAttemptedTaskId: Int? = null
     private var currentTask: Task? = null
     private val taskQueue = ArrayDeque<TaskData>()
@@ -55,13 +58,6 @@ class ApplicationEx : Application(), OnInitListener {
     @Volatile
     private var notificationsEnabled: Boolean = false
 
-    /**
-     * Whether the TTS is ready to synthesize text into speech.
-     *
-     * This should be changed by the OnInitListener.
-     * */
-    var ttsReady = false
-        private set
 
     private val asyncProgressObserver = object : TaskProgressObserver {
         override fun notifyProgress(progress: Int, taskId: Int,
@@ -208,21 +204,21 @@ class ApplicationEx : Application(), OnInitListener {
     }
 
     fun setupTTS(initListener: OnInitListener, preferredEngine: String?) {
-        if (mTTS == null) {
-            // Try to get the preferred engine package from shared preferences if
-            // it is null.
-            val engineName = preferredEngine ?:
-            PreferenceManager.getDefaultSharedPreferences(this)
-                    .getString("pref_tts_engine", null)
+        if (mTTS != null) return
 
-            // Initialize the TTS object.  Wrap the given OnInitListener.
-            val wrappedListener = OnInitListener { status ->
-                this.onInit(status)
-                initListener.onInit(status)
-            }
+        // Try to get the preferred engine package from shared preferences if
+        // it is null.
+        val engineName = preferredEngine ?:
+        PreferenceManager.getDefaultSharedPreferences(this)
+                .getString("pref_tts_engine", null)
 
-            mTTS = TextToSpeech(this, wrappedListener, engineName)
+        // Prepare the OnInitListener and begin text-to-speech initialization.
+        val wrappedListener = OnInitListener { status ->
+            this.onInit(status)
+            initListener.onInit(status)
         }
+        ttsInitializing = true
+        mTTS = TextToSpeech(this, wrappedListener, engineName)
     }
 
     private fun setTTSLanguage(tts: TextToSpeech): Boolean {
@@ -292,10 +288,10 @@ class ApplicationEx : Application(), OnInitListener {
         }
 
         // Handle setting the appropriate language.
-        if (!setTTSLanguage(tts)) return
-
-        // Success: TTS is ready.
-        ttsReady = true
+        if (!setTTSLanguage(tts)) {
+            freeTTS()
+            return
+        }
 
         // Set the preferred voice if one has been set in the preferences.
         val prefs = PreferenceManager.getDefaultSharedPreferences(this)
@@ -321,6 +317,16 @@ class ApplicationEx : Application(), OnInitListener {
         val preferredSpeechRate = prefs.getFloat("pref_tts_speech_rate", -1.0f)
         if (preferredSpeechRate > 0) {
             tts.setSpeechRate(preferredSpeechRate)
+        }
+
+        // Initialization complete.
+        ttsInitializing = false
+
+        // If there are one or more tasks in the queue, begin processing.
+        val taskData = taskQueue.peek()
+        if (taskData != null) {
+            val ttsOpRes = beginTaskOrNotify(taskData, false)
+            handleTTSOperationResult(ttsOpRes)
         }
     }
 
@@ -400,6 +406,7 @@ class ApplicationEx : Application(), OnInitListener {
         stopSpeech()
         mTTS?.shutdown()
         mTTS = null
+        ttsInitializing = false
         taskQueue.clear()
         currentTask = null
 
@@ -496,7 +503,7 @@ class ApplicationEx : Application(), OnInitListener {
         // queue.
         if (progress == 100 && taskQueue.size > 0) {
             val nextTaskData = taskQueue.peek()
-            val result = beginTaskOrNotify(nextTaskData)
+            val result = beginTaskOrNotify(nextTaskData, true)
             handleTTSOperationResult(result)
         } else if (progress == -1) {
             taskQueue.clear()
@@ -512,7 +519,7 @@ class ApplicationEx : Application(), OnInitListener {
         lastAttemptedTaskId = taskData.taskId
 
         // Return early if it is not possible or not appropriate to proceed.
-        if (!ttsReady || tts == null) return TTS_NOT_READY
+        if (tts == null) return TTS_NOT_READY
 
         // Use the input source to open an input stream and retrieve the content
         // size in bytes.  Return early if this is not possible.
@@ -544,7 +551,7 @@ class ApplicationEx : Application(), OnInitListener {
         lastAttemptedTaskId = taskData.taskId
 
         // Return early if it is not possible or not appropriate to proceed.
-        if (!ttsReady || tts == null) return TTS_NOT_READY
+        if (tts == null) return TTS_NOT_READY
 
         // Use the input source to open an input stream and retrieve the content
         // size in bytes.  Return early if this is not possible.
@@ -601,10 +608,12 @@ class ApplicationEx : Application(), OnInitListener {
         return SUCCESS
     }
 
-    private fun beginTaskOrNotify(taskData: TaskData): Int {
-        // If *taskData* is at the head of the queue, begin the task it is
-        // associated with.  Otherwise, notify the observer.
-        val wasPriorTask = currentTask != null
+    private fun beginTaskOrNotify(taskData: TaskData, priorTask: Boolean): Int {
+        // Return early if TTS is not yet initialized.
+        if (ttsInitializing) return SUCCESS
+
+        // If the specified task is at the head of the queue, begin it associated
+        // with.  Otherwise, notify the observer.
         val observer = asyncProgressObserver
         val result: Int
         if (taskQueue.peek() === taskData) {
@@ -630,7 +639,7 @@ class ApplicationEx : Application(), OnInitListener {
             }
 
             // If it is appropriate, display an info message.
-            if (result == SUCCESS && wasPriorTask && nextTaskMessagesEnabled) {
+            if (result == SUCCESS && priorTask && nextTaskMessagesEnabled) {
                 val message = getString(infoMessageId, srcDescription)
                 runOnUiThread { toast(message) }
             }
@@ -656,7 +665,7 @@ class ApplicationEx : Application(), OnInitListener {
 
     fun enqueueReadInputTask(inputSource: InputSource, queueMode: Int): Int {
         // Do not continue unless TTS is ready.
-        if (!ttsReady || mTTS == null) return TTS_NOT_READY
+        if (mTTS == null) return TTS_NOT_READY
 
         // Handle QUEUE_FLUSH and QUEUE_DESTROY by clearing the task queue and
         // finalizing the current task.
@@ -674,13 +683,13 @@ class ApplicationEx : Application(), OnInitListener {
 
         // Process the task if it is at the head of the queue.  Otherwise, notify
         // progress observers.
-        return beginTaskOrNotify(taskData)
+        return beginTaskOrNotify(taskData, currentTask != null)
     }
 
     fun enqueueFileSynthesisTasks(inputSource: InputSource, outDirectory: Directory,
                                   waveFilename: String): Int {
         // Do not continue unless TTS is ready.
-        if (!ttsReady || mTTS == null) return TTS_NOT_READY
+        if (mTTS == null) return TTS_NOT_READY
 
         // Encapsulate the file synthesis task data and add it to the queue.
         val taskData1 = TaskData.FileSynthesisTaskData(TASK_ID_WRITE_FILE, 0,
@@ -695,7 +704,7 @@ class ApplicationEx : Application(), OnInitListener {
 
         // Process the task if it is at the head of the queue.  Otherwise, notify
         // progress observers.
-        return beginTaskOrNotify(taskData1)
+        return beginTaskOrNotify(taskData1, currentTask != null)
     }
 
     override fun onLowMemory() {
