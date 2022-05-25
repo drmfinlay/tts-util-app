@@ -23,6 +23,7 @@ package com.danefinlay.ttsutil
 import android.speech.tts.TextToSpeech
 import android.speech.tts.TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED
 import android.speech.tts.Voice
+import android.util.Log
 import java.util.*
 
 /**
@@ -55,6 +56,9 @@ var TextToSpeech.voiceEx: Voice?
             // Try to retrieve the current voice.
             // This can sometimes raise a NullPointerException.
             voice = value
+            // Log.e(TAG, "Setting voice to ${value?.name}")
+            // val result = setVoice(value)
+            // Log.e(TAG, "Voice set to ${voiceEx?.name}, result=$result")
         }
         catch (error: NullPointerException) {}
     }
