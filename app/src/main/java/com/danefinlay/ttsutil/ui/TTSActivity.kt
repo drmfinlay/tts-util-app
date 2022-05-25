@@ -178,7 +178,8 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
 
             // Get the engine info.
             // Note: An engine should be available at this point.
-            val engine = tts.engines.find { it.name == tts.defaultEngine }!!
+            val engineName = myApplication.ttsEngineName
+            val engine = tts.engines.find { it.name == engineName }!!
 
             // Set the message text.
             val messageText = getString(R.string.no_tts_data_alert_message,
