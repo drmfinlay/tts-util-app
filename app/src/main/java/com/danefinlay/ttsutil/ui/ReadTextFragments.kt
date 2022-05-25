@@ -20,6 +20,7 @@
 
 package com.danefinlay.ttsutil.ui
 
+import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
@@ -241,14 +242,15 @@ class ReadTextFragment : ReadTextFragmentBase() {
     /**
      * Event listener for the memory buttons.
      */
-    private class MemoryButtonEventListener(val memoryKey: String,
-                                            val prefs: SharedPreferences,
+    private class MemoryButtonEventListener(val ctx: Context,
+                                            val memoryKey: String,
                                             val fragment: ReadTextFragmentBase
     ) : View.OnClickListener, View.OnLongClickListener {
 
         override fun onClick(v: View?) {
             // Set the text content from memory.  If the memory slot is empty,
             // display a message.
+            val prefs = PreferenceManager.getDefaultSharedPreferences(ctx)
             val text = prefs.getString(memoryKey, "")
             if (text.isNullOrEmpty()) {
                 fragment.context?.toast(R.string.mem_slot_empty_msg)
@@ -260,6 +262,7 @@ class ReadTextFragment : ReadTextFragmentBase() {
         override fun onLongClick(v: View?): Boolean {
             // Store the text field content in memory, displaying an appropriate
             // message.
+            val prefs = PreferenceManager.getDefaultSharedPreferences(ctx)
             val content = fragment.inputLayoutContent ?: ""
             val messageId = if (content.isEmpty()) R.string.mem_slot_cleared_msg
                             else R.string.mem_slot_set_msg
@@ -295,13 +298,11 @@ class ReadTextFragment : ReadTextFragmentBase() {
 
         // Set OnClick and OnLongClick event listeners for each memory button.
         val ctx = context /* Activity context */
-        val prefs = PreferenceManager.getDefaultSharedPreferences(ctx)
         listOf(R.id.Memory1, R.id.Memory2, R.id.Memory3, R.id.Memory4)
                 .forEachIndexed { i, id ->
                     val button = find<ImageButton>(id)
                     val memoryKey = "mem${i + 1}"  // mem1..mem4
-                    val listener = MemoryButtonEventListener(memoryKey, prefs,
-                            this)
+                    val listener = MemoryButtonEventListener(ctx!!, memoryKey, this)
                     button.setOnClickListener(listener)
                     button.setOnLongClickListener(listener)
         }
@@ -315,6 +316,7 @@ class ReadTextFragment : ReadTextFragmentBase() {
                 persistentContent = false
                 inputLayoutContent = intent.getStringExtra(Intent.EXTRA_TEXT)
             } else {
+                val prefs = PreferenceManager.getDefaultSharedPreferences(ctx)
                 persistentContent = true
                 inputLayoutContent = prefs.getString(CONTENT_PREF_KEY, "")
             }

@@ -55,9 +55,9 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
                                        nameKey: String, fileType: Int):
             ActivityEvent.ChosenFileEvent? {
         // Retrieve the saved chosen file data.
-        val uriPrefString = prefs.getString(uriKey, "")
+        val uriPrefString = prefs.getString(uriKey, "") ?: return null
         val displayNamePrefString = prefs.getString(nameKey, null)
-        if (uriPrefString == null || displayNamePrefString == null) return null
+                ?: return null
 
         // Note: The Uri and display names are delimited by null characters to
         // This is done to avoid mangling; filenames cannot typically include this
@@ -103,20 +103,8 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
         // Register as a task progress observer.
         myApplication.addProgressObserver(this)
 
-        // Restore persistent data, if necessary.
-        if (savedInstanceState == null) {
-            val prefs = getSharedPreferences(packageName, MODE_PRIVATE)
-            val event1 = retrieveChosenFileData(prefs, CHOSEN_DIR_URI_KEY,
-                    CHOSEN_DIR_NAME_KEY, DIR_SELECT_CODE)
-            if (event1 != null) mLastChosenDirEvent = event1
-            val event2 = retrieveChosenFileData(prefs, CHOSEN_FILE_URI_KEY,
-                    CHOSEN_FILE_NAME_KEY, FILE_SELECT_CODE)
-            if (event2 != null) mLastChosenFileEvent = event2
-            return
-        }
-
         // Restore instance data.
-        savedInstanceState.run {
+        savedInstanceState?.run {
             mLastStatusUpdate = restoreLastStatusUpdate(savedInstanceState)
             mLastChosenFileEvent = getParcelable("mLastChosenFileEvent")
             mLastChosenDirEvent = getParcelable("mLastChosenDirEvent")
@@ -129,6 +117,7 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
         outState?.run {
             putParcelable("mLastStatusUpdate", mLastStatusUpdate)
             putParcelable("mLastChosenFileEvent", mLastChosenFileEvent)
+            putParcelable("mLastChosenDirEvent", mLastChosenDirEvent)
         }
     }
 
@@ -260,8 +249,30 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
     }
 
     override fun getLastStatusUpdate() = mLastStatusUpdate
-    override fun getLastFileChosenEvent() = mLastChosenFileEvent
-    override fun getLastDirChosenEvent() = mLastChosenDirEvent
+
+    override fun getLastFileChosenEvent(): ActivityEvent.ChosenFileEvent? {
+        // Attempt to restore the data concerning the last chosen file(s) from
+        // shared preferences, if necessary.
+        if (mLastChosenFileEvent == null) {
+            val prefs = getSharedPreferences(packageName, MODE_PRIVATE)
+            val event = retrieveChosenFileData(prefs, CHOSEN_FILE_URI_KEY,
+                    CHOSEN_FILE_NAME_KEY, FILE_SELECT_CODE)
+            if (event != null) mLastChosenFileEvent = event
+        }
+        return mLastChosenFileEvent
+    }
+
+    override fun getLastDirChosenEvent(): ActivityEvent.ChosenFileEvent? {
+        // Attempt to restore the data concerning the last chosen directory from
+        // shared preferences, if necessary.
+        if (mLastChosenDirEvent == null) {
+            val prefs = getSharedPreferences(packageName, MODE_PRIVATE)
+            val event = retrieveChosenFileData(prefs, CHOSEN_DIR_URI_KEY,
+                    CHOSEN_DIR_NAME_KEY, DIR_SELECT_CODE)
+            if (event != null) mLastChosenDirEvent = event
+        }
+        return mLastChosenDirEvent
+    }
 
     override fun notifyProgress(progress: Int, taskId: Int, remainingTasks: Int) {
         // Inform each compatible fragment of the progress via a status update
