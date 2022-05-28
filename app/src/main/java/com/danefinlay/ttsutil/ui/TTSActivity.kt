@@ -49,8 +49,6 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
     protected var mLastChosenDirEvent: ActivityEvent.ChosenFileEvent? = null
     protected var mLastChosenFileEvent: ActivityEvent.ChosenFileEvent? = null
 
-    protected var ttsInitAttempted: Boolean = false
-
     private fun retrieveChosenFileData(prefs: SharedPreferences, uriKey: String,
                                        nameKey: String, fileType: Int):
             ActivityEvent.ChosenFileEvent? {
@@ -134,14 +132,12 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
     override fun initializeTTS(initListener: TextToSpeech.OnInitListener?) {
         // Initialize TTS, if necessary.  Since this may take some time, inform the
         // user with a short message.
-        if (!ttsInitAttempted && myApplication.mTTS == null) {
-            runOnUiThread { toast(R.string.tts_initializing_message) }
+        if (myApplication.mTTS == null) {
             val wrappedListener = TextToSpeech.OnInitListener { status ->
                 this.onInit(status)
                 initListener?.onInit(status)
             }
             myApplication.setupTTS(wrappedListener, null)
-            ttsInitAttempted = true
         }
     }
 

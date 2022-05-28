@@ -212,11 +212,16 @@ class ApplicationEx : Application(), OnInitListener {
         PreferenceManager.getDefaultSharedPreferences(this)
                 .getString("pref_tts_engine", null)
 
-        // Prepare the OnInitListener and begin text-to-speech initialization.
+        // Prepare the OnInitListener.
         val wrappedListener = OnInitListener { status ->
             this.onInit(status)
             initListener.onInit(status)
         }
+
+        // Display a message to the user.
+        runOnUiThread { toast(R.string.tts_initializing_message) }
+
+        // Begin text-to-speech initialization.
         ttsInitializing = true
         mTTS = TextToSpeech(this, wrappedListener, engineName)
     }
