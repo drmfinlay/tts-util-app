@@ -76,14 +76,15 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
 
     @Volatile
     protected var finalize: Boolean = false
-
-    protected val reader by lazy { inputStream.bufferedReader() }
-    protected val maxInputLength = getMaxSpeechInputLength()
-    private var inputProcessed: Long = 0
-    protected var streamHasFurtherInput: Boolean = true
     protected var utteranceBytesQueue = mutableListOf<Int>()
 
-    abstract fun enqueueNextInput(): Boolean
+    private val reader by lazy { inputStream.bufferedReader() }
+    private val maxInputLength = getMaxSpeechInputLength()
+    private var inputProcessed: Long = 0
+    private var streamHasFurtherInput: Boolean = true
+
+    abstract fun enqueueText(text: String, bytesRead: Int)
+    abstract fun enqueueSilence(durationInMs: Long)
 
     sealed class Filter(val include: Boolean,
                         val newUtteranceRequired: Boolean) {
@@ -114,6 +115,53 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
             return finish(false)
         }
         return true
+    }
+
+    private fun enqueueNextInput(): Boolean {
+        // Have Android's TTS framework to speak some text from the input stream.
+        var text = ""
+        var bytesRead = 0
+        var byte = reader.read()
+        while (byte >= 0) {
+            // Increment input counter.
+            bytesRead++
+
+            // Use the input byte, applying filters as necessary.
+            val filter = filterInputByte(byte)
+            if (filter.newUtteranceRequired) {
+                // Enqueue text current text.
+                enqueueText(text, bytesRead)
+                text = ""
+                bytesRead = 0
+            }
+            if (filter.include) text += byte.toChar()
+            when (filter) {
+                is Filter.SilentUtteranceFilter -> {
+                    enqueueSilence(filter.durationInMs)
+
+                    // This is enough input.
+                    break
+                }
+                is Filter.NoFilter -> {}
+            }
+
+            // Avoid hitting Android's input text limit.  We try to break nicely on
+            // a whitespace character close to the limit.  If there is no word
+            // boundary close to the limit, we break on the last possible character.
+            if (text.length > maxInputLength - 100 && byte.toChar().isWhitespace())
+                break
+            else if (text.length == maxInputLength)
+                break
+
+            // Read the next byte.
+            byte = reader.read()
+        }
+
+        // Flush text, if any.
+        enqueueText(text, bytesRead)
+
+        // Return whether there is further input.
+        return byte >= 0
     }
 
     override fun finish(success: Boolean): Boolean {
@@ -213,15 +261,16 @@ class ReadInputTask(ctx: Context, tts: TextToSpeech, inputStream: InputStream,
         return super.begin()
     }
 
-    private fun enqueueSilentUtterance(durationInMs: Long) {
-        // We ignore *queueMode* for silent utterances.  It does not make much sense
-        // to use QUEUE_FLUSH here.
+    override fun enqueueSilence(durationInMs: Long) {
+        // The queue mode initially specified for the task is ignored here; it only
+        // makes sense to use QUEUE_ADD for silence.
         tts.playSilentUtterance(durationInMs, QUEUE_ADD, nextUtteranceId())
     }
 
-    private fun enqueueTextUtterance(text: String, bytesRead: Int) {
+    override fun enqueueText(text: String, bytesRead: Int) {
         if (bytesRead == 0) return
 
+        // Enqueue text using speak().
         // Add *bytesRead* to the queue.
         utteranceBytesQueue.add(bytesRead)
 
@@ -229,53 +278,6 @@ class ReadInputTask(ctx: Context, tts: TextToSpeech, inputStream: InputStream,
         val bundle = Bundle()
         bundle.putInt(Engine.KEY_PARAM_STREAM, AudioManager.STREAM_MUSIC)
         tts.speak(text, queueMode, bundle, nextUtteranceId())
-    }
-
-    override fun enqueueNextInput(): Boolean {
-        // Have Android's TTS framework to speak some text from the input stream.
-        var text = ""
-        var bytesRead = 0
-        var byte = reader.read()
-        while (byte >= 0) {
-            // Increment input counter.
-            bytesRead++
-
-            // Use the input byte, applying filters as necessary.
-            val filter = filterInputByte(byte)
-            if (filter.newUtteranceRequired) {
-                // Enqueue text current text.
-                enqueueTextUtterance(text, bytesRead)
-                text = ""
-                bytesRead = 0
-            }
-            if (filter.include) text += byte.toChar()
-            when (filter) {
-                is Filter.SilentUtteranceFilter -> {
-                    enqueueSilentUtterance(filter.durationInMs)
-
-                    // This is enough input.
-                    break
-                }
-                is Filter.NoFilter -> {}
-            }
-
-            // Avoid hitting Android's input text limit.  We try to break nicely on
-            // a whitespace character close to the limit.  If there is no word
-            // boundary close to the limit, we break on the last possible character.
-            if (text.length > maxInputLength - 100 && byte.toChar().isWhitespace())
-                break
-            else if (text.length == maxInputLength)
-                break
-
-            // Read the next byte.
-            byte = reader.read()
-        }
-
-        // Flush text, if any.
-        enqueueTextUtterance(text, bytesRead)
-
-        // Return whether there is further input.
-        return byte >= 0
     }
 
     override fun onDone(utteranceId: String?) {
@@ -301,71 +303,97 @@ class FileSynthesisTask(ctx: Context, tts: TextToSpeech,
         TTSTask(ctx, tts, inputStream, inputSize,
                 TASK_ID_WRITE_FILE, progressObserver) {
 
-    private fun enqueueFileSynthesis(text: String, bytesRead: Int) {
+    override fun begin(): Boolean {
+        if (!super.begin()) return false
+
+        // Delete silent wave files because they may be incompatible with current
+        // user settings.
+        for (file in app.filesDir.listFiles()) {
+            if (file.name.endsWith("ms_sil.wav")) file.delete()
+        }
+        return true
+    }
+
+    override fun enqueueSilence(durationInMs: Long) {
+        // Android's text-to-speech framework does not allow adding silence to wave
+        // files, so we add a reference to a special wave file that will contain Xms
+        // of silence.  These files are created in finish(), if necessary.
+        val file = File(app.filesDir, "${durationInMs}ms_sil.wav")
+        inWaveFiles.add(file)
+    }
+
+    private fun writeSilentWaveFile(file: File, header: WaveFileHeader,
+                                    durationInSeconds: Float) {
+        // Determine the data sub-chunk size.  It should be an even integer.
+        var dataSize = (header.fmtSubChunk.byteRate * durationInSeconds).toInt() + 1
+        if (dataSize % 2 == 1) dataSize += 1
+
+        // Construct a wave header using the duration and the header provided.
+        val silHeader = header.copy(dataSize)
+
+        // Write the new header's bytes to the file.
+        val silHeaderBytes = silHeader.writeToArray()
+        val outputStream = FileOutputStream(file).buffered()
+        outputStream.write(silHeaderBytes)
+
+        // Write the audio data as zeros.
+        var count = 0
+        do {
+            outputStream.write(0)
+            count++
+        } while (count < silHeader.dataSubChunk.ckSize)
+        outputStream.flush()
+        outputStream.close()
+    }
+
+    override fun enqueueText(text: String, bytesRead: Int) {
         if (bytesRead == 0) return
 
-        // Create a wave file for this utterance.
-        val file = File.createTempFile("utt", "dat", app.cacheDir)
-
+        // Enqueue text with synthesizeToFile().
         // Add *bytesRead* to the queue.
         utteranceBytesQueue.add(bytesRead)
 
-        // Enqueue file synthesis.
-        val success = tts.synthesizeToFile(text, null, file, file.name)
+        // Create a wave file for this utterance and enqueue file synthesis.
+        val file = File.createTempFile("utt", "dat", app.filesDir)
+        val success = tts.synthesizeToFile(text, null, file, nextUtteranceId())
+
+        // If successful, add the file to the list.
         if (success == SUCCESS) inWaveFiles.add(file)
     }
 
-    override fun enqueueNextInput(): Boolean {
-        // Have Android's TTS framework to synthesize the input into one or more
-        // files.  These will be joined together at the end.
-        var bytesRead = 0
-        var text = ""
-        var byte = reader.read()
-        while (byte >= 0) {
-            // Increment input counter.
-            bytesRead++
+    override fun finish(success: Boolean): Boolean {
+        // Generate silent wave files, if successful and if necessary.
+        val minFileSize = WaveFileHeader.MIN_SIZE + 1
+        if (success) {
+            // Find the first proper wave file and read its header.
+            val wf = inWaveFiles.find { it.length() >= minFileSize }
+            val wfHeader = WaveFileHeader(FileInputStream(wf).buffered())
 
-            // Use the input byte.
-            text += byte.toChar()
+            // Generate silence for each distinct file in the list ending with
+            // "ms_sil.wav".
+            val suffix = "ms_sil.wav"
+            for (f in inWaveFiles) {
+                val filename = f.name
+                if (filename.endsWith(suffix) && !f.exists()) {
+                    // Parse the duration in seconds from the filename.
+                    val durationInMs = filename.substringBefore(suffix).toInt()
+                    val durationInSeconds = durationInMs / 1000f
 
-            /*
-            NOTE ON SILENT UTTERANCES
-
-            As far as this programmer can tell, it is currently impossible to add
-            silent utterances to wave files with Android's TextToSpeech class.
-
-            It is, however, possible to do manually.  One would need to interweave
-            the wave files for each utterance (generated by the engine) with
-            specially crafted wave files containing the desired silence in
-            milliseconds.
-             */
-
-            // Avoid hitting Android's input text limit.  We try to break nicely on
-            // a whitespace character close to the limit.  If there is no word
-            // boundary close to the limit, we break on the last possible character.
-            if (text.length > maxInputLength - 100 && byte.toChar().isWhitespace())
-                break
-            else if (text.length == maxInputLength)
-                break
-
-            // Read the next byte.
-            byte = reader.read()
+                    // Write the silent wave file.
+                    writeSilentWaveFile(f, wfHeader, durationInSeconds)
+                }
+            }
         }
 
-        // Flush text, if any.
-        enqueueFileSynthesis(text, bytesRead)
-
-        // Return whether there is further input.
-        return byte >= 0
-    }
-
-    override fun finish(success: Boolean): Boolean {
         // If the TTS engine has produced impossibly short wave files, filter
-        // them out.  These are typically empty files.
-        // If file synthesis failed, delete all files instead.
-        for (wf in inWaveFiles) {
-            if (wf.length() < WaveFileHeader.MIN_SIZE) inWaveFiles.remove(wf)
-            else if (!success && wf.isFile && wf.canWrite()) wf.delete()
+        // them out and delete them.  If file synthesis failed, delete all files
+        // instead.
+        val toRemoveAndDelete = inWaveFiles.filter { f ->
+            f.length() < minFileSize || !success && f.isFile && f.canWrite()
+        }
+        for (f in toRemoveAndDelete) {
+            inWaveFiles.remove(f)
+            f.delete()
         }
 
         // Display a toast message on failure.
