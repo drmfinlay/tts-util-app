@@ -20,6 +20,7 @@
 
 package com.danefinlay.ttsutil
 
+import android.support.annotation.CallSuper
 import java.io.*
 import java.nio.ByteBuffer
 import java.nio.ByteOrder.LITTLE_ENDIAN
@@ -40,69 +41,128 @@ fun ByteArray.toAsciiString(): String {
     return fold("") { acc, i -> acc + i.toChar() }
 }
 
+fun String.toByteArray(): ByteArray {
+    val buffer = ByteBuffer.allocate(this.length)
+    for (i in 0 until this.length) {
+        val asciiChar = this[i].toByte()
+        buffer.put(asciiChar)
+    }
+    return buffer.array()
+}
+
 fun ByteArray.toInt() = toLEByteBuffer().int
 fun ByteArray.toShort() = toLEByteBuffer().short
 
-fun ByteBuffer.putArrays(vararg arrays: ByteArray): ByteBuffer {
-    arrays.forEach { put(it) }
-    return this
+fun Int.toLEByteArray(): ByteArray {
+    val buffer = ByteBuffer.allocate(4).order(LITTLE_ENDIAN)
+    buffer.putInt(this)
+    return buffer.array()
+}
+
+fun Short.toLEByteArray(): ByteArray {
+    val buffer = ByteBuffer.allocate(2).order(LITTLE_ENDIAN)
+    buffer.putShort(this)
+    return buffer.array()
 }
 
 @Suppress("WeakerAccess")
-class WaveFileHeader(stream: InputStream) {
-    open class ChunkHeader(stream: InputStream) {
+class WaveFileHeader {
+    class ChunkHeader(stream: InputStream) {
         val bCkId: ByteArray = stream.read(4)
         val bCkSize: ByteArray = stream.read(4)
         val ckId: String = bCkId.toAsciiString()
         val ckSize: Int = bCkSize.toInt()
+    }
 
-        fun compatibleWith(other: ChunkHeader): Boolean {
-            // Do not compare chunk size in general.  Sub-chunks should only
-            // this if necessary.
-            return ckId == other.ckId
+    open class Chunk {
+        val bCkId: ByteArray
+        val bCkSize: ByteArray
+        val ckId: String
+        val ckSize: Int
+
+        constructor(chunkHeader: ChunkHeader) {
+            this.bCkId = chunkHeader.bCkId
+            this.bCkSize = chunkHeader.bCkSize
+            this.ckId = chunkHeader.ckId
+            this.ckSize = chunkHeader.ckSize
+        }
+
+        constructor(ckId: String, ckSize: Int) {
+            this.bCkId = ckId.toByteArray()
+            this.bCkSize = ckSize.toLEByteArray()
+            this.ckId = ckId
+            this.ckSize = ckSize
+
         }
 
         override fun toString(): String {
             return "ckId=\"$ckId\", ckSize=$ckSize"
         }
+
+        fun compatibleWith(other: Chunk): Boolean {
+            // Do not compare chunk size in general.  Sub-chunks should only
+            // this if necessary.
+            return ckId == other.ckId
+        }
+
+        @CallSuper
+        open fun validateFields() {}
+
+        @CallSuper
+        open fun writeToArray(array: ByteArray, startIndex: Int): Int {
+            // Write sub-chunk bytes to the given array and return the index of the
+            // next byte.
+            var count = startIndex
+            for (i in 0..3) array[count++] = bCkId[i]
+            for (i in 0..3) array[count++] = bCkSize[i]
+            return count
+        }
     }
 
-    open class Chunk(val ckHeader: ChunkHeader) {
-        val bCkId = ckHeader.bCkId
-        val bCkSize = ckHeader.bCkSize
-        val ckId = ckHeader.ckId
-        val ckSize = ckHeader.ckSize
-    }
-
-    class RIFFChunk(ckHeader: ChunkHeader, stream: InputStream) : Chunk(ckHeader) {
+    class RIFFChunk : Chunk {
         // RIFF chunk descriptor fields.
-        val bFormat: ByteArray = stream.read(4)
-        val format: String = bFormat.toAsciiString()
+        val bFormat: ByteArray
+        val format: String
 
-        init {
-            // Verify that the WAVE identifier is present.
+        constructor(chunkHeader: ChunkHeader,
+                    stream: InputStream) : super(chunkHeader) {
+            this.bFormat = stream.read(4)
+            this.format = bFormat.toAsciiString()
             if (format != "WAVE") {
                 val message = "Input is \"$format\", not WAVE format."
                 throw IncompatibleWaveFileException(message)
             }
         }
 
-        fun compatibleWith(other: RIFFChunk): Boolean {
-            return ckHeader.compatibleWith(other.ckHeader) && format == other.format
+        constructor(ckId: String, ckSize: Int,
+                    format: String) : super(ckId, ckSize) {
+            this.format = format
+            this.bFormat = format.toByteArray()
         }
 
-        fun writeToArray(newChunkSize: Int): ByteArray {
-            return ByteBuffer.allocate(12)
-                    .put(bCkId).putInt(newChunkSize).put(bFormat)
-                    .array()
+        fun compatibleWith(other: RIFFChunk): Boolean {
+            return super.compatibleWith(other) && format == other.format
+        }
+
+        fun copy(ckSize: Int): RIFFChunk {
+            return RIFFChunk(ckId, ckSize, format)
+        }
+
+        override fun writeToArray(array: ByteArray, startIndex: Int): Int {
+            // Write sub-chunk bytes to the given array and return the index of the
+            // next byte.
+            var count = super.writeToArray(array, startIndex)
+            for (i in 0..3) array[count++] = bFormat[i]
+            return count
         }
 
         override fun toString(): String {
-            return "${javaClass.simpleName}($ckHeader, format=\"$format\")"
+            return "${javaClass.simpleName}(${super.toString()}, " +
+                    "format=\"$format\")"
         }
     }
 
-    class FmtSubChunk(ckHeader: ChunkHeader, stream: InputStream) : Chunk(ckHeader) {
+    class FmtSubChunk : Chunk {
         // "fmt " sub-chunk fields.
         val bAudioFormat: ByteArray
         val bNumChannels: ByteArray
@@ -120,12 +180,8 @@ class WaveFileHeader(stream: InputStream) {
         val extraParamsSize: Short?
         val bExtraParams: ByteArray?
 
-        init {
-            if (ckId != "fmt ") {
-                val message = "Unexpected RIFF sub-chunk $ckId"
-                throw IncompatibleWaveFileException(message)
-            }
-
+        constructor(chunkHeader: ChunkHeader,
+                    stream: InputStream) : super(chunkHeader) {
             // Read the "fmt " sub-chunk.
             bAudioFormat = stream.read(2)
             bNumChannels = stream.read(2)
@@ -155,10 +211,36 @@ class WaveFileHeader(stream: InputStream) {
                 extraParamsSize = null
                 bExtraParams = null
             }
+
+            // Validate sub-chunk fields.
+            validateFields()
+        }
+
+        constructor(ckId: String, ckSize: Int, audioFormat: Short,
+                    numChannels: Short, sampleRate: Int, byteRate: Int,
+                    blockAlign: Short, bitsPerSample: Short,
+                    extraParamsSize: Short?,
+                    bExtraParams: ByteArray?) : super(ckId, ckSize) {
+            this.audioFormat = audioFormat
+            this.bAudioFormat = audioFormat.toLEByteArray()
+            this.numChannels = numChannels
+            this.bNumChannels = numChannels.toLEByteArray()
+            this.sampleRate = sampleRate
+            this.bSampleRate = sampleRate.toLEByteArray()
+            this.byteRate = byteRate
+            this.bByteRate = byteRate.toLEByteArray()
+            this.blockAlign = blockAlign
+            this.bBlockAlign = blockAlign.toLEByteArray()
+            this.bitsPerSample = bitsPerSample
+            this.bBitsPerSample = bitsPerSample.toLEByteArray()
+            this.extraParamsSize = extraParamsSize
+            this.bExtraParamsSize = extraParamsSize?.toLEByteArray()
+            this.bExtraParams = bExtraParams
+            validateFields()
         }
 
         fun compatibleWith(other: FmtSubChunk): Boolean {
-            return ckHeader.compatibleWith(other.ckHeader) &&
+            return super.compatibleWith(other) &&
                     ckSize == other.ckSize &&
                     audioFormat == other.audioFormat &&
                     numChannels == other.numChannels &&
@@ -170,17 +252,14 @@ class WaveFileHeader(stream: InputStream) {
                     other.bExtraParams?.contentHashCode()
         }
 
-        fun writeToArray(): ByteArray {
-            val buffer = ByteBuffer.allocate(8 + ckSize)
-            buffer.putArrays(bCkId, bCkSize, bAudioFormat, bNumChannels,
-                    bSampleRate, bByteRate, bBlockAlign, bBitsPerSample)
-            if (bExtraParamsSize != null) buffer.put(bExtraParamsSize)
-            if (bExtraParams != null) buffer.put(bExtraParams)
-            return buffer.array()
+        fun copy(): FmtSubChunk {
+            return FmtSubChunk(ckId, ckSize, audioFormat, numChannels, sampleRate,
+                    byteRate, blockAlign, bitsPerSample, extraParamsSize,
+                    bExtraParams)
         }
 
         override fun toString(): String {
-            var string = "${javaClass.simpleName}($ckHeader, " +
+            var string = "${javaClass.simpleName}(${super.toString()}, " +
                     "audioFormat=${audioFormat}, numChannels=${numChannels}, " +
                     "sampleRate=${sampleRate}, byteRate=${byteRate}, " +
                     "blockAlign=${blockAlign}, bitsPerSample=${bitsPerSample}"
@@ -188,20 +267,42 @@ class WaveFileHeader(stream: InputStream) {
             string += ")"
             return string
         }
+
+        override fun validateFields() {
+            super.validateFields()
+            if (ckId != "fmt ") {
+                val message = "Unexpected RIFF sub-chunk $ckId"
+                throw IncompatibleWaveFileException(message)
+            }
+        }
+
+        override fun writeToArray(array: ByteArray, startIndex: Int): Int {
+            // Write sub-chunk bytes to the given array and return the index of the
+            // next byte.
+            var count = super.writeToArray(array, startIndex)
+            for (i in 0..1) array[count++] = bAudioFormat[i]
+            for (i in 0..1) array[count++] = bNumChannels[i]
+            for (i in 0..3) array[count++] = bSampleRate[i]
+            for (i in 0..3) array[count++] = bByteRate[i]
+            for (i in 0..1) array[count++] = bBlockAlign[i]
+            for (i in 0..1) array[count++] = bBitsPerSample[i]
+            if (bExtraParamsSize != null && bExtraParams != null) {
+                for (i in 0..1) array[count++] = bExtraParamsSize[i]
+                for (i in 0 until extraParamsSize!!) {
+                    array[count++] = bExtraParams[i]
+                }
+            }
+            return count
+        }
     }
 
-    class FactSubChunk(ckHeader: ChunkHeader,
-                       stream: InputStream) : Chunk(ckHeader) {
+    class FactSubChunk : Chunk {
         // "fact"  sub-chunk fields.
         val sampleLength: Int?
         val bSampleLength: ByteArray?
 
-        init {
-            if (ckId != "fact") {
-                val message = "Unexpected RIFF sub-chunk $ckId"
-                throw IncompatibleWaveFileException(message)
-            }
-
+        constructor(chunkHeader: ChunkHeader,
+                    stream: InputStream) : super(chunkHeader) {
             // Read the "fact" sub-chunk.
             if (ckSize >= 4) {
                 bSampleLength = stream.read(4)
@@ -210,50 +311,82 @@ class WaveFileHeader(stream: InputStream) {
                 bSampleLength = null
                 sampleLength = null
             }
+
+            // Validate sub-chunk fields.
+            validateFields()
+        }
+
+        constructor(ckId: String, ckSize: Int,
+                    sampleLength: Int?) : super(ckId, ckSize) {
+            this.sampleLength = sampleLength
+            this.bSampleLength = sampleLength?.toLEByteArray()
+            validateFields()
         }
 
         fun compatibleWith(other: FactSubChunk): Boolean {
-            // Do not compare sample length, which is derived from the data chunk
-            // size.
-            return ckHeader.compatibleWith(other.ckHeader)
+            // Note: Do not compare sample length, which is derived from the data
+            // chunk size.
+            return super.compatibleWith(other)
         }
 
-        fun writeToArray(newSampleLength: Int): ByteArray {
-            val buffer =  ByteBuffer.allocate(8 + ckSize)
-                    .putArrays(bCkId, bCkSize)
-            if (ckSize >= 4) buffer.putInt(newSampleLength)
-            return buffer.array()
+        fun copy(sampleLength: Int?): FactSubChunk {
+            return FactSubChunk(ckId, ckSize, sampleLength)
         }
 
         override fun toString(): String {
-            var string = "${javaClass.simpleName}($ckHeader"
+            var string = "${javaClass.simpleName}(${super.toString()}"
             if (ckSize >= 4) string += ", sampleLength=$sampleLength"
             string += ")"
             return string
         }
+
+        override fun validateFields() {
+            super.validateFields()
+            if (ckId != "fact") {
+                val message = "Unexpected RIFF sub-chunk $ckId"
+                throw IncompatibleWaveFileException(message)
+            }
+        }
+
+        override fun writeToArray(array: ByteArray, startIndex: Int): Int {
+            // Write sub-chunk bytes to the given array and return the index of the
+            // next byte.
+            var count = super.writeToArray(array, startIndex)
+            if (ckSize >= 4) {
+                for (i in 0..3) array[count++] = bSampleLength!![i]
+            }
+            return count
+        }
     }
 
-    class DataSubChunk(ckHeader: ChunkHeader) : Chunk(ckHeader) {
-        init {
+    class DataSubChunk : Chunk {
+        constructor(ckId: String, ckSize: Int) : super(ckId, ckSize) {
+            // Validate sub-chunk fields.
+            validateFields()
+        }
+
+        constructor(chunkHeader: ChunkHeader) : super(chunkHeader) {
+            validateFields()
+        }
+
+        fun compatibleWith(other: DataSubChunk): Boolean {
+            return super.compatibleWith(other)
+        }
+
+        fun copy(ckSize: Int): DataSubChunk {
+            return DataSubChunk(ckId, ckSize)
+        }
+
+        override fun toString(): String {
+            return "${javaClass.simpleName}(${super.toString()})"
+        }
+
+        override fun validateFields() {
+            super.validateFields()
             if (ckId != "data") {
                 val message = "Unexpected RIFF sub-chunk $ckId"
                 throw IncompatibleWaveFileException(message)
             }
-
-            // Note: this is the end; this class does not read the wave data.
-        }
-
-        fun compatibleWith(other: DataSubChunk): Boolean {
-            return ckHeader.compatibleWith(other.ckHeader)
-        }
-
-        fun writeToArray(newChunkSize: Int): ByteArray {
-            // This is only the first 8 bytes of the data chunk.
-            return ByteBuffer.allocate(8).put(bCkId).putInt(newChunkSize).array()
-        }
-
-        override fun toString(): String {
-            return "${javaClass.simpleName}($ckHeader)"
         }
     }
 
@@ -263,21 +396,13 @@ class WaveFileHeader(stream: InputStream) {
     val factSubChunk: FactSubChunk?
     val dataSubChunk: DataSubChunk
 
-    init {
+    constructor(stream: InputStream) {
         // Read the RIFF header chunk.
         val riffHeader = ChunkHeader(stream)
-        if (riffHeader.ckId != "RIFF") {
-            val message = "RIFF header chunk not found"
-            throw IncompatibleWaveFileException(message)
-        }
         riffChunk = RIFFChunk(riffHeader, stream)
 
         // Read the "fmt " sub-chunk.
         val fmtHeader = ChunkHeader(stream)
-        if (fmtHeader.ckId != "fmt ") {
-            val message = "\"fmt \" sub-chunk not found."
-            throw IncompatibleWaveFileException(message)
-        }
         fmtSubChunk = FmtSubChunk(fmtHeader, stream)
 
         // Read the next sub-chunk header.
@@ -295,8 +420,16 @@ class WaveFileHeader(stream: InputStream) {
         }
 
         // Read the "data" sub-chunk.
-        // Note: this is the end; this class does not read the wave data.
+        // Note: The wave data is not read here.
         dataSubChunk = DataSubChunk(dataSCkHeader)
+    }
+
+    constructor(riffChunk: RIFFChunk, fmtSubChunk: FmtSubChunk,
+                factSubChunk: FactSubChunk?, dataSubChunk: DataSubChunk) {
+        this.riffChunk = riffChunk
+        this.fmtSubChunk = fmtSubChunk
+        this.factSubChunk = factSubChunk
+        this.dataSubChunk = dataSubChunk
     }
 
     /**
@@ -331,6 +464,47 @@ class WaveFileHeader(stream: InputStream) {
                         factSubChunk.compatibleWith(other.factSubChunk))
     }
 
+    fun copy(dataSubChunkSize: Int): WaveFileHeader {
+        // Determine the final size based on the specified data sub-chunk size.
+        val fmtSubChunkSize = fmtSubChunk.ckSize
+        val factSubChunkSize = factSubChunk?.ckSize
+        val totalSize = 4 + (8 + fmtSubChunkSize) +
+                (if (factSubChunkSize != null) 8 + factSubChunkSize else 0) +
+                (8 + dataSubChunkSize)
+
+        // Determine the new sample length.
+        val newSampleLength = totalSize / fmtSubChunk.numChannels
+
+        // Create copies of each sub-chunk with fields adjusted appropriately.
+        val riffChunk = riffChunk.copy(totalSize)
+        val fmtSubChunk = fmtSubChunk.copy()
+        var factSubChunk: FactSubChunk? = null
+        if (factSubChunk != null) {
+            factSubChunk = factSubChunk.copy(newSampleLength)
+        }
+        val dataSubChunk = dataSubChunk.copy(dataSubChunkSize)
+
+        // Return a new wave file header.
+        return WaveFileHeader(riffChunk, fmtSubChunk, factSubChunk, dataSubChunk)
+    }
+
+    override fun equals(other: Any?): Boolean {
+        var result = false
+        if (other is WaveFileHeader) {
+            result = this.compatibleWith(other) &&
+                    this.riffChunk.ckSize == other.riffChunk.ckSize
+        }
+        return result
+    }
+
+    override fun hashCode(): Int {
+        var result = riffChunk.hashCode()
+        result = 31 * result + fmtSubChunk.hashCode()
+        result = 31 * result + (factSubChunk?.hashCode() ?: 0)
+        result = 31 * result + dataSubChunk.hashCode()
+        return result
+    }
+
     override fun toString(): String {
         var string = "${javaClass.simpleName}(\n" +
                 "\t$riffChunk\n" +
@@ -340,17 +514,34 @@ class WaveFileHeader(stream: InputStream) {
         return string
     }
 
+    fun writeToArray(): ByteArray {
+        // Allocate a byte array for the header bytes.
+        val array = ByteArray(this.size)
+
+        // Write the bytes of each sub-chunk in order.
+        var count = 0
+        count = riffChunk.writeToArray(array, count)
+        count = fmtSubChunk.writeToArray(array, count)
+        if (factSubChunk != null) {
+            count = factSubChunk.writeToArray(array, count)
+        }
+        dataSubChunk.writeToArray(array, count)
+
+        // Return the array.
+        return array
+    }
+
     companion object {
         const val MIN_SIZE = 44
     }
 }
 
 class WaveFile(val stream: InputStream) {
-    // Read the file header.
-    val header = WaveFileHeader(stream)
+    // Read the file header from the stream.
+    val header: WaveFileHeader = WaveFileHeader(stream)
 
-    // The rest of the file is the actual sound data.
-    inline fun readDataChunk(block: (int: Int) -> Unit) {
+    // The rest of the input stream is assumed to be the actual sound data.
+    inline fun readWaveData(block: (int: Int) -> Unit) {
         var byte = stream.read()
         while (byte >= 0) {
             block(byte)
@@ -422,47 +613,32 @@ fun joinWaveFiles(inFiles: List<File>, outStream: OutputStream,
                 wf
             }
 
-    // Construct a new wave file.  Use the first wave file for fields with the same
-    // values.
-    // Calculate the SubChunk2Size and ChunkSize.
+    // Calculate the data chunk size.
     val dataSubChunkSize = waveFiles.fold(0) { acc, wf ->
         acc + wf.header.dataSubChunk.ckSize
     }
-    val header = wf1.header
-    val fmtSubChunkSize = header.fmtSubChunk.ckSize
-    val factSubChunkSize = header.factSubChunk?.ckSize
-    val totalChunkSize = 4 + (8 + fmtSubChunkSize) +
-            (if (factSubChunkSize != null) 8 + factSubChunkSize else 0) +
-            (8 + dataSubChunkSize)
+
+    // Create a new wave file header based on the first one.
+    val header = wf1.header.copy(dataSubChunkSize)
+
+    // Get the total file size from the new header.
+    val totalSize = 8 + header.riffChunk.ckSize
 
     // Open the output file for writing.
     outStream.buffered().use { bOutStream ->
-
-        // Write the RIFF header.
-        bOutStream.write(header.riffChunk.writeToArray(totalChunkSize))
-
-        // Write the "fmt " sub-chunk.
-        bOutStream.write(header.fmtSubChunk.writeToArray())
-
-        // Write the "fact" sub-chunk, if necessary.
-        if (header.factSubChunk != null) {
-            val newSampleLength = totalChunkSize / header.fmtSubChunk.numChannels
-            bOutStream.write(header.factSubChunk.writeToArray(newSampleLength))
-        }
-
-        // Write the data chunk header.
-        bOutStream.write(header.dataSubChunk.writeToArray(dataSubChunkSize))
+        // Write the header to the output stream.
+        bOutStream.write(header.writeToArray())
 
         // Return early if appropriate.
         if (interruptEvent?.interrupt == true) return false
 
         // Notify the observer of the progress so far.
-        var count = (totalChunkSize - dataSubChunkSize).toFloat()
-        progressCallback?.invoke((count / totalChunkSize * 100).toInt())
+        var count = header.size.toFloat()
+        progressCallback?.invoke((count / totalSize * 100).toInt())
 
         // Stream data from each file into the output file.
         inFiles.zip(waveFiles).forEach { (f, wf) ->
-            wf.readDataChunk { byte ->
+            wf.readWaveData { byte ->
                 bOutStream.write(byte)
             }
 
@@ -474,7 +650,7 @@ fun joinWaveFiles(inFiles: List<File>, outStream: OutputStream,
 
             // Notify the observer after each file is written, if necessary.
             count += wf.header.dataSubChunk.ckSize
-            progressCallback?.invoke((count / totalChunkSize * 100).toInt())
+            progressCallback?.invoke((count / totalSize * 100).toInt())
         }
     }
     return true
