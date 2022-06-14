@@ -111,6 +111,9 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
         try {
             reader
             streamHasFurtherInput = enqueueNextInput()
+            if (!streamHasFurtherInput && utteranceBytesQueue.size == 0) {
+                finish(true)
+            }
         } catch (exception: IOException) {
             return finish(false)
         }
@@ -227,6 +230,9 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
         // Enqueue the next input.
         try {
             streamHasFurtherInput = enqueueNextInput()
+            if (!streamHasFurtherInput && utteranceBytesQueue.size == 0) {
+                finish(true)
+            }
         } catch (exception: IOException) {
             finish(false)
         }
