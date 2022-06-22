@@ -29,19 +29,19 @@ class IncompatibleWaveFileException(message: String): RuntimeException(message)
 
 
 // Define a few convenient byte-related extension functions.
-fun InputStream.read(n: Int): ByteArray {
+private fun InputStream.read(n: Int): ByteArray {
     return (1..n).map { read().toByte() }.toByteArray()
 }
 
-fun ByteArray.toLEByteBuffer(): ByteBuffer {
+private fun ByteArray.toLEByteBuffer(): ByteBuffer {
     return ByteBuffer.wrap(this).order(LITTLE_ENDIAN)
 }
 
-fun ByteArray.toAsciiString(): String {
+private fun ByteArray.toAsciiString(): String {
     return fold("") { acc, i -> acc + i.toChar() }
 }
 
-fun String.toByteArray(): ByteArray {
+private fun String.toByteArray(): ByteArray {
     val buffer = ByteBuffer.allocate(this.length)
     for (i in 0 until this.length) {
         val asciiChar = this[i].toByte()
@@ -50,16 +50,16 @@ fun String.toByteArray(): ByteArray {
     return buffer.array()
 }
 
-fun ByteArray.toInt() = toLEByteBuffer().int
-fun ByteArray.toShort() = toLEByteBuffer().short
+private fun ByteArray.toInt() = toLEByteBuffer().int
+private fun ByteArray.toShort() = toLEByteBuffer().short
 
-fun Int.toLEByteArray(): ByteArray {
+private fun Int.toLEByteArray(): ByteArray {
     val buffer = ByteBuffer.allocate(4).order(LITTLE_ENDIAN)
     buffer.putInt(this)
     return buffer.array()
 }
 
-fun Short.toLEByteArray(): ByteArray {
+private fun Short.toLEByteArray(): ByteArray {
     val buffer = ByteBuffer.allocate(2).order(LITTLE_ENDIAN)
     buffer.putShort(this)
     return buffer.array()
