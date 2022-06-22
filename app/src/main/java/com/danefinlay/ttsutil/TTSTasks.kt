@@ -30,6 +30,7 @@ import android.support.annotation.CallSuper
 import android.support.v7.preference.PreferenceManager
 import org.jetbrains.anko.*
 import java.io.*
+import java.util.*
 
 abstract class MyUtteranceProgressListener(ctx: Context, val tts: TextToSpeech) :
         UtteranceProgressListener() {
@@ -75,18 +76,24 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
                        private val observer: TaskProgressObserver) :
         MyUtteranceProgressListener(ctx, tts), Task {
 
-    @Volatile
-    protected var finalize: Boolean = false
-    protected var utteranceBytesQueue = mutableListOf<Int>()
-
     private val reader by lazy { inputStream.bufferedReader() }
     private val maxInputLength = getMaxSpeechInputLength()
-    private var inputProcessed: Long = 0
-    private var streamHasFurtherInput: Boolean = true
-
+    protected val utteranceBytesQueue: MutableList<Int> =
+            Collections.synchronizedList(mutableListOf())
     private val scaleSilenceToRate: Boolean
     private val speechRate: Float
     private val inputSilDurationMap: Map<Int, Long>
+
+    // Note: Instance variables may be accessed by many (at least three) threads.
+    // Hence, we use Java's "volatile" mechanism.
+    @Volatile
+    protected var finalize: Boolean = false
+
+    @Volatile
+    private var inputProcessed: Long = 0
+
+    @Volatile
+    private var streamHasFurtherInput: Boolean = true
 
     abstract fun enqueueText(text: String, bytesRead: Int)
     abstract fun enqueueSilence(durationInMs: Long)
@@ -111,11 +118,9 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
         // Notify the progress listener that work has begun.
         observer.notifyProgress(0, taskId, 0)
 
-        // Initialize the input stream reader and enqueue the first input bytes,
-        // catching any IO exceptions.  This jumpstarts the processing of the
-        // entire stream.
+        // Enqueue the first input bytes, catching any IO exceptions.  This
+        // jumpstarts the processing of the entire stream.
         try {
-            reader
             streamHasFurtherInput = enqueueNextInput()
             if (!streamHasFurtherInput && utteranceBytesQueue.size == 0) {
                 finish(true)
