@@ -27,6 +27,7 @@ import android.speech.tts.TextToSpeech
 import android.speech.tts.TextToSpeech.*
 import android.speech.tts.UtteranceProgressListener
 import android.support.annotation.CallSuper
+import android.support.v7.preference.PreferenceManager
 import org.jetbrains.anko.*
 import java.io.*
 
@@ -83,20 +84,25 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
     private var inputProcessed: Long = 0
     private var streamHasFurtherInput: Boolean = true
 
+    private val scaleSilenceToRate: Boolean
+    private val speechRate: Float
+    private val inputSilDurationMap: Map<Int, Long>
+
     abstract fun enqueueText(text: String, bytesRead: Int)
     abstract fun enqueueSilence(durationInMs: Long)
 
-    sealed class Filter(val include: Boolean,
-                        val newUtteranceRequired: Boolean) {
-        class SilentUtteranceFilter(val durationInMs: Long) : Filter(false, true)
-        class NoFilter : Filter(true, false)
-    }
-
-    protected fun filterInputByte(byte: Int): Filter {
-        return when (byte) {
-            "\n"[0].toInt() -> Filter.SilentUtteranceFilter(100)
-            else -> Filter.NoFilter()
-        }
+    init {
+        // Retrieve values from shared preferences.
+        // Note: This cannot be done from the binder threads which invoke utterance
+        // progress listener callbacks.
+        val prefs = PreferenceManager.getDefaultSharedPreferences(app)
+        scaleSilenceToRate = prefs.getBoolean("pref_silence_scale_to_rate", false)
+        speechRate = prefs.getFloat("pref_tts_speech_rate", 1.0f)
+        inputSilDurationMap = mapOf(
+                // Line Feed (\n).
+                0x0a to prefs.getString("pref_silence_line_endings", "100")
+                    !!.toLong()
+        )
     }
 
     override fun begin(): Boolean {
@@ -121,7 +127,7 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
     }
 
     private fun enqueueNextInput(): Boolean {
-        // Have Android's TTS framework to speak some text from the input stream.
+        // Have Android's TTS framework to process text from the input stream.
         var text = ""
         var bytesRead = 0
         var byte = reader.read()
@@ -129,23 +135,24 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
             // Increment input counter.
             bytesRead++
 
-            // Use the input byte, applying filters as necessary.
-            val filter = filterInputByte(byte)
-            if (filter.newUtteranceRequired) {
-                // Enqueue text current text.
+            // Get the duration of the silent utterance, if any, to be inserted
+            // in place of the input byte.
+            var silentUttDuration: Long = inputSilDurationMap[byte] ?: 0L
+
+            // Include the input byte if no silence is to be inserted.
+            if (silentUttDuration == 0L) text += byte.toChar()
+
+            // Otherwise, enqueue the current text followed by silence and break.
+            // Scale the duration of the silence by the scale factor, if necessary.
+            else {
                 enqueueText(text, bytesRead)
                 text = ""
                 bytesRead = 0
-            }
-            if (filter.include) text += byte.toChar()
-            when (filter) {
-                is Filter.SilentUtteranceFilter -> {
-                    enqueueSilence(filter.durationInMs)
-
-                    // This is enough input.
-                    break
+                if (scaleSilenceToRate) {
+                    silentUttDuration = (silentUttDuration / speechRate).toLong()
                 }
-                is Filter.NoFilter -> {}
+                enqueueSilence(silentUttDuration)
+                break
             }
 
             // Avoid hitting Android's input text limit.  We try to break nicely on

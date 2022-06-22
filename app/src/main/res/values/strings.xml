@@ -168,6 +168,12 @@
     <string name="pref_tts_speech_rate_summary">Select the speed of the synthesized voice.</string>
     <string name="pref_tts_system_settings">System Text-to-Speech Settings</string>
     <string name="pref_tts_system_settings_summary">Open the System Text-to-Speech Settings.</string>
+    <string name="pref_silence_category">Silent Utterance Settings</string>
+    <string name="pref_silence_category_summary">Insert pauses between text.</string>
+    <string name="pref_silence_line_endings">Line endings</string>
+    <string name="pref_silence_line_endings_summary">Set the number of milliseconds to pause after each line.</string>
+    <string name="pref_silence_scale_to_rate">Scale Inserted Silence to Speech Rate</string>
+    <string name="pref_silence_scale_to_rate_summary">Set the application to scale inserted silence to the selected speech rate.</string>
     <string name="pref_messages_category">Message Settings</string>
     <string name="pref_messages_next_task">Next Task Messages</string>
     <string name="pref_messages_next_task_summary">Display a message when a queued task begins.</string>

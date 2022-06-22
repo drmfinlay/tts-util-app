@@ -63,6 +63,9 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
         // Handle TTS engine preferences.
         if (handleTtsEnginePrefs(preference)) return true
 
+        // Handle silence value preferences.
+        if (handleSilencePrefs(preference)) return true
+
         return super.onPreferenceTreeClick(preference)
     }
 
@@ -161,7 +164,10 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
     }
 
     private fun handleTtsEnginePrefs(preference: Preference?): Boolean {
-        val key = preference?.key
+        val key = preference?.key ?: return false
+
+        // Return if the preference is not handled by this procedure.
+        if (!key.startsWith("pref_tts")) return false
 
         // Handle opening the system settings.
         if (key == "pref_tts_system_settings") {
@@ -195,6 +201,15 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
             }
             return true
         }
+    }
+
+    private fun handleSilencePrefs(preference: Preference?): Boolean {
+        val key = preference?.key ?: return false
+
+        // Return if the preference is not handled by this procedure.
+        if (!key.startsWith("pref_silence")) return false
+
+        return true
     }
 
     private fun buildAlertDialog(title: Int, items: List<String>,

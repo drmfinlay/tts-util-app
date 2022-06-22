@@ -56,6 +56,26 @@
             android:summary="@string/pref_tts_system_settings_summary"
             android:icon="@android:drawable/ic_menu_preferences" />
 
+        <PreferenceCategory
+            android:title="@string/pref_silence_category"
+            android:summary="@string/pref_silence_category_summary" />
+
+        <!-- TODO Figure out how to use ListPreferences. -->
+        <ListPreference
+            android:key="pref_silence_line_endings"
+            android:title="@string/pref_silence_line_endings"
+            android:summary="@string/pref_silence_line_endings_summary"
+            android:dialogTitle="@string/pref_silence_line_endings_summary"
+            android:entries="@array/silence_line_endings_entries"
+            android:entryValues="@array/silence_line_endings_values"
+            android:defaultValue="100" />
+
+        <CheckBoxPreference
+            android:key="pref_silence_scale_to_rate"
+            android:title="@string/pref_silence_scale_to_rate"
+            android:summary="@string/pref_silence_scale_to_rate_summary"
+            android:defaultValue="false" />
+
     </PreferenceCategory>
     <PreferenceCategory
         android:title="@string/pref_messages_category">
