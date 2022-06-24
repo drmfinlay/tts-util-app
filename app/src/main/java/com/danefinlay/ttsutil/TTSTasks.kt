@@ -30,6 +30,7 @@ import android.support.annotation.CallSuper
 import android.support.v7.preference.PreferenceManager
 import org.jetbrains.anko.*
 import java.io.*
+import java.lang.StringBuilder
 import java.util.*
 
 abstract class MyUtteranceProgressListener(ctx: Context, val tts: TextToSpeech) :
@@ -82,7 +83,7 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
             Collections.synchronizedList(mutableListOf())
     private val scaleSilenceToRate: Boolean
     private val speechRate: Float
-    private val inputSilDurationMap: Map<Int, Long>
+    private val delimitersToSilenceMap: Map<Int, Long>
 
     // Note: Instance variables may be accessed by many (at least three) threads.
     // Hence, we use Java's "volatile" mechanism.
@@ -105,7 +106,7 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
         val prefs = PreferenceManager.getDefaultSharedPreferences(app)
         scaleSilenceToRate = prefs.getBoolean("pref_silence_scale_to_rate", false)
         speechRate = prefs.getFloat("pref_tts_speech_rate", 1.0f)
-        inputSilDurationMap = mapOf(
+        delimitersToSilenceMap = mapOf(
                 // Line Feed (\n).
                 0x0a to prefs.getString("pref_silence_line_endings", "100")
                     !!.toLong()
@@ -131,49 +132,81 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
         return true
     }
 
-    private fun enqueueNextInput(): Boolean {
-        // Have Android's TTS framework to process text from the input stream.
-        var text = ""
-        var bytesRead = 0
-        var byte = reader.read()
-        while (byte >= 0) {
-            // Increment input counter.
-            bytesRead++
+    private fun processInputBuffer(buffer: ArrayList<Char>, flush: Boolean) {
+        var byteCount = 0
+        val stringBuilder = StringBuilder()
+
+        // TODO Insert filter logic here.
+
+        // Process each character in the buffer.
+        while (byteCount < buffer.size) {
+            // Retrieve the next character.
+            val char = buffer[byteCount++]
 
             // Get the duration of the silent utterance, if any, to be inserted
-            // in place of the input byte.
-            var silentUttDuration: Long = inputSilDurationMap[byte] ?: 0L
+            // in place of the current character.
+            var silenceDuration: Long = delimitersToSilenceMap[char.toInt()] ?: 0L
+            val insertSilence = silenceDuration > 0L
 
             // Include the input byte if no silence is to be inserted.
-            if (silentUttDuration == 0L) text += byte.toChar()
+            if (!insertSilence) stringBuilder.append(char)
 
-            // Otherwise, enqueue the current text followed by silence and break.
-            // Scale the duration of the silence by the scale factor, if necessary.
-            else {
-                enqueueText(text, bytesRead)
-                text = ""
-                bytesRead = 0
-                if (scaleSilenceToRate) {
-                    silentUttDuration = (silentUttDuration / speechRate).toLong()
+            // Enqueue TTS task(s), if necessary.
+            if (insertSilence || char.toInt() in delimitersToSilenceMap.keys) {
+                // Enqueue the current characters for synthesis.
+                enqueueText(stringBuilder.toString(), byteCount)
+
+                // If silence is to be inserted, then enqueue it.  Scale the silence
+                // by the speech rate, if necessary.
+                if (insertSilence) {
+                    if (scaleSilenceToRate) {
+                        silenceDuration = (silenceDuration / speechRate).toLong()
+                    }
+                    enqueueSilence(silenceDuration)
                 }
-                enqueueSilence(silentUttDuration)
-                break
-            }
 
-            // Avoid hitting Android's input text limit.  We try to break nicely on
-            // a whitespace character close to the limit.  If there is no word
-            // boundary close to the limit, we break on the last possible character.
-            if (text.length > maxInputLength - 100 && byte.toChar().isWhitespace())
-                break
-            else if (text.length == maxInputLength)
-                break
+                // Remove processed characters from the buffer and reset locals.
+                for (x in 0 until byteCount) { buffer.removeAt(0) }
+                byteCount = 0
+                stringBuilder.clear()
+            }
+        }
+
+        // If in flush mode and the buffer is not yet empty, enqueue all characters
+        // and clear it.
+        if (flush && buffer.size > 0) {
+            enqueueText(stringBuilder.toString(), byteCount)
+            buffer.clear()
+        }
+    }
+
+    private fun enqueueNextInput(): Boolean {
+        // Have Android's TTS framework to process text from the input stream.
+        val buffer = ArrayList<Char>()
+        var byte = reader.read()
+        while (byte >= 0) {
+            // Convert the input byte to a character and add it to the buffer.
+            val char = byte.toChar()
+            buffer.add(char)
+
+            // Read until we reach a line feed or the maximum input length,
+            // (whichever comes first,) then process the input buffer.  Processing
+            // may or may not enqueue TTS tasks at this point, so continue until it
+            // does.
+            val isMaxLength = buffer.size == maxInputLength
+            if (byte == 0x0a || isMaxLength) {
+                processInputBuffer(buffer, isMaxLength)
+
+                // Finish if the buffer was flushed.
+                if (buffer.size == 0) break
+            }
 
             // Read the next byte.
             byte = reader.read()
         }
 
-        // Flush text, if any.
-        enqueueText(text, bytesRead)
+        // Flush any characters still in the buffer.
+        processInputBuffer(buffer, true)
 
         // Return whether there is further input.
         return byte >= 0
