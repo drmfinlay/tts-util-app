@@ -22,6 +22,8 @@ package com.danefinlay.ttsutil
 
 import android.content.Context
 import android.media.AudioManager
+import android.net.MailTo
+import android.net.ParseException
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.speech.tts.TextToSpeech.*
@@ -31,6 +33,8 @@ import android.support.v7.preference.PreferenceManager
 import org.jetbrains.anko.*
 import java.io.*
 import java.lang.StringBuilder
+import java.net.MalformedURLException
+import java.net.URL
 import java.util.*
 
 abstract class MyUtteranceProgressListener(ctx: Context, val tts: TextToSpeech) :
@@ -96,6 +100,10 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
     @Volatile
     private var streamHasFurtherInput: Boolean = true
 
+    private val filterHashes: Boolean
+    private val filterHyperlinks: Boolean
+    private val filtersEnabled: Boolean
+
     abstract fun enqueueText(text: String, bytesRead: Int)
     abstract fun enqueueSilence(durationInMs: Long)
 
@@ -111,6 +119,11 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
                 0x0a to prefs.getString("pref_silence_line_endings", "100")
                     !!.toLong()
         )
+
+        // FIXME after adding preferences -- default=false for both filters.
+        filterHashes = true
+        filterHyperlinks = true
+        filtersEnabled = filterHyperlinks || filterHashes
     }
 
     override fun begin(): Boolean {
@@ -132,11 +145,91 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
         return true
     }
 
+    private fun filterChar(char: Char): Boolean {
+        // Check for hash, if appropriate.
+        return filterHashes && char.toInt() == 0x23
+    }
+
+    private fun filterWord(word: String): Boolean {
+        // Check for common hyperlinks, if appropriate.
+        var result = false
+        if (filterHyperlinks) {
+            // Check prefixes first as an optimization.
+            val lowerCaseWord = word.toLowerCase(Locale.ROOT)
+            for (prefix in listOf("http://", "https://")) {
+                result = lowerCaseWord.startsWith(prefix)
+                if (result) break
+            }
+
+            // If there is a match, try to parse the string using Java's URL class,
+            // which is imperfect, but good enough for this use case.
+            if (result) {
+                result = try { URL(word); true }
+                catch (e: MalformedURLException) { false }
+            }
+
+            // Check if the "word" is a mailto URL.
+            // This must be done separately because the URL class doesn't understand
+            // the protocol.
+            if (!result) {
+                result = try { MailTo.parse(lowerCaseWord); true }
+                catch (e: ParseException) { false }
+            }
+        }
+        return result
+    }
+
+    private fun applyTextFilters(buffer: ArrayList<Char>,
+                                 stringBuilder: StringBuilder) {
+        var count = 0
+        var markedIndices = mutableListOf<Int>()
+
+        // Mark the index of each character to filter out.
+        while (count < buffer.size) {
+            // Retrieve the next character.
+            val char = buffer[count]
+
+            // Read until we reach a word boundary.
+            // Filter characters here, if appropriate.
+            if (!char.isWhitespace()) {
+                stringBuilder.append(char)
+                if (filterChar(char)) markedIndices.add(count)
+                count++
+                continue
+            }
+
+            // We have reached a word boundary.  Filter out the word, if
+            // appropriate.
+            val word = stringBuilder.toString()
+            if (filterWord(word)) {
+                val wordIndexZero = count - word.length
+                word.indices.forEach { i -> markedIndices.add(wordIndexZero + i) }
+            }
+            stringBuilder.clear()
+            count++
+        }
+
+        // Remove duplicate indices and sort the list.
+        markedIndices = markedIndices.toMutableSet().toMutableList()
+        markedIndices.sort()
+
+        // Remove filtered characters from the buffer in reverse order.
+        count = markedIndices.size - 1
+        while (count >= 0) {
+            buffer.removeAt(markedIndices[count])
+            count--
+        }
+
+        // Done.
+        stringBuilder.clear()
+    }
+
     private fun processInputBuffer(buffer: ArrayList<Char>, flush: Boolean) {
         var byteCount = 0
         val stringBuilder = StringBuilder()
 
-        // TODO Insert filter logic here.
+        // Apply text filters, if necessary.
+        if (filtersEnabled) applyTextFilters(buffer, stringBuilder)
 
         // Process each character in the buffer.
         while (byteCount < buffer.size) {
