@@ -56,11 +56,12 @@
             android:summary="@string/pref_tts_system_settings_summary"
             android:icon="@android:drawable/ic_menu_preferences" />
 
-        <PreferenceCategory
-            android:title="@string/pref_silence_category"
-            android:summary="@string/pref_silence_category_summary" />
+    </PreferenceCategory>
 
-        <!-- TODO Figure out how to use ListPreferences. -->
+    <PreferenceCategory
+        android:title="@string/pref_silence_category"
+        android:summary="@string/pref_silence_category_summary" >
+
         <ListPreference
             android:key="pref_silence_line_endings"
             android:title="@string/pref_silence_line_endings"
@@ -76,7 +77,32 @@
             android:summary="@string/pref_silence_scale_to_rate_summary"
             android:defaultValue="false" />
 
+    <PreferenceCategory
+        android:title="@string/pref_filter_category"
+        android:summary="@string/pref_filter_category_summary" >
+
+        <CheckBoxPreference
+            android:key="pref_filter_hash"
+            android:title="@string/pref_filter_hash"
+            android:summary="@string/pref_filter_hash_summary"
+            android:defaultValue="false" />
+
+        <CheckBoxPreference
+            android:key="pref_filter_web_links"
+            android:title="@string/pref_filter_web_links"
+            android:summary="@string/pref_filter_web_links_summary"
+            android:defaultValue="false" />
+
+        <CheckBoxPreference
+            android:key="pref_filter_mailto_links"
+            android:title="@string/pref_filter_mailto_links"
+            android:summary="@string/pref_filter_mailto_links_summary"
+            android:defaultValue="false" />
+
     </PreferenceCategory>
+
+    </PreferenceCategory>
+
     <PreferenceCategory
         android:title="@string/pref_messages_category">
 

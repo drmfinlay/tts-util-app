@@ -104,7 +104,8 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
     private var inputFiltered: Long = 0
 
     private val filterHashes: Boolean
-    private val filterHyperlinks: Boolean
+    private val filterWebLinks: Boolean
+    private val filterMailToLinks: Boolean
     private val filtersEnabled: Boolean
 
     abstract fun enqueueText(text: String, bytesRead: Int)
@@ -122,11 +123,10 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
                 0x0a to prefs.getString("pref_silence_line_endings", "100")
                     !!.toLong()
         )
-
-        // FIXME after adding preferences -- default=false for both filters.
-        filterHashes = true
-        filterHyperlinks = true
-        filtersEnabled = filterHyperlinks || filterHashes
+        filterHashes = prefs.getBoolean("pref_filter_hash", false)
+        filterWebLinks = prefs.getBoolean("pref_filter_web_links", false)
+        filterMailToLinks = prefs.getBoolean("pref_filter_mailto_links", false)
+        filtersEnabled = filterHashes || filterWebLinks || filterMailToLinks
     }
 
     override fun begin(): Boolean {
@@ -154,9 +154,10 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
     }
 
     private fun filterWord(word: String): Boolean {
-        // Check for common hyperlinks, if appropriate.
         var result = false
-        if (filterHyperlinks) {
+
+        // Check for web hyperlinks, if appropriate.
+        if (filterWebLinks) {
             // Check prefixes first as an optimization.
             val lowerCaseWord = word.toLowerCase(Locale.ROOT)
             for (prefix in listOf("http://", "https://")) {
@@ -167,17 +168,16 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
             // If there is a match, try to parse the string using Java's URL class,
             // which is imperfect, but good enough for this use case.
             if (result) {
-                result = try { URL(word); true }
+                result = try { URL(lowerCaseWord); true }
                 catch (e: MalformedURLException) { false }
             }
+        }
 
-            // Check if the "word" is a mailto URL.
-            // This must be done separately because the URL class doesn't understand
-            // the protocol.
-            if (!result) {
-                result = try { MailTo.parse(lowerCaseWord); true }
-                catch (e: ParseException) { false }
-            }
+        // Check for mailto hyperlinks, if appropriate.
+        if (!result && filterMailToLinks) {
+            val lowerCaseWord = word.toLowerCase(Locale.ROOT)
+            result = try { MailTo.parse(lowerCaseWord); true }
+            catch (e: ParseException) { false }
         }
         return result
     }
