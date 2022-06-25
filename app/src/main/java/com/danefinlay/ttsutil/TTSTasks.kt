@@ -100,6 +100,9 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
     @Volatile
     private var streamHasFurtherInput: Boolean = true
 
+    @Volatile
+    private var inputFiltered: Long = 0
+
     private val filterHashes: Boolean
     private val filterHyperlinks: Boolean
     private val filtersEnabled: Boolean
@@ -228,8 +231,14 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
         var byteCount = 0
         val stringBuilder = StringBuilder()
 
-        // Apply text filters, if necessary.
-        if (filtersEnabled) applyTextFilters(buffer, stringBuilder)
+        // If text filters are enabled, apply them to the input buffer and take note
+        // of the number of filtered characters.
+        if (filtersEnabled) {
+            val preFilteringCount = buffer.size
+            applyTextFilters(buffer, stringBuilder)
+            val postFilteringCount = buffer.size
+            inputFiltered += (preFilteringCount - postFilteringCount)
+        }
 
         // Process each character in the buffer.
         while (byteCount < buffer.size) {
@@ -313,6 +322,16 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
         // Notify the progress observer that the task is finished.
         val progress = if (success) 100 else -1
         observer.notifyProgress(progress, taskId, 0)
+
+        // If any input was filtered, display a toast message.
+        if (inputFiltered > 0) {
+            val message = app.getString(
+                    R.string.filtered_characters_message,
+                    inputFiltered, app.resources.getQuantityString(
+                    R.plurals.characters, inputFiltered.toInt())
+            )
+            displayMessage(message, false)
+        }
 
         // Call the super method.
         return super.finish(success)

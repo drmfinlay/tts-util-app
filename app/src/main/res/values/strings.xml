@@ -154,6 +154,7 @@
     <string name="tts_initialization_failure_msg">Text-to-speech engine failed to initialize.</string>
     <string name="using_general_tts_language_msg">Selected language is not available, using %1$s.</string>
     <string name="no_tts_language_available_msg">Neither the selected nor the system speaker languages are available.</string>
+    <string name="filtered_characters_message">%1$d input %2$s filtered out.</string>
 
     <!--Preferences/settings.-->
     <string name="pref_tts_engine_category">Text-to-Speech (TTS) Settings</string>

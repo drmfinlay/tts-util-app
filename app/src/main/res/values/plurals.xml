@@ -27,4 +27,8 @@
         <item quantity="one">task</item>
         <item quantity="other">tasks</item>
     </plurals>
+    <plurals name="characters">
+        <item quantity="one">character</item>
+        <item quantity="other">characters</item>
+    </plurals>
 </resources>
