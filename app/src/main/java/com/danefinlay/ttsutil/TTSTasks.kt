@@ -36,6 +36,8 @@ import java.lang.StringBuilder
 import java.net.MalformedURLException
 import java.net.URL
 import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.math.min
 
 abstract class MyUtteranceProgressListener(ctx: Context, val tts: TextToSpeech) :
         UtteranceProgressListener() {
@@ -81,13 +83,18 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
                        private val observer: TaskProgressObserver) :
         MyUtteranceProgressListener(ctx, tts), Task {
 
-    private val reader by lazy { inputStream.bufferedReader() }
-    private val maxInputLength = getMaxSpeechInputLength()
+    private val streamReader: Reader
     protected val utteranceBytesQueue: MutableList<Int> =
-            Collections.synchronizedList(mutableListOf())
+            Collections.synchronizedList(mutableListOf<Int>())
+
     private val scaleSilenceToRate: Boolean
     private val speechRate: Float
     private val delimitersToSilenceMap: Map<Int, Long>
+
+    private val filterHashes: Boolean
+    private val filterWebLinks: Boolean
+    private val filterMailToLinks: Boolean
+    private val filtersEnabled: Boolean
 
     // Note: Instance variables may be accessed by many (at least three) threads.
     // Hence, we use Java's "volatile" mechanism.
@@ -95,20 +102,15 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
     protected var finalize: Boolean = false
 
     @Volatile
-    private var inputProcessed: Long = 0
-
-    @Volatile
-    private var streamHasFurtherInput: Boolean = true
+    protected var inputProcessed: Long = 0
 
     @Volatile
     private var inputFiltered: Long = 0
 
-    private val filterHashes: Boolean
-    private val filterWebLinks: Boolean
-    private val filterMailToLinks: Boolean
-    private val filtersEnabled: Boolean
+    @Volatile
+    private var streamHasFurtherInput: Boolean = true
 
-    abstract fun enqueueText(text: String, bytesRead: Int)
+    abstract fun enqueueText(text: CharSequence, bytesRead: Int)
     abstract fun enqueueSilence(durationInMs: Long)
 
     init {
@@ -127,6 +129,11 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
         filterWebLinks = prefs.getBoolean("pref_filter_web_links", false)
         filterMailToLinks = prefs.getBoolean("pref_filter_mailto_links", false)
         filtersEnabled = filterHashes || filterWebLinks || filterMailToLinks
+
+        // Initialize an appropriate reader.
+        val delimitersEnabled = delimitersToSilenceMap.values.count { it > 0 }
+        streamReader = if (delimitersEnabled > 0) inputStream.reader()
+                       else inputStream.bufferedReader()
     }
 
     override fun begin(): Boolean {
@@ -182,22 +189,18 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
         return result
     }
 
-    private fun applyTextFilters(buffer: ArrayList<Char>,
-                                 stringBuilder: StringBuilder) {
-        var count = 0
+    private fun applyTextFilters(buffer: ArrayList<Char>) {
+        val initialBufferSize = buffer.size
+        val stringBuilder = StringBuilder()
         var markedIndices = mutableListOf<Int>()
 
         // Mark the index of each character to filter out.
-        while (count < buffer.size) {
-            // Retrieve the next character.
-            val char = buffer[count]
-
+        for ((index, char) in buffer.withIndex()) {
             // Read until we reach a word boundary.
             // Filter characters here, if appropriate.
             if (!char.isWhitespace()) {
                 stringBuilder.append(char)
-                if (filterChar(char)) markedIndices.add(count)
-                count++
+                if (filterChar(char)) markedIndices.add(index)
                 continue
             }
 
@@ -205,110 +208,88 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
             // appropriate.
             val word = stringBuilder.toString()
             if (filterWord(word)) {
-                val wordIndexZero = count - word.length
+                val wordIndexZero = index - word.length
                 word.indices.forEach { i -> markedIndices.add(wordIndexZero + i) }
             }
             stringBuilder.clear()
-            count++
         }
 
-        // Remove duplicate indices and sort the list.
+        // Remove repeated indices and sort the list.
         markedIndices = markedIndices.toMutableSet().toMutableList()
         markedIndices.sort()
 
         // Remove filtered characters from the buffer in reverse order.
-        count = markedIndices.size - 1
-        while (count >= 0) {
-            buffer.removeAt(markedIndices[count])
-            count--
+        var index = markedIndices.size - 1
+        while (index >= 0) {
+            buffer.removeAt(markedIndices[index])
+            index--
         }
 
         // Done.
-        stringBuilder.clear()
+        val filterCount = initialBufferSize - buffer.size
+        inputProcessed += filterCount
+        inputFiltered += filterCount
     }
 
-    private fun processInputBuffer(buffer: ArrayList<Char>, flush: Boolean) {
-        var byteCount = 0
+    private fun processInputBuffer(buffer: ArrayList<Char>) {
         val stringBuilder = StringBuilder()
 
         // If text filters are enabled, apply them to the input buffer and take note
         // of the number of filtered characters.
-        if (filtersEnabled) {
-            val preFilteringCount = buffer.size
-            applyTextFilters(buffer, stringBuilder)
-            val postFilteringCount = buffer.size
-            inputFiltered += (preFilteringCount - postFilteringCount)
-        }
+        if (filtersEnabled) applyTextFilters(buffer)
 
-        // Process each character in the buffer.
-        while (byteCount < buffer.size) {
-            // Retrieve the next character.
-            val char = buffer[byteCount++]
-
-            // Get the duration of the silent utterance, if any, to be inserted
-            // in place of the current character.
-            var silenceDuration: Long = delimitersToSilenceMap[char.toInt()] ?: 0L
-            val insertSilence = silenceDuration > 0L
-
-            // Include the input byte if no silence is to be inserted.
-            if (!insertSilence) stringBuilder.append(char)
-
-            // Enqueue TTS task(s), if necessary.
-            if (insertSilence || char.toInt() in delimitersToSilenceMap.keys) {
-                // Enqueue the current characters for synthesis.
-                enqueueText(stringBuilder.toString(), byteCount)
-
-                // If silence is to be inserted, then enqueue it.  Scale the silence
-                // by the speech rate, if necessary.
-                if (insertSilence) {
-                    if (scaleSilenceToRate) {
-                        silenceDuration = (silenceDuration / speechRate).toLong()
-                    }
-                    enqueueSilence(silenceDuration)
+        // Process buffer characters as strings delimited by characters with
+        // positive silence duration entries.  Scale silence by the speech rate, if
+        // appropriate.
+        for (char in buffer) {
+            var silenceDuration = delimitersToSilenceMap[char.toInt()]
+            if (silenceDuration != null && silenceDuration > 0L) {
+                val text = stringBuilder.toString()
+                val bytesRead = text.length + 1 // Including char.
+                enqueueText(text, bytesRead)
+                if (scaleSilenceToRate) {
+                    silenceDuration = (silenceDuration / speechRate).toLong()
                 }
-
-                // Remove processed characters from the buffer and reset locals.
-                for (x in 0 until byteCount) { buffer.removeAt(0) }
-                byteCount = 0
+                enqueueSilence(silenceDuration)
                 stringBuilder.clear()
+                continue
             }
+            stringBuilder.append(char)
         }
 
-        // If in flush mode and the buffer is not yet empty, enqueue all characters
-        // and clear it.
-        if (flush && buffer.size > 0) {
-            enqueueText(stringBuilder.toString(), byteCount)
-            buffer.clear()
+        // If there were no appropriate delimiters, then enqueue the text.
+        if (stringBuilder.length > 0) {
+            val text = stringBuilder.toString()
+            enqueueText(text, text.length)
         }
+
+        // Done.
+        buffer.clear()
     }
 
     private fun enqueueNextInput(): Boolean {
-        // Have Android's TTS framework to process text from the input stream.
         val buffer = ArrayList<Char>()
-        var byte = reader.read()
+        var byte = streamReader.read()
+        val lineFeedScanThreshold = (maxInputLength * 0.70).toInt()
+        val whiteSpaceScanThreshold = (maxInputLength * 0.9).toInt()
+
+        // Read characters until we hit a delimiter with a positive silence duration
+        // or until an appropriate whitespace character is found near the maximum
+        // input length -- whichever comes first.
         while (byte >= 0) {
-            // Convert the input byte to a character and add it to the buffer.
             val char = byte.toChar()
             buffer.add(char)
 
-            // Read until we reach a line feed or the maximum input length,
-            // (whichever comes first,) then process the input buffer.  Processing
-            // may or may not enqueue TTS tasks at this point, so continue until it
-            // does.
-            val isMaxLength = buffer.size == maxInputLength
-            if (byte == 0x0a || isMaxLength) {
-                processInputBuffer(buffer, isMaxLength)
+            val silenceDuration = delimitersToSilenceMap[char.toInt()] ?: 0L
+            if (silenceDuration > 0) break
+            if (buffer.size >= lineFeedScanThreshold && byte == 0x0a) break
+            if (buffer.size >= whiteSpaceScanThreshold && char.isWhitespace()) break
 
-                // Finish if the buffer was flushed.
-                if (buffer.size == 0) break
-            }
-
-            // Read the next byte.
-            byte = reader.read()
+            byte = streamReader.read()
         }
 
-        // Flush any characters still in the buffer.
-        processInputBuffer(buffer, true)
+        // Process the input buffer.
+        processInputBuffer(buffer)
 
         // Return whether there is further input.
         return byte >= 0
@@ -316,7 +297,7 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
 
     override fun finish(success: Boolean): Boolean {
         // Close the reader and input stream.
-        reader.close()
+        streamReader.close()
         inputStream.close()
 
         // Notify the progress observer that the task is finished.
@@ -400,13 +381,13 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
     }
 
     companion object {
+        // Note: Using the value returned by getMaxSpeechInputLength() can result in
+        // fatal errors, i.e. application crashes.  Hence, we use shorter values.
+        val maxInputLength = min(500, getMaxSpeechInputLength() - 1)
+
         private var currentUtteranceId: Long = 0
 
-        fun nextUtteranceId(): String {
-            val id = currentUtteranceId
-            currentUtteranceId += 1
-            return "$id"
-        }
+        fun nextUtteranceId(): String = "${currentUtteranceId++}"
     }
 }
 
@@ -425,14 +406,14 @@ class ReadInputTask(ctx: Context, tts: TextToSpeech, inputStream: InputStream,
     }
 
     override fun enqueueSilence(durationInMs: Long) {
+        if (durationInMs == 0L) return
+
         // The queue mode initially specified for the task is ignored here; it only
         // makes sense to use QUEUE_ADD for silence.
         tts.playSilentUtterance(durationInMs, QUEUE_ADD, nextUtteranceId())
     }
 
-    override fun enqueueText(text: String, bytesRead: Int) {
-        if (bytesRead == 0) return
-
+    override fun enqueueText(text: CharSequence, bytesRead: Int) {
         // Enqueue text using speak().
         // Add *bytesRead* to the queue.
         utteranceBytesQueue.add(bytesRead)
@@ -467,17 +448,19 @@ class FileSynthesisTask(ctx: Context, tts: TextToSpeech,
                 TASK_ID_WRITE_FILE, progressObserver) {
 
     override fun begin(): Boolean {
-        if (!super.begin()) return false
-
         // Delete silent wave files because they may be incompatible with current
         // user settings.
         for (file in app.filesDir.listFiles()) {
             if (file.name.endsWith("ms_sil.wav")) file.delete()
         }
+
+        if (!super.begin()) return false
         return true
     }
 
     override fun enqueueSilence(durationInMs: Long) {
+        if (durationInMs == 0L) return
+
         // Android's text-to-speech framework does not allow adding silence to wave
         // files, so we add a reference to a special wave file that will contain Xms
         // of silence.  These files are created in finish(), if necessary.
@@ -509,9 +492,7 @@ class FileSynthesisTask(ctx: Context, tts: TextToSpeech,
         outputStream.close()
     }
 
-    override fun enqueueText(text: String, bytesRead: Int) {
-        if (bytesRead == 0) return
-
+    override fun enqueueText(text: CharSequence, bytesRead: Int) {
         // Enqueue text with synthesizeToFile().
         // Add *bytesRead* to the queue.
         utteranceBytesQueue.add(bytesRead)
