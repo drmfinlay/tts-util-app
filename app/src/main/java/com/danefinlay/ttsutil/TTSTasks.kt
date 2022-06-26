@@ -196,19 +196,21 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
 
         // Mark the index of each character to filter out.
         for ((index, char) in buffer.withIndex()) {
-            // Read until we reach a word boundary.
-            // Filter characters here, if appropriate.
-            if (!char.isWhitespace()) {
+            // Read until we reach a word boundary or the last character.
+            // Filter characters, if appropriate.
+            val charNotWhitespace = !char.isWhitespace()
+            if (charNotWhitespace) {
                 stringBuilder.append(char)
                 if (filterChar(char)) markedIndices.add(index)
-                continue
+                if (index < buffer.lastIndex) continue
             }
 
             // We have reached a word boundary.  Filter out the word, if
             // appropriate.
             val word = stringBuilder.toString()
             if (filterWord(word)) {
-                val wordIndexZero = index - word.length
+                var wordIndexZero = index - word.length
+                if (charNotWhitespace) wordIndexZero++ // Include the last char.
                 word.indices.forEach { i -> markedIndices.add(wordIndexZero + i) }
             }
             stringBuilder.clear()
@@ -226,70 +228,56 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
         }
 
         // Done.
-        val filterCount = initialBufferSize - buffer.size
-        inputProcessed += filterCount
-        inputFiltered += filterCount
-    }
-
-    private fun processInputBuffer(buffer: ArrayList<Char>) {
-        val stringBuilder = StringBuilder()
-
-        // If text filters are enabled, apply them to the input buffer and take note
-        // of the number of filtered characters.
-        if (filtersEnabled) applyTextFilters(buffer)
-
-        // Process buffer characters as strings delimited by characters with
-        // positive silence duration entries.  Scale silence by the speech rate, if
-        // appropriate.
-        for (char in buffer) {
-            var silenceDuration = delimitersToSilenceMap[char.toInt()]
-            if (silenceDuration != null && silenceDuration > 0L) {
-                val text = stringBuilder.toString()
-                val bytesRead = text.length + 1 // Including char.
-                enqueueText(text, bytesRead)
-                if (scaleSilenceToRate) {
-                    silenceDuration = (silenceDuration / speechRate).toLong()
-                }
-                enqueueSilence(silenceDuration)
-                stringBuilder.clear()
-                continue
-            }
-            stringBuilder.append(char)
-        }
-
-        // If there were no appropriate delimiters, then enqueue the text.
-        if (stringBuilder.length > 0) {
-            val text = stringBuilder.toString()
-            enqueueText(text, text.length)
-        }
-
-        // Done.
-        buffer.clear()
+        inputFiltered += initialBufferSize - buffer.size
     }
 
     private fun enqueueNextInput(): Boolean {
         val buffer = ArrayList<Char>()
-        var byte = streamReader.read()
+        var bytesRead = 0
         val lineFeedScanThreshold = (maxInputLength * 0.70).toInt()
         val whiteSpaceScanThreshold = (maxInputLength * 0.9).toInt()
 
         // Read characters until we hit a delimiter with a positive silence duration
         // or until an appropriate whitespace character is found near the maximum
         // input length -- whichever comes first.
+        var byte = streamReader.read()
+        var silenceDuration = 0L
         while (byte >= 0) {
-            val char = byte.toChar()
-            buffer.add(char)
+            bytesRead++
 
-            val silenceDuration = delimitersToSilenceMap[char.toInt()] ?: 0L
-            if (silenceDuration > 0) break
+            // Only add regular characters, not ones which are to be replaced with
+            // silence.
+            val char = byte.toChar()
+            silenceDuration = delimitersToSilenceMap[char.toInt()] ?: 0L
+            if (silenceDuration == 0L) buffer.add(char)
+            else if (silenceDuration > 0) break
+
             if (buffer.size >= lineFeedScanThreshold && byte == 0x0a) break
             if (buffer.size >= whiteSpaceScanThreshold && char.isWhitespace()) break
 
             byte = streamReader.read()
         }
 
-        // Process the input buffer.
-        processInputBuffer(buffer)
+        // Return early if no bytes were read (end of stream).
+        if (bytesRead == 0) return false
+
+        // Process the buffer.
+        // If text filters are enabled, apply them.
+        if (filtersEnabled) applyTextFilters(buffer)
+
+        // Enqueue the final string.
+        val stringBuilder = StringBuilder()
+        for (i in 0 until buffer.size) stringBuilder.append(buffer[i])
+        enqueueText(stringBuilder.toString(), bytesRead)
+
+        // Enqueue silence, if necessary.  Scale silence by the speech rate, if
+        // appropriate.
+        if (silenceDuration > 0L) {
+            if (scaleSilenceToRate) {
+                silenceDuration = (silenceDuration / speechRate).toLong()
+            }
+            enqueueSilence(silenceDuration)
+        }
 
         // Return whether there is further input.
         return byte >= 0
