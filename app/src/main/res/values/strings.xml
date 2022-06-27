@@ -57,6 +57,7 @@
     <string name="mem_button_2">Memory 2</string>
     <string name="mem_button_3">Memory 3</string>
     <string name="mem_button_4">Memory 4</string>
+    <string name="mem_button_5">Memory 5</string>
 
     <!--This was adapted from the FreeOTP app's source code (also licensed under
         Apache 2.0).-->

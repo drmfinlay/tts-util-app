@@ -297,13 +297,14 @@ class ReadTextFragment : ReadTextFragmentBase() {
 
         // Set OnClick and OnLongClick event listeners for each memory button.
         val ctx = context /* Activity context */
-        listOf(R.id.Memory1, R.id.Memory2, R.id.Memory3, R.id.Memory4)
-                .forEachIndexed { i, id ->
-                    val button = find<ImageButton>(id)
-                    val memoryKey = "mem${i + 1}"  // mem1..mem4
-                    val listener = MemoryButtonEventListener(ctx!!, memoryKey, this)
-                    button.setOnClickListener(listener)
-                    button.setOnLongClickListener(listener)
+        val memoryButtons = listOf(R.id.Memory1, R.id.Memory2, R.id.Memory3,
+                R.id.Memory4, R.id.Memory5)
+        memoryButtons.forEachIndexed { i, id ->
+            val button = find<ImageButton>(id)
+            val memoryKey = "mem${i + 1}"  // mem1..mem4
+            val listener = MemoryButtonEventListener(ctx!!, memoryKey, this)
+            button.setOnClickListener(listener)
+            button.setOnLongClickListener(listener)
         }
 
         // Set input layout content as necessary.

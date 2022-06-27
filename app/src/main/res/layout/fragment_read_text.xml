@@ -215,5 +215,14 @@
             app:layout_constraintTop_toBottomOf="@+id/store_description"
             app:layout_constraintStart_toEndOf="@id/Memory3"  />
 
+        <ImageButton
+            android:id="@+id/Memory5"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_baseline_filter_5_24"
+            android:contentDescription="@string/mem_button_5"
+            app:layout_constraintTop_toBottomOf="@+id/store_description"
+            app:layout_constraintStart_toEndOf="@id/Memory4"  />
+
     </android.support.constraint.ConstraintLayout>
 </android.support.constraint.ConstraintLayout>
