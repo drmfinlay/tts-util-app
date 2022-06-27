@@ -83,7 +83,7 @@ class TTSIntentService : IntentService("TTSIntentService") {
         }
 
         // Speak *text* and handle the result.
-        val inputSource = InputSource.String(text, sourceDescription)
+        val inputSource = InputSource.CharSequence(text, sourceDescription)
         val result = myApplication.enqueueReadInputTask(inputSource, QUEUE_ADD)
         myApplication.handleTTSOperationResult(result)
     }

@@ -147,7 +147,7 @@ abstract class ReadTextFragmentBase : MyFragment() {
         }
 
         // Speak *text* and handle the result.
-        val inputSource = InputSource.String(text, textSourceDescription)
+        val inputSource = InputSource.CharSequence(text, textSourceDescription)
         val result = myApplication.enqueueReadInputTask(inputSource, QUEUE_ADD)
         myApplication.handleTTSOperationResult(result)
     }
@@ -171,9 +171,8 @@ abstract class ReadTextFragmentBase : MyFragment() {
             return
         }
 
-        // Start synthesizing the file's content into a wave file and handle the
-        // result.
-        val inputSource = InputSource.String(text, textSourceDescription)
+        // Start synthesizing the text into a wave file and handle the result.
+        val inputSource = InputSource.CharSequence(text, textSourceDescription)
         val result = myApplication.enqueueFileSynthesisTasks(inputSource, directory,
                 waveFilename)
         when (result) {

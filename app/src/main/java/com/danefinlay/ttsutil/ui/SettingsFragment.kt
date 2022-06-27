@@ -94,7 +94,7 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
                 // Speak sample text and handle the result.
                 // We use QUEUE_FLUSH because it is more appropriate.
                 // Note: The input source description won't be used.
-                val inputSource = InputSource.String(event.sampleText,
+                val inputSource = InputSource.CharSequence(event.sampleText,
                         "sample text")
                 val result = app.enqueueReadInputTask(inputSource, QUEUE_FLUSH)
                 if (result == SUCCESS) {

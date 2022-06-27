@@ -22,27 +22,32 @@ package com.danefinlay.ttsutil
 
 import android.content.Context
 import android.net.Uri
-import java.io.ByteArrayInputStream
 import java.io.InputStream
 
 /**
  * These classes constitute an adapter for working with text-to-speech input
  * sources.
  */
-sealed class InputSource(val description: kotlin.String) {
+sealed class InputSource(val description: kotlin.CharSequence) {
     abstract fun isSourceAvailable(ctx: Context): Boolean
     abstract fun getSize(ctx: Context): Long?
     abstract fun openInputStream(ctx: Context): InputStream?
 
-    class String(val text: kotlin.String, description: kotlin.String) :
+    class CharSequence(val text: kotlin.CharSequence,
+                       description: kotlin.CharSequence) :
             InputSource(description) {
         override fun isSourceAvailable(ctx: Context): Boolean = true
         override fun getSize(ctx: Context): Long = text.length.toLong()
-        override fun openInputStream(ctx: Context): InputStream =
-                ByteArrayInputStream(text.toByteArray())
+        override fun openInputStream(ctx: Context) = object : InputStream() {
+            var counter = 0
+            override fun read(): Int {
+                return if (counter < text.length) text[counter++].toInt()
+                       else -1
+            }
+        }
     }
 
-    class ContentUri(val uri: Uri?, description: kotlin.String) :
+    class ContentUri(val uri: Uri?, description: kotlin.CharSequence) :
             InputSource(description) {
         override fun isSourceAvailable(ctx: Context) =
                 uri?.isAccessibleFile(ctx) == true

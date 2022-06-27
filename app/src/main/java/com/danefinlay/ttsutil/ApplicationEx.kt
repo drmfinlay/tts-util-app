@@ -624,7 +624,7 @@ class ApplicationEx : Application(), OnInitListener {
         if (taskQueue.peek() === taskData) {
             // Begin the task, taking note of information that might be used later.
             val infoMessageId: Int
-            val srcDescription: String
+            val srcDescription: CharSequence
             when (taskData) {
                 is TaskData.ReadInputTaskData -> {
                     result = speak(taskData)

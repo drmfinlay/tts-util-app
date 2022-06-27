@@ -52,7 +52,7 @@ fun getNotificationText(ctx: Context, taskData: TaskData,
     //           2 tasks remaining."
     val textId = R.string.progress_notification_text
     val beginTextId: Int
-    val srcDescription: String
+    val srcDescription: CharSequence
     when (taskData) {
         is TaskData.ReadInputTaskData -> {
             beginTextId = R.string.begin_reading_source_message
