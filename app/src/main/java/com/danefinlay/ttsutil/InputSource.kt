@@ -22,6 +22,7 @@ package com.danefinlay.ttsutil
 
 import android.content.Context
 import android.net.Uri
+import java.io.ByteArrayInputStream
 import java.io.InputStream
 
 /**
@@ -38,13 +39,8 @@ sealed class InputSource(val description: kotlin.CharSequence) {
             InputSource(description) {
         override fun isSourceAvailable(ctx: Context): Boolean = true
         override fun getSize(ctx: Context): Long = text.length.toLong()
-        override fun openInputStream(ctx: Context) = object : InputStream() {
-            var counter = 0
-            override fun read(): Int {
-                return if (counter < text.length) text[counter++].toInt()
-                       else -1
-            }
-        }
+        override fun openInputStream(ctx: Context): InputStream =
+                ByteArrayInputStream(text.toString().toByteArray())
     }
 
     class ContentUri(val uri: Uri?, description: kotlin.CharSequence) :

@@ -37,7 +37,6 @@ import java.net.MalformedURLException
 import java.net.URL
 import java.util.*
 import kotlin.collections.ArrayList
-import kotlin.math.min
 
 abstract class MyUtteranceProgressListener(ctx: Context, val tts: TextToSpeech) :
         UtteranceProgressListener() {
@@ -83,7 +82,7 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
                        private val observer: TaskProgressObserver) :
         MyUtteranceProgressListener(ctx, tts), Task {
 
-    private val streamReader: Reader
+    private val streamReader: Reader = inputStream.bufferedReader()
     protected val utteranceBytesQueue: MutableList<Int> =
             Collections.synchronizedList(mutableListOf<Int>())
 
@@ -129,11 +128,6 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
         filterWebLinks = prefs.getBoolean("pref_filter_web_links", false)
         filterMailToLinks = prefs.getBoolean("pref_filter_mailto_links", false)
         filtersEnabled = filterHashes || filterWebLinks || filterMailToLinks
-
-        // Initialize an appropriate reader.
-        val delimitersEnabled = delimitersToSilenceMap.values.count { it > 0 }
-        streamReader = if (delimitersEnabled > 0) inputStream.reader()
-                       else inputStream.bufferedReader()
     }
 
     override fun begin(): Boolean {
@@ -234,8 +228,6 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
     private fun enqueueNextInput(): Boolean {
         val buffer = ArrayList<Char>()
         var bytesRead = 0
-        val lineFeedScanThreshold = (maxInputLength * 0.70).toInt()
-        val whiteSpaceScanThreshold = (maxInputLength * 0.9).toInt()
 
         // Read characters until we hit a delimiter with a positive silence duration
         // or until an appropriate whitespace character is found near the maximum
@@ -253,7 +245,8 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
             else if (silenceDuration > 0) break
 
             if (buffer.size >= lineFeedScanThreshold && byte == 0x0a) break
-            if (buffer.size >= whiteSpaceScanThreshold && char.isWhitespace()) break
+            if (buffer.size >= whitespaceScanThreshold && char.isWhitespace()) break
+            if (buffer.size == maxInputLength) break
 
             byte = streamReader.read()
         }
@@ -369,9 +362,13 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
     }
 
     companion object {
-        // Note: Using the value returned by getMaxSpeechInputLength() can result in
-        // fatal errors, i.e. application crashes.  Hence, we use shorter values.
-        val maxInputLength = min(500, getMaxSpeechInputLength() - 1)
+        // Note: This value appears to be interpreted by TTS engines as a maximum
+        // index.  TTS Util too will interpret it thus.  The input processing logic
+        // will most likely find a line feed or another whitespace character before
+        // hitting the absolute maximum.
+        private val maxInputLength = getMaxSpeechInputLength() - 1
+        private val lineFeedScanThreshold = (maxInputLength * 0.70).toInt()
+        private val whitespaceScanThreshold = (maxInputLength * 0.9).toInt()
 
         private var currentUtteranceId: Long = 0
 
