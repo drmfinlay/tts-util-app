@@ -39,8 +39,7 @@ import org.jetbrains.anko.support.v4.find
 
 abstract class ReadTextFragmentBase : MyFragment() {
 
-    protected var playbackOnStart: Boolean = false
-    protected val inputLayout: TextInputLayout
+    val inputLayout: TextInputLayout
         get() = find(R.id.input_layout)
 
     var inputLayoutContent: String?
@@ -55,10 +54,14 @@ abstract class ReadTextFragmentBase : MyFragment() {
             return inputLayout.editText?.text?.toString()
         }
 
+    protected var playbackOnStart: Boolean = false
     protected abstract val textSourceDescription: String
+
+    protected abstract fun initializeInputField()
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        val activityInterface = activityInterface
 
         // Set OnClick listener for common buttons.
         find<ImageButton>(R.id.play_button).onClick { onClickPlay() }
@@ -71,16 +74,20 @@ abstract class ReadTextFragmentBase : MyFragment() {
         val event = activityInterface?.getLastStatusUpdate()
         if (event != null) onStatusUpdate(event)
 
-        // Handle playback on start.
-        val intent = activity?.intent
-        if (savedInstanceState == null && intent != null) {
-            playbackOnStart = intent.getBooleanExtra("playbackOnStart", false)
+        // Read and set common values.
+        if (savedInstanceState == null) {
+            val intent = activity?.intent
+            if (intent != null) {
+                playbackOnStart = intent.getBooleanExtra("playbackOnStart", false)
+            }
         }
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
-        if (savedInstanceState == null) return
+
+        // Initialize the input field here.
+        if (savedInstanceState == null) { initializeInputField(); return; }
 
         // Restore fragment instance state here.
         inputLayoutContent = savedInstanceState.getString("inputLayoutContent")
@@ -138,8 +145,8 @@ abstract class ReadTextFragmentBase : MyFragment() {
     override fun onClickPlay() {
         super.onClickPlay()
 
-        // Retrieve input field text.  If blank, use the hint text
-        // and display an alert message.
+        // Retrieve input field text.  If blank, read the hint text and display a
+        // message.
         var text = inputLayoutContent ?: ""
         if (text.isBlank()) {
             ctx.toast(R.string.cannot_read_empty_input_message)
@@ -164,7 +171,7 @@ abstract class ReadTextFragmentBase : MyFragment() {
             return
         }
 
-        // Retrieve input field text.  If blank, display an alert message.
+        // Retrieve input field text.  If blank, display a message.
         val text = inputLayoutContent ?: ""
         if (text.isBlank()) {
             ctx.toast(R.string.cannot_read_empty_input_message)
@@ -306,32 +313,33 @@ class ReadTextFragment : ReadTextFragmentBase() {
             button.setOnClickListener(listener)
             button.setOnLongClickListener(listener)
         }
+    }
 
-        // Set input layout content as necessary.
-        // The content of the input layout is set to persist between uses unless
-        // ACTION_SEND is specified.
+    override fun initializeInputField() {
+        // Restore persistent data as necessary.
+        // The content of the input field is set to persist unless ACTION_SEND is
+        // specified.
         val intent = activity?.intent
-        if (savedInstanceState == null && intent != null) {
-            if (intent.action == Intent.ACTION_SEND) {
-                persistentContent = false
-                inputLayoutContent = intent.getStringExtra(Intent.EXTRA_TEXT)
-            } else {
-                val prefs = PreferenceManager.getDefaultSharedPreferences(ctx)
-                persistentContent = true
-                inputLayoutContent = prefs.getString(CONTENT_PREF_KEY, "")
-            }
+        val prefs = PreferenceManager.getDefaultSharedPreferences(ctx)
+        if (intent?.action == Intent.ACTION_SEND) {
+            persistentContent = false
+            inputLayoutContent = intent.getStringExtra(Intent.EXTRA_TEXT)
+        } else {
+            persistentContent = true
+            inputLayoutContent = prefs.getString(CONTENT_PREF_KEY, "")
         }
 
         // Attempt to start playback, if requested.
         if (playbackOnStart) attemptPlaybackOnStart()
+
     }
 
     override fun onPause() {
         super.onPause()
         if (view == null) return
 
-        // If the content of the fragment's input layout should be persisted, save
-        // it asynchronously to shared preferences.
+        // If the content of the fragment's input layout should persist, save it to
+        // shared preferences.
         if (persistentContent) {
             val prefs = PreferenceManager.getDefaultSharedPreferences(context)
             val editor: SharedPreferences.Editor = prefs.edit()
@@ -363,36 +371,34 @@ class ReadClipboardFragment : ReadTextFragmentBase() {
         super.onViewCreated(view, savedInstanceState)
 
         // Set OnClick listener for the paste button.
-        find<ImageButton>(R.id.paste_button).onClick {
-            // Get the current clipboard text.
-            val text = context?.getClipboardText() ?: ""
-
-            // Update the text field.
-            inputLayoutContent = text
-
-            // Display a message if the clipboard was empty.
-            if (text.isEmpty()) {
-                activity?.toast(R.string.clipboard_is_empty_msg)
-            }
-        }
+        find<ImageButton>(R.id.paste_button).onClick { onClickPaste() }
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
-
-        val ctx = context
-        if (savedInstanceState != null || ctx == null) return
-
+    override fun initializeInputField() {
         // Set the (initial) content of the input layout.
         // Note: The safety check on *view* is necessary because of how the
         // useClipboardText() function works.
-        ctx.useClipboardText(false) { text: String? ->
-            if (view != null) {
-                inputLayoutContent = text
-
-                // Attempt to start playback, if requested.
-                if (playbackOnStart) attemptPlaybackOnStart()
-            }
+        ctx.useClipboardText(true) { text: String? ->
+            if (view != null) onClipboardTextReceived(text)
         }
+    }
+
+    private fun onClipboardTextReceived(text: String?) {
+        // Set the input field content.
+        inputLayoutContent = text
+
+        // Attempt to start playback, if requested.
+        if (playbackOnStart) attemptPlaybackOnStart()
+    }
+
+    private fun onClickPaste() {
+        // Get the current clipboard text.
+        val text = context?.getClipboardText() ?: ""
+
+        // Update the text field.
+        inputLayoutContent = text
+
+        // Display a message if the clipboard was empty.
+        if (text.length == 0) activity?.toast(R.string.clipboard_is_empty_msg)
     }
 }
