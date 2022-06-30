@@ -71,11 +71,19 @@
             android:entryValues="@array/silence_line_endings_values"
             android:defaultValue="100" />
 
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="@string/pref_input_category"
+        android:summary="@string/pref_input_category_summary" >
+
         <CheckBoxPreference
-            android:key="pref_silence_scale_to_rate"
-            android:title="@string/pref_silence_scale_to_rate"
-            android:summary="@string/pref_silence_scale_to_rate_summary"
+            android:key="pref_scale_silence_to_rate"
+            android:title="@string/pref_scale_silence_to_rate"
+            android:summary="@string/pref_scale_silence_to_rate_summary"
             android:defaultValue="false" />
+
+    </PreferenceCategory>
 
     <PreferenceCategory
         android:title="@string/pref_filter_category"
@@ -101,15 +109,14 @@
 
     </PreferenceCategory>
 
-    </PreferenceCategory>
-
     <PreferenceCategory
-        android:title="@string/pref_messages_category">
+        android:title="@string/pref_misc_category"
+        android:summary="@string/pref_misc_category_summary" >
 
-        <SwitchPreference
-            android:key="pref_messages_next_task"
-            android:title="@string/pref_messages_next_task"
-            android:summary="@string/pref_messages_next_task_summary"
+        <CheckBoxPreference
+            android:key="pref_misc_next_task_messages"
+            android:title="@string/pref_misc_next_task_messages"
+            android:summary="@string/pref_misc_next_task_messages_summary"
             android:defaultValue="true" />
 
     </PreferenceCategory>

@@ -117,7 +117,7 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
         // Note: This cannot be done from the binder threads which invoke utterance
         // progress listener callbacks.
         val prefs = PreferenceManager.getDefaultSharedPreferences(app)
-        scaleSilenceToRate = prefs.getBoolean("pref_silence_scale_to_rate", false)
+        scaleSilenceToRate = prefs.getBoolean("pref_scale_silence_to_rate", false)
         speechRate = prefs.getFloat("pref_tts_speech_rate", 1.0f)
         delimitersToSilenceMap = mapOf(
                 // Line Feed (\n).
