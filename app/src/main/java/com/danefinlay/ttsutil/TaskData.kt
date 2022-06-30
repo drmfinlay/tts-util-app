@@ -33,7 +33,7 @@ sealed class TaskData(val taskId: Int, var progress: Int) {
                                 val waveFilename: String,
                                 val inWaveFiles: MutableList<File>) :
             TaskData(taskId, progress)
-    class JoinWaveFilesTaskData(taskId: Int, progress: Int,
-                                val prevTaskData: FileSynthesisTaskData) :
+    class ProcessWaveFilesTaskData(taskId: Int, progress: Int,
+                                   val prevTaskData: FileSynthesisTaskData) :
             TaskData(taskId, progress)
 }

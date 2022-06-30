@@ -590,7 +590,7 @@ class ApplicationEx : Application(), OnInitListener {
     }
 
     @Synchronized
-    private fun joinWaveFiles(taskData: TaskData.JoinWaveFilesTaskData): Int {
+    private fun joinWaveFiles(taskData: TaskData.ProcessWaveFilesTaskData): Int {
         // Set this task as under consideration.
         lastAttemptedTaskId = taskData.taskId
 
@@ -606,7 +606,7 @@ class ApplicationEx : Application(), OnInitListener {
                 waveFilename, "audio/x-wav") ?: return UNAVAILABLE_OUT_DIR
 
         // Initialize the task, begin it asynchronously and return.
-        val task = JoinWaveFilesTask(this, asyncProgressObserver,
+        val task = ProcessWaveFilesTask(this, asyncProgressObserver,
                 prevTaskData.inWaveFiles, outputStream, waveFilename)
         currentTask = task
         userTaskExecService.submit { task.begin() }
@@ -636,7 +636,7 @@ class ApplicationEx : Application(), OnInitListener {
                     infoMessageId = R.string.begin_synthesizing_source_message
                     srcDescription = taskData.inputSource.description
                 }
-                is TaskData.JoinWaveFilesTaskData -> {
+                is TaskData.ProcessWaveFilesTaskData -> {
                     result = joinWaveFiles(taskData)
                     infoMessageId = R.string.begin_processing_source_message
                     srcDescription = taskData.prevTaskData.inputSource.description
@@ -655,7 +655,7 @@ class ApplicationEx : Application(), OnInitListener {
                 val taskCount = when (taskData) {
                     is TaskData.ReadInputTaskData -> 1
                     is TaskData.FileSynthesisTaskData -> 2
-                    is TaskData.JoinWaveFilesTaskData -> 1
+                    is TaskData.ProcessWaveFilesTaskData -> 1
                 }
                 for (i in 0 until taskCount) taskQueue.pop()
                 observer.notifyProgress(-1, taskData.taskId, 0)
@@ -701,9 +701,8 @@ class ApplicationEx : Application(), OnInitListener {
                 inputSource, outDirectory, waveFilename, mutableListOf())
         taskQueue.add(taskData1)
 
-        // TODO Handle creation of MP3 files here with a separate task.
         // Encapsulate the join wave files task data and add it to the queue.
-        val taskData2 = TaskData.JoinWaveFilesTaskData(TASK_ID_PROCESS_FILE, 0,
+        val taskData2 = TaskData.ProcessWaveFilesTaskData(TASK_ID_PROCESS_FILE, 0,
                 taskData1)
         taskQueue.add(taskData2)
 

@@ -40,7 +40,7 @@ fun getNotificationTitle(ctx: Context, taskData: TaskData): String {
             R.string.reading_notification_title
         is TaskData.FileSynthesisTaskData ->
             R.string.synthesis_notification_title
-        is TaskData.JoinWaveFilesTaskData ->
+        is TaskData.ProcessWaveFilesTaskData ->
             R.string.post_synthesis_notification_title
     }
     return ctx.getString(titleId)
@@ -62,7 +62,7 @@ fun getNotificationText(ctx: Context, taskData: TaskData,
             beginTextId = R.string.begin_synthesizing_source_message
             srcDescription = taskData.inputSource.description
         }
-        is TaskData.JoinWaveFilesTaskData -> {
+        is TaskData.ProcessWaveFilesTaskData -> {
             beginTextId = R.string.begin_processing_source_message
             srcDescription = taskData.prevTaskData.inputSource.description
         }

@@ -133,7 +133,7 @@
     <string name="post_synthesis_notification_title">Processing synthesized wave file</string>
     <string name="begin_reading_source_message">Reading from %1$s…</string>
     <string name="begin_synthesizing_source_message">Synthesizing wave file from %1$s…</string>
-    <string name="begin_processing_source_message">Processing synthesized %1$s wave files…</string>
+    <string name="begin_processing_source_message">Processing synthesized %1$s wave file…</string>
     <!--Example: "Reading from abc.txt…
                   2 tasks remaining."-->
     <string name="progress_notification_text">%1$s\n%2$d %3$s remaining.</string>
@@ -201,4 +201,5 @@
     <string name="pref_filter_web_links_summary">Filter HTTP and HTTPS links from input text.</string>
     <string name="pref_filter_mailto_links">Filter mailto links</string>
     <string name="pref_filter_mailto_links_summary">Filter mailto links from input text.</string>
+
 </resources>

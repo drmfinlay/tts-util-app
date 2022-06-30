@@ -399,11 +399,12 @@ class ReadInputTask(ctx: Context, tts: TextToSpeech, inputStream: InputStream,
     }
 
     override fun enqueueText(text: CharSequence, bytesRead: Int) {
-        // Enqueue text using speak().
         // Add *bytesRead* to the queue.
         utteranceBytesQueue.add(bytesRead)
 
         // Add text to the queue as an utterance.
+        // Note: This is necessary even when the text is blank because progress
+        // callbacks are used to process the input stream in order.
         val bundle = Bundle()
         bundle.putInt(Engine.KEY_PARAM_STREAM, AudioManager.STREAM_MUSIC)
         tts.speak(text, queueMode, bundle, nextUtteranceId())
@@ -447,86 +448,45 @@ class FileSynthesisTask(ctx: Context, tts: TextToSpeech,
         if (durationInMs == 0L) return
 
         // Android's text-to-speech framework does not allow adding silence to wave
-        // files, so we add a reference to a special wave file that will contain Xms
-        // of silence.  These files are created in finish(), if necessary.
-        val file = File(app.filesDir, "${durationInMs}ms_sil.wav")
+        // files, so we add references to special wave files that contain Xms of
+        // silence.  These files are created later.
+        val suffix = "ms_sil.wav"
+        var filename: String = "$durationInMs$suffix"
+
+        // Add this silence to the last file as an optimisation, if possible.
+        if (inWaveFiles.size > 0) {
+            val lastFilename = inWaveFiles.last().name
+            if (lastFilename.endsWith(suffix)) {
+                val lastFileDuration = lastFilename.substringBefore(suffix).toInt()
+                filename = "${lastFileDuration + durationInMs}$suffix"
+                inWaveFiles.removeAt(inWaveFiles.lastIndex)
+            }
+        }
+
+        val file = File(app.filesDir, filename)
         inWaveFiles.add(file)
     }
 
-    private fun writeSilentWaveFile(file: File, header: WaveFileHeader,
-                                    durationInSeconds: Float) {
-        // Determine the data sub-chunk size.  It should be an even integer.
-        var dataSize = (header.fmtSubChunk.byteRate * durationInSeconds).toInt() + 1
-        if (dataSize % 2 == 1) dataSize += 1
-
-        // Construct a wave header using the duration and the header provided.
-        val silHeader = header.copy(dataSize)
-
-        // Write the new header's bytes to the file.
-        val silHeaderBytes = silHeader.writeToArray()
-        val outputStream = FileOutputStream(file).buffered()
-        outputStream.write(silHeaderBytes)
-
-        // Write the audio data as zeros.
-        var count = 0
-        do {
-            outputStream.write(0)
-            count++
-        } while (count < silHeader.dataSubChunk.ckSize)
-        outputStream.flush()
-        outputStream.close()
-    }
-
     override fun enqueueText(text: CharSequence, bytesRead: Int) {
-        // Enqueue text with synthesizeToFile().
         // Add *bytesRead* to the queue.
         utteranceBytesQueue.add(bytesRead)
 
         // Create a wave file for this utterance and enqueue file synthesis.
+        // Note: This is necessary even when the text is blank because progress
+        // callbacks are used to process the input stream in order.
         val file = File.createTempFile("utt", "dat", app.filesDir)
         val success = tts.synthesizeToFile(text, null, file, nextUtteranceId())
 
-        // If successful, add the file to the list.
-        if (success == SUCCESS) inWaveFiles.add(file)
+        // If successful and the text is not empty, add the file to the list.
+        if (success == SUCCESS && text.length > 0) inWaveFiles.add(file)
     }
 
     override fun finish(success: Boolean): Boolean {
-        // Generate silent wave files, if successful and if necessary.
-        val minFileSize = WaveFileHeader.MIN_SIZE + 1
-        if (success) {
-            // Find the first proper wave file and read its header.
-            val wf = inWaveFiles.find { it.length() >= minFileSize }
-            val wfHeader = WaveFileHeader(FileInputStream(wf).buffered())
-
-            // Generate silence for each distinct file in the list ending with
-            // "ms_sil.wav".
-            val suffix = "ms_sil.wav"
-            for (f in inWaveFiles) {
-                val filename = f.name
-                if (filename.endsWith(suffix) && !f.exists()) {
-                    // Parse the duration in seconds from the filename.
-                    val durationInMs = filename.substringBefore(suffix).toInt()
-                    val durationInSeconds = durationInMs / 1000f
-
-                    // Write the silent wave file.
-                    writeSilentWaveFile(f, wfHeader, durationInSeconds)
-                }
-            }
-        }
-
-        // If the TTS engine has produced impossibly short wave files, filter
-        // them out and delete them.  If file synthesis failed, delete all files
-        // instead.
-        val toRemoveAndDelete = inWaveFiles.filter { f ->
-            f.length() < minFileSize || !success && f.isFile && f.canWrite()
-        }
-        for (f in toRemoveAndDelete) {
-            inWaveFiles.remove(f)
-            f.delete()
-        }
-
-        // Display a toast message on failure.
+        // Delete wave files and display a toast message and on failure.
         if (!success) {
+            for (f in inWaveFiles) {
+                if (f.isFile && f.canWrite()) f.delete()
+            }
             val messageId = R.string.write_to_file_message_failure
             val message = app.getString(messageId, waveFilename)
             displayMessage(message, true)

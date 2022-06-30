@@ -558,9 +558,9 @@ class WaveFile(val stream: InputStream) {
     }
 }
 
-class InterruptEvent {
-    @Volatile
-    var interrupt: Boolean = false
+interface JoinWaveFilesHandler {
+    fun jwfHandler(totalProgress: Int, currentFile: File?,
+                   fileProgress: Int): Boolean
 }
 
 /**
@@ -573,84 +573,92 @@ class InterruptEvent {
  * This, of course, has no bearing if the reader wishes to use this code on other
  * platforms.
  *
- * @param   inFiles             List of wave files.
- * @param   outStream           Output stream to which the joined wave file will be written.
- * @param   deleteFiles         Delete each inFile after processing.
- * @param   interruptEvent      Event to check for early returns, i.e., interrupts.
- * @param   progressCallback    Callback function for observing progress out of 100%.
+ * @param   inFiles       List of wave files.
+ * @param   outStream     Output stream to which the joined wave file will be
+ *                        written.
+ * @param   handler       Function called periodically with procedural updates.  The
+ *                        procedure will terminate early if the handler function
+ *                        returns false.
  * @return  success
  * @exception   IncompatibleWaveFileException   Raised for invalid/incompatible Wave
  * files.
  */
 fun joinWaveFiles(inFiles: List<File>, outStream: OutputStream,
-                  deleteFiles: Boolean = false,
-                  interruptEvent: InterruptEvent? = null,
-                  progressCallback: ((progress: Int) -> Unit)? = null): Boolean {
-    // Return early if appropriate.
-    if (interruptEvent?.interrupt == true) return false
-
-    // Notify the observer that work has begun.
-    progressCallback?.invoke(0)
+                  handler: JoinWaveFilesHandler): Boolean {
+    // Notify that work has begun, returning early if appropriate.
+    val file1 = inFiles.firstOrNull()
+    if (!handler.jwfHandler(0, file1, 0)) return false
 
     // Handle special case: empty list.
-    if (inFiles.isEmpty()) {
-        progressCallback?.invoke(100)
-        return true
+    if (inFiles.size == 0) return handler.jwfHandler(100, file1, 100)
+
+    // Read each file header into a list, closing input streams afterward.  Throw an
+    // error if an incompatible file header is found.
+    // Note: Files are opened only as needed to avoid hitting the system's maximum
+    // file limit (soft: 1024, hard: 4096).  This limit is not difficult to hit if
+    // custom silence values are used.
+    val wfHeaders: MutableList<WaveFileHeader> = mutableListOf()
+    val fileToWfHeaderMap: MutableMap<File, WaveFileHeader> = mutableMapOf()
+    for (file in inFiles) {
+        // Do not reread file headers unnecessarily.
+        var header: WaveFileHeader? = fileToWfHeaderMap[file]
+        if (header != null) { wfHeaders.add(header); continue; }
+
+        // Open a buffered input stream using a small buffer size and process the
+        // file header.
+        val inStream = BufferedInputStream(FileInputStream(file), 60)
+        header = inStream.use { WaveFileHeader(it) }
+        wfHeaders.add(header)
+        fileToWfHeaderMap[file] = header
+        val wf1header = wfHeaders.first()
+        if (!header.compatibleWith(wf1header)) {
+            throw IncompatibleWaveFileException("Wave files with " +
+                    "incompatible headers are not supported: " +
+                    "$header ~ $wf1header")
+        }
     }
 
-    // Read each file, verifying that all files are compatible.
-    // Data chunks are not read in yet.
-    val wf1 = WaveFile(FileInputStream(inFiles.first()).buffered())
-    val waveFiles = listOf(wf1) + inFiles.subList(1, inFiles.size)
-            .map { file ->
-                val wf = WaveFile(FileInputStream(file).buffered())
-                if (!wf.compatibleWith(wf1)) {
-                    throw IncompatibleWaveFileException("Wave files with " +
-                            "incompatible headers are not supported: " +
-                            "$${wf.header} ~ ${wf1.header}")
-                }
-                // This wave file is acceptable.
-                wf
-            }
-
     // Calculate the data chunk size.
-    val dataSubChunkSize = waveFiles.fold(0) { acc, wf ->
-        acc + wf.header.dataSubChunk.ckSize
+    val dataSubChunkSize = wfHeaders.fold(0) { acc, wfHeader ->
+        acc + wfHeader.dataSubChunk.ckSize
     }
 
     // Create a new wave file header based on the first one.
-    val header = wf1.header.copy(dataSubChunkSize)
+    val header = wfHeaders.first().copy(dataSubChunkSize)
 
     // Get the total file size from the new header.
     val totalSize = 8 + header.riffChunk.ckSize
 
-    // Open the output file for writing.
-    outStream.buffered().use { bOutStream ->
-        // Write the header to the output stream.
-        bOutStream.write(header.writeToArray())
+    // Start writing to the output stream.
+    outStream.buffered().use { bufOutStream ->
+        // Write the header.
+        bufOutStream.write(header.writeToArray())
 
-        // Return early if appropriate.
-        if (interruptEvent?.interrupt == true) return false
-
-        // Notify the observer of the progress so far.
+        // Calculate the progress so far
         var count = header.size.toFloat()
-        progressCallback?.invoke((count / totalSize * 100).toInt())
+        var totalProgress = (count / totalSize * 100).toInt()
 
-        // Stream data from each file into the output file.
-        inFiles.zip(waveFiles).forEach { (f, wf) ->
-            wf.readWaveData { byte ->
-                bOutStream.write(byte)
+        // Stream data from each file.
+        inFiles.forEach { file ->
+            // Notify before each file is processed, returning early if appropriate.
+            var fileProgress = 0
+            if (!handler.jwfHandler(totalProgress, file, fileProgress)) return false
+
+            // Stream wave data from the input file to the output stream, closing
+            // the stream when done.
+            val inStream = FileInputStream(file).buffered()
+            var wfDataSize: Int
+            inStream.use {
+                val wf = WaveFile(it)
+                wfDataSize = wf.header.dataSubChunk.ckSize
+                wf.readWaveData { byte -> bufOutStream.write(byte) }
             }
 
-            // Delete the input file, if necessary.
-            if (deleteFiles) f.delete()
-
-            // Return early if appropriate.
-            if (interruptEvent?.interrupt == true) return false
-
-            // Notify the observer after each file is written, if necessary.
-            count += wf.header.dataSubChunk.ckSize
-            progressCallback?.invoke((count / totalSize * 100).toInt())
+            // Notify after each file is written, returning early if appropriate.
+            count += wfDataSize
+            totalProgress = (count / totalSize * 100).toInt()
+            fileProgress = 100
+            if (!handler.jwfHandler(totalProgress, file, fileProgress)) return false
         }
     }
     return true
