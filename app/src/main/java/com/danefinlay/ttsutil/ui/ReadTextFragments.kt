@@ -25,7 +25,9 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.os.Environment
+import android.speech.tts.TextToSpeech
 import android.speech.tts.TextToSpeech.QUEUE_ADD
+import android.speech.tts.TextToSpeech.QUEUE_FLUSH
 import android.support.design.widget.TextInputLayout
 import android.support.v7.preference.PreferenceManager
 import android.view.LayoutInflater
@@ -54,7 +56,29 @@ abstract class ReadTextFragmentBase : MyFragment() {
             return inputLayout.editText?.text?.toString()
         }
 
+    protected val inputTextReader: InputTextReader = object : InputTextReader() {
+        override fun readChangedText(text: CharSequence) {
+            // Refuse to read text if a file synthesis task is in progress.
+            val application = myApplication
+            if (application.fileSynthesisTaskInProgress) return
+
+            // Enqueue the specified text with QUEUE_FLUSH so it is read
+            // immediately.
+            val inputSource = InputSource.CharSequence(text, textSourceDescription)
+            val result = application.enqueueReadInputTask(inputSource, QUEUE_FLUSH)
+
+            // Initialize TTS, if necessary.
+            if (result != TTS_NOT_READY) return
+            activityInterface?.initializeTTS { status ->
+                if (status == TextToSpeech.SUCCESS) {
+                    application.enqueueReadInputTask(inputSource, QUEUE_FLUSH)
+                }
+            }
+        }
+    }
+
     protected var playbackOnStart: Boolean = false
+    protected var playbackOnInput: Boolean = false
     protected abstract val textSourceDescription: String
 
     protected abstract fun initializeInputField()
@@ -80,6 +104,8 @@ abstract class ReadTextFragmentBase : MyFragment() {
             if (intent != null) {
                 playbackOnStart = intent.getBooleanExtra("playbackOnStart", false)
             }
+            val prefs = PreferenceManager.getDefaultSharedPreferences(ctx)
+            playbackOnInput = prefs.getBoolean("pref_playback_on_input", false)
         }
     }
 
@@ -92,6 +118,7 @@ abstract class ReadTextFragmentBase : MyFragment() {
         // Restore fragment instance state here.
         inputLayoutContent = savedInstanceState.getString("inputLayoutContent")
         playbackOnStart = savedInstanceState.getBoolean("playbackOnStart", false)
+        playbackOnInput = savedInstanceState.getBoolean("playbackOnInput", false)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -101,6 +128,7 @@ abstract class ReadTextFragmentBase : MyFragment() {
         if (view != null) {
             outState.putString("inputLayoutContent", inputLayoutContent)
             outState.putBoolean("playbackOnStart", playbackOnStart)
+            outState.putBoolean("playbackOnInput", playbackOnInput)
         }
     }
 
@@ -329,6 +357,13 @@ class ReadTextFragment : ReadTextFragmentBase() {
             inputLayoutContent = prefs.getString(CONTENT_PREF_KEY, "")
         }
 
+        // Enable the playback-on-input feature, if appropriate.
+        // Note: Since this feature uses a TextWatcher it should only be enabled
+        // after restoration of the previous input field content.
+        if (playbackOnInput) {
+            inputLayout.editText?.addTextChangedListener(inputTextReader)
+        }
+
         // Attempt to start playback, if requested.
         if (playbackOnStart) attemptPlaybackOnStart()
 
@@ -380,6 +415,13 @@ class ReadClipboardFragment : ReadTextFragmentBase() {
         // useClipboardText() function works.
         ctx.useClipboardText(true) { text: String? ->
             if (view != null) onClipboardTextReceived(text)
+        }
+
+        // Enable the playback-on-input feature, if appropriate.
+        // Note: Since this feature uses a TextWatcher it should only be
+        // enabled after the input field content is initialized.
+        if (playbackOnInput) {
+            inputLayout.editText?.addTextChangedListener(inputTextReader)
         }
     }
 

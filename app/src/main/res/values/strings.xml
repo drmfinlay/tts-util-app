@@ -179,6 +179,8 @@
 
     <string name="pref_input_category">Input Processing</string>
     <string name="pref_input_category_summary">Change how input text is processed.</string>
+    <string name="pref_playback_on_input">Playback on Input</string>
+    <string name="pref_playback_on_input_summary">Read characters and words as they are entered into the application\'s text input fields.</string>
     <string name="pref_scale_silence_to_rate">Scale Silence to Speech Rate</string>
     <string name="pref_scale_silence_to_rate_summary">Set the application to scale inserted silence to the selected speech rate.</string>
 

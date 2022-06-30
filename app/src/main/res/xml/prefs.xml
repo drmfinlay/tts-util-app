@@ -78,6 +78,12 @@
         android:summary="@string/pref_input_category_summary" >
 
         <CheckBoxPreference
+            android:key="pref_playback_on_input"
+            android:title="@string/pref_playback_on_input"
+            android:summary="@string/pref_playback_on_input_summary"
+            android:defaultValue="false" />
+
+        <CheckBoxPreference
             android:key="pref_scale_silence_to_rate"
             android:title="@string/pref_scale_silence_to_rate"
             android:summary="@string/pref_scale_silence_to_rate_summary"
