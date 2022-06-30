@@ -26,11 +26,11 @@
 
     <!--Fragment & activity labels and descriptions.-->
     <string name="read_text_fragment_label">Read text</string>
-    <string name="read_text_fragment_desc">This application integrates with Android\'s text-to-speech framework.\n\nEnter text below and press the \'Play\' button to have it spoken.  The \'Save\' button may be used to synthesize and write the text to a wave file.</string>
+    <string name="read_text_fragment_desc">Enter text below and press the \'Play\' button to have it spoken with text-to-speech.  To enable automatic playback, see the application\'s \'Playback on Input\' setting.\n\nThe \'Save\' button may be used to synthesize and write the text to a wave file.</string>
     <string name="read_clipboard_fragment_label">Read clipboard</string>
-    <string name="read_clipboard_fragment_desc">Press the \'Play\' button to have clipboard text spoken.  The \'Save\' button may be used to synthesize and write the text to a wave file.\n\nThe text field can be updated with the current clipboard text by pressing the \'Paste\' button.</string>
+    <string name="read_clipboard_fragment_desc">Press the \'Play\' button to have clipboard text spoken with text-to-speech.  To enable automatic playback, see the application\'s \'Playback on Input\' setting.\n\nThe \'Save\' button may be used to synthesize and write the text to a wave file.  The \'Paste\' button may be used to update the text field.</string>
     <string name="read_files_fragment_label">Read to/from files</string>
-    <string name="read_files_fragment_desc">This part of the application may be used to read text files and synthesize wave files using text-to-speech.\n\nChoose one or more text files from storage and press the \'Play\' button to have their contents read in order.  Press the \'Save\' button to have the text synthesized and written to wave files instead.</string>
+    <string name="read_files_fragment_desc">This part of the application may be used to process text files using text-to-speech.\n\nChoose one or more text files from storage and press the \'Play\' button to have their contents read in order or the \'Save\' button to have them transcribed to wave files.</string>
     <string name="settings_fragment_label">Settings</string>
     <string name="edit_read_activity_label">Edit &amp; read text</string>
     <string name="about_activity_label">About TTS Util</string>
