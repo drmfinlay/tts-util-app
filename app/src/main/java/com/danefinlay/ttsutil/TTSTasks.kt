@@ -82,7 +82,7 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
                        private val observer: TaskProgressObserver) :
         MyUtteranceProgressListener(ctx, tts), Task {
 
-    private val streamReader: Reader = inputStream.bufferedReader()
+    private val streamReader: Reader = inputStream.reader().buffered(maxInputLength)
     protected val utteranceBytesQueue: MutableList<Int> =
             Collections.synchronizedList(mutableListOf<Int>())
 
