@@ -39,10 +39,10 @@ import android.text.TextWatcher
  *  4. If the character sequence has entirely changed, read from the start to the
  *     end normally.
  *
- * Spaces, full stops, commas, colons, semicolons, exclamation marks, question
- * marks and quotation marks are the "delimiters" mentioned in the first three
- * rules.  The Unicode "Halfwidth and Fullwidth Forms" of these symbols are also
- * treated as delimiters.
+ * Spaces, full stops, ellipses, commas, colons, semicolons, exclamation marks,
+ * question marks and quotation marks are the "delimiters" mentioned in the first
+ * three rules.  The Unicode "Halfwidth and Fullwidth Forms" of these symbols are
+ * also treated as delimiters.
  *
  */
  abstract class InputTextReader : TextWatcher {
@@ -65,6 +65,7 @@ import android.text.TextWatcher
                 || cp == 0x003a || cp == 0xff1a // Colons.
                 || cp == 0x003b || cp == 0xff1b // Semicolons.
                 || cp == 0x003f || cp == 0xff1f // Question marks.
+                || cp == 0x2026                 // Ellipses.
                 || char.isWhitespace()
     }
 
