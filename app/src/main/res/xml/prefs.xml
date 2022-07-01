@@ -66,10 +66,37 @@
             android:key="pref_silence_line_endings"
             android:title="@string/pref_silence_line_endings"
             android:summary="@string/pref_silence_line_endings_summary"
-            android:dialogTitle="@string/pref_silence_line_endings_summary"
-            android:entries="@array/silence_line_endings_entries"
-            android:entryValues="@array/silence_line_endings_values"
-            android:defaultValue="100" />
+            android:dialogTitle="@string/pref_silence_line_endings"
+            android:entries="@array/silence_entries"
+            android:entryValues="@array/silence_values"
+            android:defaultValue="200" />
+
+        <ListPreference
+            android:key="pref_silence_sentences"
+            android:title="@string/pref_silence_sentences"
+            android:summary="@string/pref_silence_sentences_summary"
+            android:dialogTitle="@string/pref_silence_sentences"
+            android:entries="@array/silence_entries"
+            android:entryValues="@array/silence_values"
+            android:defaultValue="0" />
+
+        <ListPreference
+            android:key="pref_silence_questions"
+            android:title="@string/pref_silence_questions"
+            android:summary="@string/pref_silence_questions_summary"
+            android:dialogTitle="@string/pref_silence_questions"
+            android:entries="@array/silence_entries"
+            android:entryValues="@array/silence_values"
+            android:defaultValue="0" />
+
+        <ListPreference
+            android:key="pref_silence_exclamations"
+            android:title="@string/pref_silence_exclamations"
+            android:summary="@string/pref_silence_exclamations_summary"
+            android:dialogTitle="@string/pref_silence_exclamations"
+            android:entries="@array/silence_entries"
+            android:entryValues="@array/silence_values"
+            android:defaultValue="0" />
 
     </PreferenceCategory>
 

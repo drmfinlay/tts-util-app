@@ -176,6 +176,12 @@
     <string name="pref_silence_category_summary">Insert custom pauses between text.</string>
     <string name="pref_silence_line_endings">Line endings</string>
     <string name="pref_silence_line_endings_summary">Set the number of milliseconds to pause after each line.</string>
+    <string name="pref_silence_sentences">Sentences</string>
+    <string name="pref_silence_sentences_summary">Set the number of milliseconds to pause after a sentence, i.e. after a full stop or ellipsis.</string>
+    <string name="pref_silence_questions">Questions</string>
+    <string name="pref_silence_questions_summary">Set the number of milliseconds to pause after a question, e.g. \"How could this happen?\"</string>
+    <string name="pref_silence_exclamations">Exclamations</string>
+    <string name="pref_silence_exclamations_summary">Set the number of milliseconds to pause after an exclamation, e.g. \"No way!\"</string>
 
     <string name="pref_input_category">Input Processing</string>
     <string name="pref_input_category_summary">Change how input text is processed.</string>

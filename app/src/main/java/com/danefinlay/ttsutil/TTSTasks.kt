@@ -89,6 +89,7 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
     private val scaleSilenceToRate: Boolean
     private val speechRate: Float
     private val delimitersToSilenceMap: Map<Int, Long>
+    private val endOfTextDelimiters: Set<Int>
 
     private val filterHashes: Boolean
     private val filterWebLinks: Boolean
@@ -119,11 +120,34 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
         val prefs = PreferenceManager.getDefaultSharedPreferences(app)
         scaleSilenceToRate = prefs.getBoolean("pref_scale_silence_to_rate", false)
         speechRate = prefs.getFloat("pref_tts_speech_rate", 1.0f)
+        val silLF = prefs.getString("pref_silence_line_endings", "200")!!.toLong()
+        val sentenceSil = prefs.getString("pref_silence_sentences", "0")!!.toLong()
+        val questionSil = prefs.getString("pref_silence_questions", "0")!!.toLong()
+        val excSil = prefs.getString("pref_silence_exclamations", "0")!!.toLong()
+
+        // Set the delimiters to silence map, aliasing the Unicode "halfwidth" and
+        // "fullwidth" forms as necessary.
         delimitersToSilenceMap = mapOf(
                 // Line Feed (\n).
-                0x0a to prefs.getString("pref_silence_line_endings", "100")
-                    !!.toLong()
+                0x000a to silLF,
+
+                // Sentences:
+                // Full stops.                  Ellipses.
+                0x002e to sentenceSil,          0x2026 to sentenceSil,
+                0xff0e to sentenceSil,
+                0xff61 to sentenceSil,
+
+                // Questions.                   Exclamations.
+                0x003f to questionSil,          0x0021 to excSil,
+                0xff1f to questionSil,          0xff01 to excSil,
         )
+
+        // The set of end-of-text delimiters includes all non-whitespace delimiters.
+        val endOfTextDelimiters = delimitersToSilenceMap.keys.toMutableSet()
+        endOfTextDelimiters.remove(0x000a)
+        this.endOfTextDelimiters = endOfTextDelimiters
+
+        // Set variables related to input filtering.
         filterHashes = prefs.getBoolean("pref_filter_hash", false)
         filterWebLinks = prefs.getBoolean("pref_filter_web_links", false)
         filterMailToLinks = prefs.getBoolean("pref_filter_mailto_links", false)
@@ -229,9 +253,9 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
         val buffer = ArrayList<Char>()
         var bytesRead = 0
 
-        // Read characters until we hit a delimiter with a positive silence duration
-        // or until an appropriate whitespace character is found near the maximum
-        // input length -- whichever comes first.
+        // Read characters until we hit an appropriate delimiter with a positive
+        // silence duration or until an appropriate whitespace character is found
+        // near the maximum input length -- whichever comes first.
         var byte = streamReader.read()
         var silenceDuration = 0L
         while (byte >= 0) {
@@ -242,7 +266,21 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
             val char = byte.toChar()
             silenceDuration = delimitersToSilenceMap[char.toInt()] ?: 0L
             if (silenceDuration == 0L) buffer.add(char)
-            else if (silenceDuration > 0) break
+            else if (silenceDuration > 0) {
+                // There should be at least one non-delimiting, non-whitespace
+                // character before this one for it to count as a delimiter.
+                // This rule prevents silence from being inserted for, e.g.,
+                // successive question marks, which methinks would be a poor
+                // imitation of human speech.
+                if (byte in endOfTextDelimiters) {
+                    val lastChar = buffer.lastOrNull()
+                    if (lastChar != null && !lastChar.isWhitespace() &&
+                            lastChar.toInt() !in delimitersToSilenceMap) break
+                }
+
+                // This is a whitespace delimiter: break.
+                else break
+            }
 
             if (buffer.size >= lineFeedScanThreshold && byte == 0x0a) break
             if (buffer.size >= whitespaceScanThreshold && char.isWhitespace()) break
