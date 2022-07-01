@@ -59,7 +59,9 @@ import android.text.TextWatcher
         return     cp == 0x0021 || cp == 0xff01 // Exclamation marks.
                 || cp == 0x0022 || cp == 0xff02 // Quotation marks.
                 || cp == 0x002c || cp == 0xff0c // Commas.
+                || cp == 0xff64
                 || cp == 0x002e || cp == 0xff0e // Full stops.
+                || cp == 0xff61
                 || cp == 0x003a || cp == 0xff1a // Colons.
                 || cp == 0x003b || cp == 0xff1b // Semicolons.
                 || cp == 0x003f || cp == 0xff1f // Question marks.
