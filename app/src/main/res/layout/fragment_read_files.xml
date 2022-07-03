@@ -98,7 +98,8 @@
             android:layout_marginStart="24dp"
             app:layout_constraintHorizontal_bias="0.5"
             app:layout_constraintStart_toStartOf="@+id/chosen_file_label"
-            app:layout_constraintTop_toBottomOf="@id/chosen_file_label" />
+            app:layout_constraintTop_toBottomOf="@id/chosen_file_label"
+            android:layout_marginLeft="24dp" />
 
     </android.support.constraint.ConstraintLayout>
 
@@ -148,7 +149,8 @@
             android:src="@drawable/ic_outline_file_open_24"
             android:contentDescription="@string/choose_file_button"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toEndOf="@id/stop_button"/>
+            app:layout_constraintStart_toEndOf="@id/stop_button"
+            android:layout_marginLeft="24dp" />
 
         <ImageButton
             android:id="@+id/choose_dir_button"

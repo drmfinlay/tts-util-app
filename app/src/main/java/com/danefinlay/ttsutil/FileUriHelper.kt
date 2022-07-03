@@ -25,11 +25,13 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
+import android.support.annotation.RequiresApi
 import org.jetbrains.anko.storageManager
 import java.io.InputStream
 import java.io.OutputStream
 
 
+@RequiresApi(Build.VERSION_CODES.KITKAT)
 fun Uri.takeUriPermission(ctx: Context, takeFlags: Int): Uri {
     val contentResolver = ctx.contentResolver
     contentResolver.takePersistableUriPermission(this, takeFlags)
@@ -37,12 +39,14 @@ fun Uri.takeUriPermission(ctx: Context, takeFlags: Int): Uri {
 }
 
 
+@RequiresApi(Build.VERSION_CODES.KITKAT)
 fun Uri.takeReadUriPermission(ctx: Context): Uri {
     val takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION
     return takeUriPermission(ctx, takeFlags)
 }
 
 
+@RequiresApi(Build.VERSION_CODES.KITKAT)
 fun Uri.takeWriteUriPermission(ctx: Context): Uri {
     val takeFlags = Intent.FLAG_GRANT_WRITE_URI_PERMISSION
     return takeUriPermission(ctx, takeFlags)
@@ -54,8 +58,13 @@ fun Uri.takeWriteUriPermission(ctx: Context): Uri {
  */
 fun Uri.isAccessibleFile(ctx: Context): Boolean {
     return try {
-        // Ensure we have permission to access the file.
-        takeReadUriPermission(ctx)
+        // Ensure we have permission to access the file, if necessary on this
+        // version of Android.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            takeReadUriPermission(ctx)
+        }
+
+        // Test with a query.
         val cursor = ctx.contentResolver.query(this, arrayOf(), null,
                 null, null)
         cursor?.close()
@@ -76,8 +85,11 @@ fun Uri.isAccessibleFile(ctx: Context): Boolean {
  * Read permission is taken prior to querying for the display name, if requested.
  */
 fun Uri.retrieveFileDisplayName(ctx: Context, takePermission: Boolean): String? {
-    // Ensure we have permission to access the display name.
-    if (takePermission) takeReadUriPermission(ctx)
+    // Ensure we have permission to access the display name, if necessary on this
+    // version of Android.
+    if (takePermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+        takeReadUriPermission(ctx)
+    }
 
     // Retrieve the display name, falling back on the URI's last path segment, if
     // there is one.
@@ -122,7 +134,10 @@ fun Uri.resolveStorageVolumeDescription(ctx: Context): String? {
 
 
 fun Uri.getFileSize(ctx: Context): Long? {
-    takeReadUriPermission(ctx)
+    // Take read permission, if necessary.
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+        takeReadUriPermission(ctx)
+    }
 
     ctx.contentResolver.openFileDescriptor(this, "r")?.use {
         return it.statSize
@@ -139,8 +154,10 @@ fun Uri.getFileSize(ctx: Context): Long? {
  */
 fun Uri.openContentInputStream(ctx: Context,
                                takePermission: Boolean): InputStream? {
-    // Take write permission, if necessary.
-    if (takePermission) takeReadUriPermission(ctx)
+    // Take read permission, if necessary.
+    if (takePermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+        takeReadUriPermission(ctx)
+    }
 
     // Open an input stream.
     return ctx.contentResolver.openInputStream(this)
@@ -156,7 +173,9 @@ fun Uri.openContentInputStream(ctx: Context,
 fun Uri.openContentOutputStream(ctx: Context,
                                 takePermission: Boolean): OutputStream? {
     // Take write permission, if necessary.
-    if (takePermission) takeWriteUriPermission(ctx)
+    if (takePermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+        takeWriteUriPermission(ctx)
+    }
 
     // Open an output stream.
     return ctx.contentResolver.openOutputStream(this)

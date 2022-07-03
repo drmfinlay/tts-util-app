@@ -211,11 +211,15 @@
     <string name="cannot_read_empty_input_message">Cannot read zero-length input.</string>
     <string name="cannot_synthesize_empty_input_message">Cannot synthesize zero-length input.</string>
     <string name="clipboard_is_empty_msg">Clipboard is empty.</string>
-    <string name="read_clipboard_android_10_warning_message">Opening edit screen.</string>
     <string name="nav_header_desc">Navigation header</string>
     <string name="mem_description">Press long to store in memory, press short to retrieve</string>
     <string name="mem_slot_empty_msg">Memory slot is empty.</string>
     <string name="mem_slot_cleared_msg">"Memory slot cleared."</string>
     <string name="mem_slot_set_msg">"Memory slot set."</string>
+
+    <!--Version-specific messages.-->
+    <string name="sdk_18_choose_dir_message">Choosing an output directory is not supported on this version of Android.</string>
+    <string name="sdk_18_choose_tts_voice_message">Choosing a TTS voice is not supported on this version of Android.</string>
+    <string name="sdk_29_read_clipboard_message">Opening edit screen.</string>
 
 </resources>

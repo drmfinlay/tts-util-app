@@ -24,9 +24,12 @@ import android.content.Context
 import android.media.AudioManager
 import android.net.MailTo
 import android.net.ParseException
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.speech.tts.TextToSpeech
 import android.speech.tts.TextToSpeech.*
+import android.speech.tts.TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID
 import android.speech.tts.UtteranceProgressListener
 import android.support.annotation.CallSuper
 import android.support.v7.preference.PreferenceManager
@@ -37,6 +40,7 @@ import java.net.MalformedURLException
 import java.net.URL
 import java.util.*
 import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
 
 abstract class MyUtteranceProgressListener(ctx: Context, val tts: TextToSpeech) :
         UtteranceProgressListener() {
@@ -61,10 +65,6 @@ abstract class MyUtteranceProgressListener(ctx: Context, val tts: TextToSpeech) 
     open fun begin(): Boolean {
         tts.setOnUtteranceProgressListener(this)
         return true
-    }
-
-    override fun onError(utteranceId: String?) { // deprecated
-        onError(utteranceId, -1)
     }
 
     @CallSuper
@@ -339,7 +339,15 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
 
     override fun onStart(utteranceId: String?) {}
 
+    override fun onError(utteranceId: String?) { // deprecated
+        handleProcessingError(-1)
+    }
+
     override fun onError(utteranceId: String?, errorCode: Int) {
+        handleProcessingError(errorCode)
+    }
+
+    private fun handleProcessingError(errorCode: Int) {
         // Get the matching error message string for errorCode.
         val errorMsg =  when (errorCode) {
             ERROR_SYNTHESIS -> R.string.synthesis_error_msg_synthesis
@@ -400,13 +408,24 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
     }
 
     companion object {
-        // Note: This value appears to be interpreted by TTS engines as a maximum
-        // index.  TTS Util too will interpret it thus.  The input processing logic
-        // will most likely find a line feed or another whitespace character before
-        // hitting the absolute maximum.
-        private val maxInputLength = getMaxSpeechInputLength() - 1
-        private val lineFeedScanThreshold = (maxInputLength * 0.70).toInt()
-        private val whitespaceScanThreshold = (maxInputLength * 0.9).toInt()
+        private val maxInputLength: Int = when {
+            // Use a value appropriate on this Android version.
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2 -> {
+                // Note: This value appears to be interpreted by TTS engines as a
+                // sort of maximum index.  TTS Util too will interpret it thus.
+                // The input processing logic will most likely find a line feed or
+                // another whitespace character before hitting the absolute maximum.
+                getMaxSpeechInputLength() - 1
+            }
+            else -> {
+                // Note: This value seems to work all right with Pico TTS on Android
+                // 4.0.3 (SDK 15).
+                4000 - 1
+            }
+        }
+
+        private val lineFeedScanThreshold: Int = (maxInputLength * 0.70).toInt()
+        private val whitespaceScanThreshold: Int = (maxInputLength * 0.9).toInt()
 
         private var currentUtteranceId: Long = 0
 
@@ -433,7 +452,15 @@ class ReadInputTask(ctx: Context, tts: TextToSpeech, inputStream: InputStream,
 
         // The queue mode initially specified for the task is ignored here; it only
         // makes sense to use QUEUE_ADD for silence.
-        tts.playSilentUtterance(durationInMs, QUEUE_ADD, nextUtteranceId())
+        val uttId = nextUtteranceId()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            tts.playSilentUtterance(durationInMs, QUEUE_ADD, uttId)
+        } else {
+            val params = HashMap<String, String>()
+            params[KEY_PARAM_UTTERANCE_ID] = uttId
+            @Suppress("deprecation")
+            tts.playSilence(durationInMs, QUEUE_ADD, params)
+        }
     }
 
     override fun enqueueText(text: CharSequence, bytesRead: Int) {
@@ -443,9 +470,21 @@ class ReadInputTask(ctx: Context, tts: TextToSpeech, inputStream: InputStream,
         // Add text to the queue as an utterance.
         // Note: This is necessary even when the text is blank because progress
         // callbacks are used to process the input stream in order.
-        val bundle = Bundle()
-        bundle.putInt(Engine.KEY_PARAM_STREAM, AudioManager.STREAM_MUSIC)
-        tts.speak(text, queueMode, bundle, nextUtteranceId())
+        val uttId = nextUtteranceId()
+        val audioStream: Int = AudioManager.STREAM_MUSIC
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            val bundle = Bundle()
+            bundle.putInt(Engine.KEY_PARAM_STREAM, audioStream)
+            @Suppress("deprecation")
+            tts.speak(text, queueMode, bundle, uttId)
+        }
+        else {
+            val params = HashMap<String, String>()
+            params[KEY_PARAM_UTTERANCE_ID] = uttId
+            params[Engine.KEY_PARAM_STREAM] = "$audioStream"
+            @Suppress("deprecation")
+            tts.speak(text.toString(), queueMode, params)
+        }
     }
 
     override fun onDone(utteranceId: String?) {
@@ -474,12 +513,30 @@ class FileSynthesisTask(ctx: Context, tts: TextToSpeech,
     override fun begin(): Boolean {
         // Delete silent wave files because they may be incompatible with current
         // user settings.
-        for (file in app.filesDir.listFiles()) {
+        for (file in getWorkingDirectory().listFiles()) {
             if (file.name.endsWith("ms_sil.wav")) file.delete()
         }
 
         if (!super.begin()) return false
         return true
+    }
+
+    private fun getWorkingDirectory(): File {
+        val dir: File
+
+        // Use the application's files directory on versions SDK 21 and above.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            dir = app.filesDir
+        }
+
+        // Otherwise, use external storage.  This is because the old file synthesis
+        // procedure doesn't seem to work with filesDir.  Or, at least not with Pico
+        // TTS.  In any case this directory will not be cluttered, since we only use
+        // it for temporary files.
+        else {
+            dir = Environment.getExternalStorageDirectory()
+        }
+        return dir
     }
 
     override fun enqueueSilence(durationInMs: Long) {
@@ -500,8 +557,7 @@ class FileSynthesisTask(ctx: Context, tts: TextToSpeech,
                 inWaveFiles.removeAt(inWaveFiles.lastIndex)
             }
         }
-
-        val file = File(app.filesDir, filename)
+        val file: File = File(getWorkingDirectory(), filename)
         inWaveFiles.add(file)
     }
 
@@ -512,8 +568,17 @@ class FileSynthesisTask(ctx: Context, tts: TextToSpeech,
         // Create a wave file for this utterance and enqueue file synthesis.
         // Note: This is necessary even when the text is blank because progress
         // callbacks are used to process the input stream in order.
-        val file = File.createTempFile("utt", "dat", app.filesDir)
-        val success = tts.synthesizeToFile(text, null, file, nextUtteranceId())
+        val uttId = nextUtteranceId()
+        val dir: File = getWorkingDirectory()
+        val file: File = File.createTempFile("speech", ".wav", dir)
+        val success = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            tts.synthesizeToFile(text, null, file, uttId)
+        } else {
+            val params = HashMap<String, String>()
+            params[KEY_PARAM_UTTERANCE_ID] = uttId
+            @Suppress("deprecation")
+            tts.synthesizeToFile(text.toString(), params, file.absolutePath)
+        }
 
         // If successful and the text is not empty, add the file to the list.
         if (success == SUCCESS && text.length > 0) inWaveFiles.add(file)

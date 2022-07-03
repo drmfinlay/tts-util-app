@@ -9,6 +9,7 @@ import android.support.v4.app.Fragment
 import com.danefinlay.ttsutil.R
 import com.danefinlay.ttsutil.*
 import org.jetbrains.anko.AlertDialogBuilder
+import org.jetbrains.anko.longToast
 
 abstract class MyFragment : Fragment(), FragmentInterface {
 
@@ -142,7 +143,13 @@ abstract class MyFragment : Fragment(), FragmentInterface {
             title(title)
             message(message)
             positiveButton(R.string.alert_positive_message_1) {
-                activityInterface?.showDirChooser(DIR_SELECT_CONT_CODE)
+                // Choosing the output directory is not possible on versions older
+                // than Android Lollipop (21).
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    activityInterface?.showDirChooser(DIR_SELECT_CODE)
+                } else {
+                    ctx.longToast(R.string.sdk_18_choose_dir_message)
+                }
             }
             negativeButton(R.string.alert_negative_message_1)
         }
@@ -150,9 +157,17 @@ abstract class MyFragment : Fragment(), FragmentInterface {
 
     companion object {
         // Storage Permissions
-        private val PERMISSIONS_STORAGE = arrayOf(
-                Manifest.permission.READ_EXTERNAL_STORAGE,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE
-        )
+        private val PERMISSIONS_STORAGE: Array<String> by lazy {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+                arrayOf(
+                        Manifest.permission.READ_EXTERNAL_STORAGE,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE
+                )
+            } else {
+                arrayOf(
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE
+                )
+            }
+        }
     }
 }

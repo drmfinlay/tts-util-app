@@ -21,6 +21,7 @@
 package com.danefinlay.ttsutil.ui
 
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.speech.tts.TextToSpeech.QUEUE_ADD
@@ -119,8 +120,16 @@ class ReadFilesFragment : FileChooserFragment() {
         find<ImageButton>(R.id.save_button).onClick { onClickSave() }
         find<ImageButton>(R.id.choose_file_button)
                 .onClick { activityInterface?.showFileChooser() }
-        find<ImageButton>(R.id.choose_dir_button)
-                .onClick { activityInterface?.showDirChooser(DIR_SELECT_CODE) }
+
+        // Set the choose directory button's OnClick listener.  Choosing the output
+        // directory is not possible on versions older than Android Lollipop (21).
+        find<ImageButton>(R.id.choose_dir_button).onClick {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                activityInterface?.showDirChooser(DIR_SELECT_CODE)
+            } else {
+                ctx.longToast(R.string.sdk_18_choose_dir_message)
+            }
+        }
     }
 
     override fun updateStatusField(text: String) {

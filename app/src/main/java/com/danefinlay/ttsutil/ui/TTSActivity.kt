@@ -24,9 +24,11 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.speech.tts.TextToSpeech.LANG_MISSING_DATA
+import android.support.annotation.RequiresApi
 import android.support.v4.app.Fragment
 import android.support.v4.provider.DocumentFile
 import com.danefinlay.ttsutil.*
@@ -152,12 +154,16 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
         // downloaded, at least with Google's text-to-speech engine, which, in this
         // case, defaults to an available voice.
         val language = tts.currentLocale
-        val languageUnavailable = (
+        var languageUnavailable: Boolean =
                 language == null ||
-                tts.isLanguageAvailable(language) == LANG_MISSING_DATA ||
-                tts.countAvailableVoices(language) == 0
-        )
-        if (tts.voicesEx.size > 0 && languageUnavailable) {
+                tts.isLanguageAvailable(language) == LANG_MISSING_DATA
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            languageUnavailable =
+                    (languageUnavailable || language == null ||
+                    tts.countAvailableVoices(language) == 0) &&
+                    tts.voicesEx.size > 0 // Engine reports one or more voices.
+        }
+        if (languageUnavailable) {
             runOnUiThread { showNoTTSDataDialog(tts, language) }
         }
 
@@ -193,6 +199,16 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
     }
 
     override fun requestSampleTTSText() {
+        // Start the appropriate activity for requesting TTS sample text from the
+        // engine, falling back on ours if this is not possible or if an exception
+        // occurs.
+        val ourSampleText = getString(R.string.sample_tts_sentence)
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR2) {
+            val event = ActivityEvent.SampleTextReceivedEvent(ourSampleText)
+            handleActivityEvent(event)
+            return
+        }
+
         // Initialize the start activity intent.
         // Note: This action may be used to retrieve sample text for specific
         // localities.
@@ -204,14 +220,12 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
         val packageName = myApplication.ttsEngineName
         if (packageName != null) intent.setPackage(packageName)
 
-        // Start the appropriate activity for requesting TTS sample text from the
-        // engine, falling back on ours if an exception occurs.
+        // Start the appropriate activity.
         try {
             startActivityForResult(intent, SAMPLE_TEXT_CODE)
         } catch (e: ActivityNotFoundException) {
-            // Dispatch an event with the sample text.
-            val sampleText = getString(R.string.sample_tts_sentence)
-            val event = ActivityEvent.SampleTextReceivedEvent(sampleText)
+            // Failure: Dispatch an event with the sample text.
+            val event = ActivityEvent.SampleTextReceivedEvent(ourSampleText)
             handleActivityEvent(event)
         }
     }
@@ -228,17 +242,29 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
     }
 
     override fun showFileChooser() {
-        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+        // Determine which intent action to use.
+        val intentAction: String
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            intentAction = Intent.ACTION_OPEN_DOCUMENT
+        } else {
+            intentAction = Intent.ACTION_GET_CONTENT
+        }
+
+        // Initialize the intent.
+        val intent = Intent(intentAction).apply {
             type = "text/*"
             addCategory(Intent.CATEGORY_OPENABLE)
-            addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT)
+                addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2)
+                putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
         }
         val title = getString(R.string.file_chooser_title)
         startFileChooserActivity(intent, title, FILE_SELECT_CODE)
     }
 
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     override fun showDirChooser(requestCode: Int) {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
         val title = getString(R.string.dir_chooser_title)
@@ -289,6 +315,7 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
         myApplication.disableNotifications()
 
         when {
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2 &&
             requestCode == SAMPLE_TEXT_CODE -> {
                 // Note: Sample text may be available if resultCode is
                 // RESULT_CANCELLED.  Therefore, we do not check resultCode.
@@ -344,14 +371,21 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
                 // Get the Uri of the selected file(s), if possible.
                 if (data == null) return
                 val uriList = mutableListOf<Uri>()
-                val clipData = data.clipData
-                if (clipData == null) {
-                    val uri = data.data
-                    if (uri != null) uriList.add(uri)
-                } else {
-                    for (i in 0 until clipData.itemCount) {
-                        uriList.add(clipData.getItemAt(i).uri)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+                    // Iterate *clipData* on Android Jellybean (4.1) and above.
+                    val clipData = data.clipData
+                    if (clipData == null) {
+                        val uri = data.data
+                        if (uri != null) uriList.add(uri)
+                    } else {
+                        for (i in 0 until clipData.itemCount) {
+                            uriList.add(clipData.getItemAt(i).uri)
+                        }
                     }
+                } else {
+                    // Use *data* on older versions (SDK v15) that do not support
+                    // selecting multiple documents.
+                    uriList.add(data.data ?: return)
                 }
 
                 // Set display names for each Uri.

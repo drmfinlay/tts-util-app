@@ -110,7 +110,7 @@ class TTSIntentService : IntentService("TTSIntentService") {
         // user interaction).
         if (Build.VERSION.SDK_INT >= 29) {
             runOnUiThread {
-                longToast(R.string.read_clipboard_android_10_warning_message)
+                longToast(R.string.sdk_29_read_clipboard_message)
             }
             handleActionEditReadClipboard(true)
             return

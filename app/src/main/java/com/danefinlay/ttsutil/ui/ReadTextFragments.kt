@@ -23,6 +23,7 @@ package com.danefinlay.ttsutil.ui
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.speech.tts.TextToSpeech
@@ -91,8 +92,16 @@ abstract class ReadTextFragmentBase : MyFragment() {
         find<ImageButton>(R.id.play_button).onClick { onClickPlay() }
         find<ImageButton>(R.id.save_button).onClick { onClickSave() }
         find<ImageButton>(R.id.stop_button).onClick { myApplication.stopSpeech() }
-        find<ImageButton>(R.id.choose_dir_button)
-                .onClick { activityInterface?.showDirChooser(DIR_SELECT_CODE) }
+
+        // Set the choose directory button's OnClick listener.  Choosing the output
+        // directory is not possible on versions older than Android Lollipop (21).
+        find<ImageButton>(R.id.choose_dir_button).onClick {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                activityInterface?.showDirChooser(DIR_SELECT_CODE)
+            } else {
+                ctx.longToast(R.string.sdk_18_choose_dir_message)
+            }
+        }
 
         // Re-process last updates.
         val event = activityInterface?.getLastStatusUpdate()

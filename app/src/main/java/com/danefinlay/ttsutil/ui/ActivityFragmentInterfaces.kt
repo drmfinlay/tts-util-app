@@ -20,7 +20,9 @@
 
 package com.danefinlay.ttsutil.ui
 
+import android.os.Build
 import android.speech.tts.TextToSpeech
+import android.support.annotation.RequiresApi
 
 /**
  * Interface between fragments and their activity.
@@ -43,7 +45,10 @@ interface ActivityInterface {
 
     /**
      * Show a screen where the user can choose a directory.
+     *
+     * This is only possible on Android version 5 and above.
      */
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     fun showDirChooser(requestCode: Int)
 
     /**

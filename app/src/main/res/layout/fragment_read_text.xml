@@ -115,7 +115,8 @@
             android:contentDescription="@string/clear_input_button"
             android:layout_marginStart="24dp"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toEndOf="@id/stop_button"/>
+            app:layout_constraintStart_toEndOf="@id/stop_button"
+            android:layout_marginLeft="24dp" />
 
         <ImageButton
             android:id="@+id/choose_dir_button"

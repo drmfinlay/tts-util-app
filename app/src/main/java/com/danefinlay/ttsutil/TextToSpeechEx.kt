@@ -20,10 +20,12 @@
 
 package com.danefinlay.ttsutil
 
+import android.os.Build
 import android.speech.tts.TextToSpeech
 import android.speech.tts.TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED
 import android.speech.tts.Voice
-import android.util.Log
+import android.support.annotation.RequiresApi
+//import android.util.Log
 import java.util.*
 
 /**
@@ -40,6 +42,7 @@ import java.util.*
  * @see Voice
  */
 var TextToSpeech.voiceEx: Voice?
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     get() {
         return try {
             // Try to retrieve the current voice.
@@ -51,6 +54,7 @@ var TextToSpeech.voiceEx: Voice?
             null
         }
     }
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     set(value) {
         try {
             // Try to retrieve the current voice.
@@ -76,6 +80,7 @@ var TextToSpeech.voiceEx: Voice?
  * @see Voice
  */
 val TextToSpeech.defaultVoiceEx: Voice?
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     get() {
         return try {
             // Try to retrieve the current voice.
@@ -98,6 +103,7 @@ val TextToSpeech.defaultVoiceEx: Voice?
  * @see Voice
  */
 val TextToSpeech.voicesEx: MutableSet<Voice?>
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     get() {
         return try {
             // Try to retrieve the set of available voices.
@@ -117,7 +123,11 @@ val TextToSpeech.voicesEx: MutableSet<Voice?>
 val TextToSpeech.currentLocale: Locale?
     get() {
         @Suppress("deprecation")
-        return voiceEx?.locale ?: language
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            voiceEx?.locale ?: language
+        } else {
+            language
+        }
     }
 
 /**
@@ -126,6 +136,7 @@ val TextToSpeech.currentLocale: Locale?
  * The [locale] of a [Voice] is considered a match if its *language* and *country*
  * fields are the same.
  */
+@RequiresApi(Build.VERSION_CODES.LOLLIPOP)
 fun TextToSpeech.countAvailableVoices(locale: Locale): Int {
     // Find the number of matching voices by folding the list of voices.
     val voicesList = voicesEx.toList().filterNotNull()

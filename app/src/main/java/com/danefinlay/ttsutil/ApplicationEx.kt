@@ -227,6 +227,9 @@ class ApplicationEx : Application(), OnInitListener {
     }
 
     private fun setTTSLanguage(tts: TextToSpeech): Boolean {
+        // Use the engine's language setting on SDK version 17 and below.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR1) return true
+
         // Find an acceptable TTS language.
         val startLocale = tts.currentLocale
         var locale: Locale? = null
@@ -257,7 +260,7 @@ class ApplicationEx : Application(), OnInitListener {
                 startLocale.country != locale.country) {
             // A language is available, but it is one that the user might not be
             // expecting.
-            message= getString(R.string.using_general_tts_language_msg,
+            message = getString(R.string.using_general_tts_language_msg,
                     locale.displayName)
         }
         if (message != null)  runOnUiThread { longToast(message) }
@@ -298,17 +301,20 @@ class ApplicationEx : Application(), OnInitListener {
             return
         }
 
-        // Set the preferred voice if one has been set in the preferences.
+        // Set the preferred voice if one has been set in the preferences and if
+        // this is SDK 21 or above.
         val prefs = PreferenceManager.getDefaultSharedPreferences(this)
-        val voiceName = prefs.getString("pref_tts_voice", null)
-        if (voiceName != null) {
-            val voices = tts.voicesEx.toList().filterNotNull()
-            if (voices.isNotEmpty()) {
-                val voiceNames = voices.map { it.name }
-                val voiceIndex = voiceNames.indexOf(voiceName)
-                tts.voiceEx = if (voiceIndex == -1) {
-                    tts.voiceEx ?: tts.defaultVoiceEx
-                } else voices[voiceIndex]
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            val voiceName = prefs.getString("pref_tts_voice", null)
+            if (voiceName != null) {
+                val voices = tts.voicesEx.toList().filterNotNull()
+                if (voices.isNotEmpty()) {
+                    val voiceNames = voices.map { it.name }
+                    val voiceIndex = voiceNames.indexOf(voiceName)
+                    tts.voiceEx = if (voiceIndex == -1) {
+                        tts.voiceEx ?: tts.defaultVoiceEx
+                    } else voices[voiceIndex]
+                }
             }
         }
 

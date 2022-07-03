@@ -21,16 +21,19 @@
 package com.danefinlay.ttsutil.ui
 
 import android.content.SharedPreferences
+import android.os.Build
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.speech.tts.TextToSpeech.QUEUE_FLUSH
 import android.speech.tts.Voice
+import android.support.annotation.RequiresApi
 import android.support.v4.app.Fragment
 import android.support.v7.app.AlertDialog
 import android.support.v7.preference.Preference
 import android.support.v7.preference.PreferenceFragmentCompat
 import android.support.v7.view.ContextThemeWrapper
 import com.danefinlay.ttsutil.*
+import org.jetbrains.anko.longToast
 import org.jetbrains.anko.runOnUiThread
 import org.jetbrains.anko.toast
 
@@ -127,6 +130,7 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
         else activityInterface?.requestSampleTTSText()
     }
 
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     private fun playSampleWithVoice(tts: TextToSpeech, currentVoice: Voice?,
                                     voice: Voice) {
         // Temporarily set the voice.
@@ -150,17 +154,19 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
 
     private fun onPostSample() {
         sampleInProgress = false
-        val postSampleVoice = this.postSampleVoice
         val postSamplePitch = this.postSamplePitch
         val postSampleRate = this.postSampleRate
-        this.postSampleVoice = null
         this.postSampleRate = null
         this.postSamplePitch = null
 
         val tts = myApplication.mTTS ?: return
-        if (postSampleVoice != null) tts.voiceEx = postSampleVoice
         if (postSamplePitch != null) tts.setPitch(postSamplePitch)
         if (postSampleRate != null) tts.setSpeechRate(postSampleRate)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            val postSampleVoice = this.postSampleVoice
+            this.postSampleVoice = null
+            if (postSampleVoice != null) tts.voiceEx = postSampleVoice
+        }
     }
 
     private fun handleTtsEnginePrefs(preference: Preference?): Boolean {
@@ -308,6 +314,7 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
         return true
     }
 
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     private fun chooseVoiceSubSelection(prefs: SharedPreferences,
                                         tts: TextToSpeech,
                                         preferenceKey: String,
@@ -361,6 +368,12 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
 
     private fun handleSetTtsVoice(preferenceKey: String,
                                   tts: TextToSpeech): Boolean {
+        // Return early if this is not Android Lollipop (21) or above.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            context?.longToast(R.string.sdk_18_choose_tts_voice_message)
+            return true
+        }
+
         // Get the set of available TTS voices.
         // Return early if the engine returned no voices.
         val voices = tts.voicesEx
