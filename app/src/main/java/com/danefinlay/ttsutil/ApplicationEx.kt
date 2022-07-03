@@ -590,7 +590,7 @@ class ApplicationEx : Application(), OnInitListener {
     }
 
     @Synchronized
-    private fun joinWaveFiles(taskData: TaskData.ProcessWaveFilesTaskData): Int {
+    private fun processWaveFiles(taskData: TaskData.ProcessWaveFilesTaskData): Int {
         // Set this task as under consideration.
         lastAttemptedTaskId = taskData.taskId
 
@@ -637,7 +637,7 @@ class ApplicationEx : Application(), OnInitListener {
                     srcDescription = taskData.inputSource.description
                 }
                 is TaskData.ProcessWaveFilesTaskData -> {
-                    result = joinWaveFiles(taskData)
+                    result = processWaveFiles(taskData)
                     infoMessageId = R.string.begin_processing_source_message
                     srcDescription = taskData.prevTaskData.inputSource.description
                 }
@@ -701,7 +701,7 @@ class ApplicationEx : Application(), OnInitListener {
                 inputSource, outDirectory, waveFilename, mutableListOf())
         taskQueue.add(taskData1)
 
-        // Encapsulate the join wave files task data and add it to the queue.
+        // Encapsulate the process wave files task data and add it to the queue.
         val taskData2 = TaskData.ProcessWaveFilesTaskData(TASK_ID_PROCESS_FILE, 0,
                 taskData1)
         taskQueue.add(taskData2)
