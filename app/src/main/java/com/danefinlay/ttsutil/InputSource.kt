@@ -23,6 +23,8 @@ package com.danefinlay.ttsutil
 import android.content.Context
 import android.net.Uri
 import java.io.ByteArrayInputStream
+import java.io.File
+import java.io.FileInputStream
 import java.io.InputStream
 
 /**
@@ -43,15 +45,30 @@ sealed class InputSource(val description: kotlin.CharSequence) {
                 ByteArrayInputStream(text.toString().toByteArray())
     }
 
-    class ContentUri(val uri: Uri?, description: kotlin.CharSequence) :
+    class DocumentUri(val uri: Uri?, description: kotlin.CharSequence) :
             InputSource(description) {
-        override fun isSourceAvailable(ctx: Context) =
-                uri?.isAccessibleFile(ctx) == true
+        private val file: File?
 
-        override fun getSize(ctx: Context): Long? =
-                uri?.getFileSize(ctx)
+        init {
+            if (uri != null && uri.scheme == "file") file = File(uri.path)
+            else file = null
+        }
 
-        override fun openInputStream(ctx: Context): InputStream? =
-                uri?.openContentInputStream(ctx, true)
+        override fun isSourceAvailable(ctx: Context): Boolean {
+            return file != null && file.exists() ||
+                    uri != null && uri.isAccessibleFile(ctx)
+        }
+
+        override fun getSize(ctx: Context): Long? {
+            if (file != null) return file.length()
+            else if (uri != null) return uri.getFileSize(ctx)
+            return null
+        }
+
+        override fun openInputStream(ctx: Context): InputStream? {
+            if (file != null) return FileInputStream(file)
+            else if (uri != null) return uri.openContentInputStream(ctx, true)
+            return null
+        }
     }
 }

@@ -168,7 +168,7 @@ class ReadFilesFragment : FileChooserFragment() {
         if (uriList == null || uriList.size == 0) {
             buildUnavailableFileAlertDialog(listOf()).show()
         } else for ((uri, displayName) in uriList.zip(event.displayNameList)) {
-            val inputSource = InputSource.ContentUri(uri, displayName)
+            val inputSource = InputSource.DocumentUri(uri, displayName)
             val result = myApplication.enqueueReadInputTask(inputSource, QUEUE_ADD)
             when (result) {
                 UNAVAILABLE_INPUT_SRC ->
@@ -199,7 +199,7 @@ class ReadFilesFragment : FileChooserFragment() {
             buildUnavailableFileAlertDialog(event.uriList).show()
         } else for ((uri, displayName) in fileData) {
             val waveFilename = "$displayName.wav"
-            val inputSource = InputSource.ContentUri(uri, displayName)
+            val inputSource = InputSource.DocumentUri(uri, displayName)
             val result = myApplication.enqueueFileSynthesisTasks(inputSource,
                     directory, waveFilename)
             when (result) {
@@ -219,7 +219,8 @@ class ReadFilesFragment : FileChooserFragment() {
         // by showing an appropriate dialog.
         val event1 = activityInterface?.getLastFileChosenEvent()
         val fileUri = event1?.firstUri
-        if (fileUri?.isAccessibleFile(ctx) != true) {
+        val inputSource = InputSource.DocumentUri(fileUri, "")
+        if (!inputSource.isSourceAvailable(ctx) || fileUri == null) {
             val uriList = if (fileUri == null) null else listOf(fileUri)
             buildUnavailableFileAlertDialog(uriList).show()
             return
