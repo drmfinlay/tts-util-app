@@ -154,7 +154,7 @@
     <string name="mem_description">长按可存储，短按可检索</string>
     <string name="mem_slot_empty_msg">记录位为空。</string>
     <string name="mem_slot_cleared_msg">记录位清除。</string>
-    <string name="mem_slot_set_msg">内存插槽。</string>
+    <string name="mem_slot_set_msg">记录位存储</string>
     <string name="sdk_18_choose_dir_message">这个版本的Android不支持选择输出目录。</string>
     <string name="sdk_18_choose_tts_voice_message">这个版本的Android不支持选择TTS语音。</string>
     <string name="sdk_29_read_clipboard_message">打开编辑屏幕。</string>
