@@ -13,7 +13,7 @@
     <string name="edit_read_activity_label">编辑和阅读文本</string>
     <string name="about_activity_label">关于文字转语音工具</string>
     <string name="status_text_field">状态：%1$s</string>
-    <string name="status_text_idle">废弃、闲置</string>
+    <string name="status_text_idle">闲置</string>
     <string name="status_text_reading_text">读取文本中 %1$s</string>
     <string name="status_text_writing_file">写入文件中 %1$s</string>
     <string name="status_text_processing_file">处理文件 %1$s</string>
