@@ -43,9 +43,7 @@ class ApplicationEx : Application(), OnInitListener {
     var mTTS: TextToSpeech? = null
         private set
 
-    var ttsInitializing: Boolean = false
-        private set
-
+    private var ttsInitialized: Boolean = false
     private var lastAttemptedTaskId: Int? = null
     private var currentTask: Task? = null
     private val taskQueue = ArrayDeque<TaskData>()
@@ -57,7 +55,6 @@ class ApplicationEx : Application(), OnInitListener {
 
     @Volatile
     private var notificationsEnabled: Boolean = false
-
 
     private val asyncProgressObserver = object : TaskProgressObserver {
         override fun notifyProgress(progress: Int, taskId: Int,
@@ -222,7 +219,6 @@ class ApplicationEx : Application(), OnInitListener {
         runOnUiThread { toast(R.string.tts_initializing_message) }
 
         // Begin text-to-speech initialization.
-        ttsInitializing = true
         mTTS = TextToSpeech(this, wrappedListener, engineName)
     }
 
@@ -331,7 +327,7 @@ class ApplicationEx : Application(), OnInitListener {
         }
 
         // Initialization complete.
-        ttsInitializing = false
+        ttsInitialized = true
 
         // If there are one or more tasks in the queue, begin processing.
         val taskData = taskQueue.peek()
@@ -417,7 +413,7 @@ class ApplicationEx : Application(), OnInitListener {
         stopSpeech()
         mTTS?.shutdown()
         mTTS = null
-        ttsInitializing = false
+        ttsInitialized = false
         taskQueue.clear()
         currentTask = null
 
@@ -621,13 +617,13 @@ class ApplicationEx : Application(), OnInitListener {
 
     private fun beginTaskOrNotify(taskData: TaskData, priorTask: Boolean): Int {
         // Return early if TTS is not yet initialized.
-        if (ttsInitializing) return SUCCESS
+        if (!ttsInitialized) return SUCCESS
 
-        // If the specified task is at the head of the queue, begin it associated
-        // with.  Otherwise, notify the observer.
+        // If the specified task is at the head of the queue, begin it.
+        // Otherwise, notify the observer.
         val observer = asyncProgressObserver
         val result: Int
-        if (taskQueue.peek() === taskData) {
+        if (taskQueue.peek() === taskData && ttsInitialized) {
             // Begin the task, taking note of information that might be used later.
             val infoMessageId: Int
             val srcDescription: CharSequence
