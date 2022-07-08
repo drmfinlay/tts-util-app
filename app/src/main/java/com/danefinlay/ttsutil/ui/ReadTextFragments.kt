@@ -234,6 +234,7 @@ abstract class ReadTextFragmentBase : MyFragment() {
         val directory: Directory = if (event != null) {
             Directory.DocumentFile(event.firstUri)
         } else {
+            @Suppress("deprecation")
             Directory.File(Environment.getExternalStorageDirectory())
         }
 
@@ -384,8 +385,9 @@ class ReadTextFragment : ReadTextFragmentBase() {
 
         // If the content of the fragment's input layout should persist, save it to
         // shared preferences.
-        if (persistentContent) {
-            val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+        val ctx = context
+        if (persistentContent && ctx != null) {
+            val prefs = PreferenceManager.getDefaultSharedPreferences(ctx)
             val editor: SharedPreferences.Editor = prefs.edit()
             editor.putString(CONTENT_PREF_KEY, inputLayoutContent)
             editor.apply()

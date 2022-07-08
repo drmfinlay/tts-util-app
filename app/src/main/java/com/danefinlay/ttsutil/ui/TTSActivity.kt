@@ -48,8 +48,8 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
             ActivityEvent.StatusUpdateEvent(100, TASK_ID_IDLE, 0)
 
     protected var mLastStatusUpdate = idleStatusEvent
-    protected var mLastChosenDirEvent: ActivityEvent.ChosenFileEvent? = null
-    protected var mLastChosenFileEvent: ActivityEvent.ChosenFileEvent? = null
+    private var mLastChosenDirEvent: ActivityEvent.ChosenFileEvent? = null
+    private var mLastChosenFileEvent: ActivityEvent.ChosenFileEvent? = null
 
     private fun retrieveChosenFileData(prefs: SharedPreferences, uriKey: String,
                                        nameKey: String, fileType: Int):
@@ -230,8 +230,8 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
         }
     }
 
-    protected fun startFileChooserActivity(intent: Intent, chooserTitle: String,
-                                           requestCode: Int) {
+    private fun startFileChooserActivity(intent: Intent, chooserTitle: String,
+                                         requestCode: Int) {
         try {
             val chooserIntent = Intent.createChooser(intent, chooserTitle)
             startActivityForResult(chooserIntent, requestCode)
@@ -322,12 +322,13 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
                 // This apparent error may be explained by the peculiar nature of
                 // the activity, which, for each engine this programmer has tried,
                 // behaves like a trampoline.
+
+                // Retrieve the sample text, falling back on ours if the engine's
+                // is unavailable.
                 val key = TextToSpeech.Engine.EXTRA_SAMPLE_TEXT
-                val sampleText = if (data != null && data.hasExtra(key)) {
-                    // Retrieve the sample text.
-                    data.getStringExtra(key)
+                val sampleText: String = if (data != null && data.hasExtra(key)) {
+                    data.getStringExtra(key)!!
                 } else {
-                    // Engine sample text unavailable.  Falling back on ours.
                     getString(R.string.sample_tts_sentence)
                 }
 

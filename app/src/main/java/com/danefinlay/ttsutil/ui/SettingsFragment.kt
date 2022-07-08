@@ -42,7 +42,7 @@ import org.jetbrains.anko.toast
  */
 class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
 
-    private val Fragment.myApplication: ApplicationEx
+    private val myApplication: ApplicationEx
         get() = requireContext().applicationContext as ApplicationEx
 
     private val activityInterface: ActivityInterface?
@@ -176,8 +176,9 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
         if (!key.startsWith("pref_tts")) return false
 
         // Handle opening the system settings.
+        val application: ApplicationEx = myApplication
         if (key == "pref_tts_system_settings") {
-            myApplication.openSystemTTSSettings(requireContext())
+            application.openSystemTTSSettings(requireContext())
             return true
         }
 
@@ -398,7 +399,9 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
         val voicesByDisplayName = voicesList.groupBy { it.locale.displayName }
         val displayNames = voicesByDisplayName.map { it.value[0].locale }
                 .sortedBy { it.displayLanguage }.map { it.displayName }
-        val currentIndex = displayNames.indexOf(currentVoice?.locale?.displayName)
+        val currentIndex: Int = if (currentVoice == null) -1 else {
+            displayNames.indexOf(currentVoice.locale.displayName)
+        }
 
         // Define callbacks.
         val onItemSelected = { index: Int ->

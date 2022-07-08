@@ -513,7 +513,8 @@ class FileSynthesisTask(ctx: Context, tts: TextToSpeech,
     override fun begin(): Boolean {
         // Delete silent wave files because they may be incompatible with current
         // user settings.
-        for (file in getWorkingDirectory().listFiles()) {
+        val workingDirectoryFiles = getWorkingDirectory().listFiles() ?: arrayOf()
+        for (file in workingDirectoryFiles) {
             if (file.name.endsWith("ms_sil.wav")) file.delete()
         }
 
@@ -522,19 +523,20 @@ class FileSynthesisTask(ctx: Context, tts: TextToSpeech,
     }
 
     private fun getWorkingDirectory(): File {
-        val dir: File
+        var dir: File
 
-        // Use the application's files directory on versions SDK 21 and above.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            dir = app.filesDir
-        }
+        // Use the application's files directory by default.
+        dir = app.filesDir
 
-        // Otherwise, use external storage.  This is because the old file synthesis
-        // procedure doesn't seem to work with filesDir.  Or, at least not with Pico
-        // TTS.  In any case this directory will not be cluttered, since we only use
-        // it for temporary files.
-        else {
-            dir = Environment.getExternalStorageDirectory()
+        // Use external storage on older Android versions.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
+            val externalFilesDir = app.getExternalFilesDir(null)
+            if (externalFilesDir != null && externalFilesDir.canWrite()) {
+                dir = externalFilesDir
+            } else {
+                @Suppress("deprecation")
+                dir = Environment.getExternalStorageDirectory()
+            }
         }
         return dir
     }

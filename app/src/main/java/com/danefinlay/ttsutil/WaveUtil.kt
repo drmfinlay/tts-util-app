@@ -436,6 +436,7 @@ class WaveFileHeader {
      * Whether the wave file this header represents is a Pulse-code modulation (PCM)
      * wave file.
      */
+    @Suppress("unused")
     val isPCM: Boolean
         get() {
             // The following is based on definitions on this webpage:
@@ -550,6 +551,7 @@ class WaveFile(val stream: InputStream) {
         stream.close()
     }
 
+    @Suppress("unused")
     fun compatibleWith(other: WaveFile): Boolean =
             header.compatibleWith(other.header)
 

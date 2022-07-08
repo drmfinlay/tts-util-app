@@ -37,7 +37,7 @@ sealed class Directory {
                                           documentName: String,
                                           mimeType: String): OutputStream?
 
-    class File(val file: java.io.File) : Directory() {
+    class File(private val file: java.io.File) : Directory() {
         override fun exists(ctx: Context): Boolean = file.exists()
 
         override fun openDocumentOutputStream(ctx: Context,
@@ -48,7 +48,7 @@ sealed class Directory {
         }
     }
 
-    class DocumentFile(val uri: Uri) : Directory() {
+    class DocumentFile(private val uri: Uri) : Directory() {
         private fun isValidDirectory(
                 dir: android.support.v4.provider.DocumentFile): Boolean {
             return dir.isDirectory && dir.exists()

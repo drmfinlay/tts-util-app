@@ -83,16 +83,14 @@ class ApplicationEx : Application(), OnInitListener {
     val taskInProgress: Boolean
         get () = taskQueue.peek()?.progress in 0..99
 
-    val unfinishedTaskCount: Int
+    private val unfinishedTaskCount: Int
         get() {
             // Determine the total number of unfinished tasks.
             val queueSize = taskQueue.size
             var result = queueSize
-            if (queueSize > 0) {
-                val taskData = taskQueue.peek()
-                if (taskData.progress == 100) result -= 1
-                else if (taskData.progress == -1) result = 0
-            }
+            val taskData = taskQueue.peek()
+            if (taskData?.progress == 100) result -= 1
+            else if (taskData?.progress == -1) result = 0
             return result
         }
 
@@ -192,8 +190,10 @@ class ApplicationEx : Application(), OnInitListener {
         // Note: Exclude persistent data files here if the application ever requires
         // them.
 
-        // Clean up no longer needed internal files.
-        (filesDir.listFiles() + cacheDir.listFiles()).forEach { f ->
+        // Clean up application files that are no longer needed.
+        val filesDirFiles = filesDir.listFiles() ?: arrayOf()
+        val cacheDirFiles = cacheDir.listFiles() ?: arrayOf()
+        for (f in filesDirFiles + cacheDirFiles) {
             if (f.isFile && f.canWrite()) {
                 f.delete()
             }
@@ -375,8 +375,7 @@ class ApplicationEx : Application(), OnInitListener {
             TTS_BUSY -> {
                 // Inform the user that the application is currently busy performing
                 // another operation.
-                val taskId = taskQueue.peek()?.taskId
-                val currentTaskTextId = when (taskId) {
+                val currentTaskTextId = when (taskQueue.peek()?.taskId) {
                     TASK_ID_READ_TEXT ->
                         R.string.reading_notification_title
                     TASK_ID_WRITE_FILE ->
@@ -488,7 +487,7 @@ class ApplicationEx : Application(), OnInitListener {
         val totalUnfinishedTasks = remainingTasks + unfinishedTaskCount
 
         // Post a progress notification, if necessary.
-        if (notificationsEnabled) {
+        if (notificationsEnabled && taskData != null) {
             postNotification(taskData, totalUnfinishedTasks)
         }
 
@@ -508,8 +507,8 @@ class ApplicationEx : Application(), OnInitListener {
         // If the task finished successfully and there are more tasks in the queue,
         // then start the next one.  If the task finished unsuccessfully, clear the
         // queue.
-        if (progress == 100 && taskQueue.size > 0) {
-            val nextTaskData = taskQueue.peek()
+        val nextTaskData = taskQueue.peek()
+        if (progress == 100 && nextTaskData != null) {
             val result = beginTaskOrNotify(nextTaskData, true)
             handleTTSOperationResult(result)
         } else if (progress == -1) {
@@ -663,7 +662,7 @@ class ApplicationEx : Application(), OnInitListener {
                 observer.notifyProgress(-1, taskData.taskId, 0)
             }
         } else {
-            val item1 = taskQueue.peek()
+            val item1: TaskData = taskQueue.peek()!!
             observer.notifyProgress(item1.progress, item1.taskId, 0)
             result = SUCCESS
         }

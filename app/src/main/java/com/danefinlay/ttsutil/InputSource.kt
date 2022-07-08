@@ -50,8 +50,12 @@ sealed class InputSource(val description: kotlin.CharSequence) {
         private val file: File?
 
         init {
-            if (uri != null && uri.scheme == "file") file = File(uri.path)
-            else file = null
+            val uriPath = uri?.path
+            if (uriPath != null && uri?.scheme == "file") {
+                file = File(uriPath)
+            } else {
+                file = null
+            }
         }
 
         override fun isSourceAvailable(ctx: Context): Boolean {
