@@ -28,9 +28,9 @@ import android.os.Build
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.speech.tts.TextToSpeech.LANG_MISSING_DATA
-import android.support.annotation.RequiresApi
-import android.support.v4.app.Fragment
-import android.support.v4.provider.DocumentFile
+import androidx.annotation.RequiresApi
+import androidx.fragment.app.Fragment
+import androidx.documentfile.provider.DocumentFile
 import com.danefinlay.ttsutil.*
 import org.jetbrains.anko.AlertDialogBuilder
 import org.jetbrains.anko.longToast
@@ -111,10 +111,10 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
         }
     }
 
-    override fun onSaveInstanceState(outState: Bundle?) {
+    override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         // Save data.
-        outState?.run {
+        outState.run {
             putParcelable("mLastStatusUpdate", mLastStatusUpdate)
             putParcelable("mLastChosenFileEvent", mLastChosenFileEvent)
             putParcelable("mLastChosenDirEvent", mLastChosenDirEvent)

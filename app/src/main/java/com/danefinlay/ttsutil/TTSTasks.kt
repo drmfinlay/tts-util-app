@@ -31,8 +31,8 @@ import android.speech.tts.TextToSpeech
 import android.speech.tts.TextToSpeech.*
 import android.speech.tts.TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID
 import android.speech.tts.UtteranceProgressListener
-import android.support.annotation.CallSuper
-import android.support.v7.preference.PreferenceManager
+import androidx.annotation.CallSuper
+import androidx.preference.PreferenceManager
 import org.jetbrains.anko.*
 import java.io.*
 import java.lang.StringBuilder
@@ -175,7 +175,7 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
 
     private fun filterChar(char: Char): Boolean {
         // Check for hash, if appropriate.
-        return filterHashes && char.toInt() == 0x23
+        return filterHashes && char.code == 0x23
     }
 
     private fun filterWord(word: String): Boolean {
@@ -184,7 +184,7 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
         // Check for web hyperlinks, if appropriate.
         if (filterWebLinks) {
             // Check prefixes first as an optimization.
-            val lowerCaseWord = word.toLowerCase(Locale.ROOT)
+            val lowerCaseWord = word.lowercase(Locale.ROOT)
             for (prefix in listOf("http://", "https://")) {
                 result = lowerCaseWord.startsWith(prefix)
                 if (result) break
@@ -200,7 +200,7 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
 
         // Check for mailto hyperlinks, if appropriate.
         if (!result && filterMailToLinks) {
-            val lowerCaseWord = word.toLowerCase(Locale.ROOT)
+            val lowerCaseWord = word.lowercase(Locale.ROOT)
             result = try { MailTo.parse(lowerCaseWord); true }
             catch (e: ParseException) { false }
         }
@@ -264,7 +264,7 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
             // Only add regular characters, not ones which are to be replaced with
             // silence.
             val char = byte.toChar()
-            silenceDuration = delimitersToSilenceMap[char.toInt()] ?: 0L
+            silenceDuration = delimitersToSilenceMap[char.code] ?: 0L
             if (silenceDuration == 0L) buffer.add(char)
             else if (silenceDuration > 0) {
                 // There should be at least one non-delimiting, non-whitespace
@@ -275,7 +275,7 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
                 if (byte in endOfTextDelimiters) {
                     val lastChar = buffer.lastOrNull()
                     if (lastChar != null && !lastChar.isWhitespace() &&
-                            lastChar.toInt() !in delimitersToSilenceMap) break
+                            lastChar.code !in delimitersToSilenceMap) break
                 }
 
                 // This is a whitespace delimiter: break.

@@ -24,7 +24,7 @@ import android.os.Build
 import android.speech.tts.TextToSpeech
 import android.speech.tts.TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED
 import android.speech.tts.Voice
-import android.support.annotation.RequiresApi
+import androidx.annotation.RequiresApi
 //import android.util.Log
 import java.util.*
 

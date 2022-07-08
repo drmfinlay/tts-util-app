@@ -20,7 +20,7 @@
 
 package com.danefinlay.ttsutil
 
-import android.support.annotation.CallSuper
+import androidx.annotation.CallSuper
 import java.io.*
 import java.nio.ByteBuffer
 import java.nio.ByteOrder.LITTLE_ENDIAN
@@ -38,13 +38,13 @@ private fun ByteArray.toLEByteBuffer(): ByteBuffer {
 }
 
 private fun ByteArray.toAsciiString(): String {
-    return fold("") { acc, i -> acc + i.toChar() }
+    return fold("") { acc, i -> acc + Char(i.toInt()) }
 }
 
 private fun String.toByteArray(): ByteArray {
     val buffer = ByteBuffer.allocate(this.length)
     for (i in 0 until this.length) {
-        val asciiChar = this[i].toByte()
+        val asciiChar = this[i].code.toByte()
         buffer.put(asciiChar)
     }
     return buffer.array()

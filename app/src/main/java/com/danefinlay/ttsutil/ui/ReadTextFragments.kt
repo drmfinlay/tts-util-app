@@ -29,8 +29,8 @@ import android.os.Environment
 import android.speech.tts.TextToSpeech
 import android.speech.tts.TextToSpeech.QUEUE_ADD
 import android.speech.tts.TextToSpeech.QUEUE_FLUSH
-import android.support.design.widget.TextInputLayout
-import android.support.v7.preference.PreferenceManager
+import com.google.android.material.textfield.TextInputLayout
+import androidx.preference.PreferenceManager
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -38,7 +38,6 @@ import android.widget.ImageButton
 import android.widget.TextView
 import com.danefinlay.ttsutil.*
 import org.jetbrains.anko.*
-import org.jetbrains.anko.support.v4.find
 
 abstract class ReadTextFragmentBase : MyFragment() {
 
@@ -221,6 +220,7 @@ abstract class ReadTextFragmentBase : MyFragment() {
                 waveFilename)
         when (result) {
             UNAVAILABLE_OUT_DIR -> buildUnavailableDirAlertDialog().show()
+            UNWRITABLE_OUT_DIR -> buildUnwritableOutDirAlertDialog().show()
             else -> myApplication.handleTTSOperationResult(result)
         }
     }

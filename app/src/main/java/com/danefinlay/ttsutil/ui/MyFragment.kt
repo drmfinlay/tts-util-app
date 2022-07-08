@@ -4,14 +4,18 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
-import android.support.annotation.CallSuper
-import android.support.v4.app.Fragment
+import android.view.View
+import androidx.annotation.CallSuper
+import androidx.fragment.app.Fragment
 import com.danefinlay.ttsutil.R
 import com.danefinlay.ttsutil.*
 import org.jetbrains.anko.AlertDialogBuilder
 import org.jetbrains.anko.longToast
 
 abstract class MyFragment : Fragment(), FragmentInterface {
+
+    // This useful little function was extracted from Anko (Support.kt).
+    inline fun <reified T : View> find(id: Int): T = view?.findViewById(id) as T
 
     protected val ctx: Context
         get() = this.requireContext()
@@ -67,7 +71,7 @@ abstract class MyFragment : Fragment(), FragmentInterface {
 
     fun withStoragePermission(block: (granted: Boolean) -> Unit) {
         // Check if we have write permission.
-        if (Build.VERSION.SDK_INT >= 23) {
+        if (Build.VERSION.SDK_INT >= 23 && Build.VERSION.SDK_INT < 29) {
             val permission = ctx.checkSelfPermission(
                     Manifest.permission.WRITE_EXTERNAL_STORAGE)
             if (permission != PackageManager.PERMISSION_GRANTED) {
@@ -83,8 +87,8 @@ abstract class MyFragment : Fragment(), FragmentInterface {
                 block(true)
             }
         } else {
-            // No need to check permission before Android 23, so execute the
-            // function.
+            // No need to check permission before Android Marshmallow or after
+            // Android Q, so execute the function.
             block(true)
         }
     }
@@ -136,6 +140,16 @@ abstract class MyFragment : Fragment(), FragmentInterface {
         }
     }
 
+    private fun showDirChooserCompat() {
+        // Choosing the output directory is not possible on versions older than
+        // Android Lollipop (21).
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            activityInterface?.showDirChooser(DIR_SELECT_CONT_CODE)
+        } else {
+            ctx.longToast(R.string.sdk_18_choose_dir_message)
+        }
+    }
+
     protected fun buildUnavailableDirAlertDialog(): AlertDialogBuilder {
         val title = R.string.unavailable_dir_dialog_title
         val message = R.string.unavailable_dir_dialog_message
@@ -143,15 +157,22 @@ abstract class MyFragment : Fragment(), FragmentInterface {
             title(title)
             message(message)
             positiveButton(R.string.alert_positive_message_1) {
-                // Choosing the output directory is not possible on versions older
-                // than Android Lollipop (21).
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    activityInterface?.showDirChooser(DIR_SELECT_CODE)
-                } else {
-                    ctx.longToast(R.string.sdk_18_choose_dir_message)
-                }
+                showDirChooserCompat()
             }
             negativeButton(R.string.alert_negative_message_1)
+        }
+    }
+
+    protected fun buildUnwritableOutDirAlertDialog(): AlertDialogBuilder {
+        val title = R.string.unwritable_out_dir_dialog_title
+        val message = R.string.unwritable_out_dir_dialog_message
+        return AlertDialogBuilder(ctx).apply {
+            title(title)
+            message(message)
+            positiveButton(R.string.alert_positive_message_2) {
+                showDirChooserCompat()
+            }
+            negativeButton(R.string.alert_negative_message_2)
         }
     }
 

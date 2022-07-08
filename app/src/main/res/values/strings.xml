@@ -93,6 +93,8 @@
     <string name="no_file_chosen_dialog_message">No file has been chosen.\n\nWould you like to choose one?</string>
     <string name="unavailable_dir_dialog_title">Directory not found</string>
     <string name="unavailable_dir_dialog_message">The specified output directory could not be found.  Maybe it has been deleted or renamed?\n\nChoose another?</string>
+    <string name="unwritable_out_dir_dialog_title">Unwritable output directory</string>
+    <string name="unwritable_out_dir_dialog_message">The application cannot create files in the current output directory.\n\nWould you like to choose a different directory?</string>
     <string name="write_to_file_alert_title">Write to Wave File</string>
     <string name="write_to_file_alert_message_1">The current file is \"%1$s\". The content of this file will be synthesized, written to \"%2$s\" and placed into %3$s.\n\nIs this okay?</string>
     <string name="write_to_file_alert_message_2">The content of \"%1$s\" and %2$d other %3$s will be synthesized into wave files and placed into %4$s.\n\nIs this okay?</string>
@@ -144,6 +146,7 @@
     <string name="tts_busy_message">Cannot perform operation: %1$s.</string>
     <string name="unavailable_out_dir_message">The specified output directory could not be found.</string>
     <string name="unavailable_input_src_message">Cannot read from the selected file.</string>
+    <string name="unwritable_out_dir_message">Cannot write to the output file.</string>
     <string name="synthesis_error_msg_generic">There was an error during text synthesis.</string>
     <string name="synthesis_error_msg_synthesis">The text-to-speech engine failed to synthesize the text.</string>
     <string name="synthesis_error_msg_service">The text-to-speech service failed unexpectedly.</string>

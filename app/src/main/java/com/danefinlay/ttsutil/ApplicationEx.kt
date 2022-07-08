@@ -31,8 +31,8 @@ import android.os.Build
 import android.speech.tts.TextToSpeech
 import android.speech.tts.TextToSpeech.OnInitListener
 import android.speech.tts.TextToSpeech.QUEUE_FLUSH
-import android.support.v4.app.NotificationCompat
-import android.support.v7.preference.PreferenceManager
+import androidx.core.app.NotificationCompat
+import androidx.preference.PreferenceManager
 import org.jetbrains.anko.*
 import java.io.InputStream
 import java.util.*
@@ -365,6 +365,7 @@ class ApplicationEx : Application(), OnInitListener {
     }
 
     fun handleTTSOperationResult(result: Int) {
+        // FIXME Cleanup this repetitive function.
         when (result) {
             TTS_NOT_READY -> {
                 val defaultMessage = getString(R.string.tts_not_ready_message)
@@ -394,6 +395,10 @@ class ApplicationEx : Application(), OnInitListener {
             }
             UNAVAILABLE_INPUT_SRC -> {
                 val message = getString(R.string.unavailable_input_src_message)
+                runOnUiThread { longToast(message) }
+            }
+            UNWRITABLE_OUT_DIR -> {
+                val message = getString(R.string.unwritable_out_dir_message)
                 runOnUiThread { longToast(message) }
             }
             ZERO_LENGTH_INPUT -> {
@@ -573,10 +578,12 @@ class ApplicationEx : Application(), OnInitListener {
         // Verify that the input stream is at least one byte long.
         if (inputSize == 0L) return ZERO_LENGTH_INPUT
 
-        // Verify that the out directory exists.  Return early if it does not.
+        // Verify that the out directory exists and that we have permission to
+        // create files in it.
         val outDirectory = taskData.outDirectory
         val waveFilename = taskData.waveFilename
         if (!outDirectory.exists(this)) return UNAVAILABLE_OUT_DIR
+        if (!outDirectory.canWrite(this)) return UNWRITABLE_OUT_DIR
 
         // Retrieve the mutable file list initialized earlier on.  This list will
         // be used by the next task if this one is successful.
@@ -604,7 +611,7 @@ class ApplicationEx : Application(), OnInitListener {
         val waveFilename = prevTaskData.waveFilename
         if (!outDirectory.exists(this)) return UNAVAILABLE_OUT_DIR
         val outputStream = outDirectory.openDocumentOutputStream(this,
-                waveFilename, "audio/x-wav") ?: return UNAVAILABLE_OUT_DIR
+                waveFilename, "audio/x-wav") ?: return UNWRITABLE_OUT_DIR
 
         // Initialize the task, begin it asynchronously and return.
         val task = ProcessWaveFilesTask(this, asyncProgressObserver,
