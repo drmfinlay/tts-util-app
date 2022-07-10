@@ -19,16 +19,16 @@
    -->
 
 <resources>
-    <plurals name="files">
-        <item quantity="one">file</item>
-        <item quantity="other">files</item>
-    </plurals>
-    <plurals name="tasks">
-        <item quantity="one">task</item>
-        <item quantity="other">tasks</item>
-    </plurals>
-    <plurals name="characters">
-        <item quantity="one">character</item>
-        <item quantity="other">characters</item>
-    </plurals>
+<plurals name="files">
+    <item quantity="one">文件</item>
+    <item quantity="other">文件</item>
+</plurals>
+<plurals name="tasks">
+    <item quantity="one">任务</item>
+    <item quantity="other">任务</item>
+</plurals>
+<plurals name="characters">
+    <item quantity="one">文本</item>
+    <item quantity="other">文本</item>
+</plurals>
 </resources>
