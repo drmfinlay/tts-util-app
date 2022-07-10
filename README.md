@@ -2,6 +2,7 @@ TTS Util
 ========
 
 *TTS Util* is a utility app for synthesising text into audible speech using Android's text-to-speech framework.
+[中文Readme](README_CN.md)
 
 [<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png"
      alt="Get it on F-Droid"
