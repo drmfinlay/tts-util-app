@@ -66,6 +66,11 @@ class AboutActivity : MyAppCompatActivity() {
                 R.string.link_anko, apache2)
         setAckText(R.id.about_ack_free_otp, R.string.about_ack_free_otp,
                 R.string.link_freeotp, apache2)
+
+        // Set links under the Translations heading.
+        val contribLink = getString(R.string.link_mahongyin)
+        val linkText = getString(R.string.about_translations_chinese, contribLink)
+        find<TextView>(R.id.about_translations_chinese).setLinkText(linkText)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {

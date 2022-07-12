@@ -32,6 +32,13 @@ Building
 
 *TTS Util* can be built by importing the project into [Android Studio](https://developer.android.com/studio). It can also be [built from the command-line](https://developer.android.com/studio/build/building-cmdline.html) with Gradle if you don't use Android Studio.
 
+Translations
+------------
+
+Currently, this app is available in English and Chinese (Simplified).  The Chinese translation was provided by GitHub user [Mahongyin](https://github.com/1976222027).
+
+Any help in translating this app's resource strings and/or its documentation into other languages would be appreciated.
+
 Licence
 -------
 

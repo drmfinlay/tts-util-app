@@ -118,5 +118,34 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/about_ack_anko"/>
 
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/about_translations_title"
+            android:text="@string/about_translations_title"
+            android:textAppearance="@style/TextAppearance.AppCompat.Title"
+            android:layout_marginTop="16dp"
+            app:layout_constraintTop_toBottomOf="@id/about_ack_free_otp"
+            app:layout_constraintStart_toStartOf="parent"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/about_translations_msg"
+            android:text="@string/about_translations_msg"
+            android:textAppearance="@style/TextAppearance.AppCompat.Body2"
+            app:layout_constraintTop_toBottomOf="@id/about_translations_title"
+            app:layout_constraintStart_toStartOf="parent"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/about_translations_chinese"
+            android:text="@string/about_translations_chinese"
+            android:textAppearance="@style/TextAppearance.AppCompat.Body2"
+            android:layout_marginTop="8dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/about_translations_msg"/>
+
     </android.support.constraint.ConstraintLayout>
 </ScrollView>

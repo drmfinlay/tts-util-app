@@ -76,6 +76,10 @@
     <string name="link_kotlin" translatable="false">&lt;a href=&quot;https://kotlinlang.org/&quot;&gt;Kotlin&lt;/a&gt;</string>
     <string name="about_ack_free_otp">%1$s (%2$s) — portions used to create this About section</string>
     <string name="link_freeotp" translatable="false">&lt;a href=&quot;https://freeotp.github.io&quot;&gt;FreeOTP&lt;/a&gt;</string>
+    <string name="about_translations_title">Translations</string>
+    <string name="about_translations_msg">TTS Util has been translated into the following languages:</string>
+    <string name="about_translations_chinese">&#8226; Chinese (Simplified).  Translation by GitHub user %1$s.</string>
+    <string name="link_mahongyin" translatable="false">&lt;a href=&quot;https://github.com/1976222027&quot;&gt;Mahongyin&lt;/a&gt;</string>
 
     <!--Dialog strings.-->
     <string name="alert_positive_message_1">Okay</string>
