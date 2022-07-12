@@ -36,10 +36,10 @@
     <string name="about_app">文字转语音工具是根据 %1$s 许可证获得许可的免费软件。应用程序源代码可从 %2$s 获得。</string>
     <string name="about_acknowledgements_title">致谢和许可</string>
     <string name="about_acknowledgements_msg">在此应用程序的开发中使用了以下项目的一部分：</string>
-    <string name="about_ack_material_design_icons">%1$s (%2$s) — 此应用程序中使用的图标</string>
-    <string name="about_ack_anko">%1$s (%2$s) — 愉快的 Android 应用程序开发</string>
-    <string name="about_ack_kotlin">%1$s (%2$s) — 使用的编程语言</string>
-    <string name="about_ack_free_otp">%1$s (%2$s) — 用于创建此 About 部分的部分</string>
+    <string name="about_ack_material_design_icons">&#8226; %1$s (%2$s) — 此应用程序中使用的图标</string>
+    <string name="about_ack_anko">&#8226; %1$s (%2$s) — 愉快的 Android 应用程序开发</string>
+    <string name="about_ack_kotlin">&#8226; %1$s (%2$s) — 使用的编程语言</string>
+    <string name="about_ack_free_otp">&#8226; %1$s (%2$s) — 用于创建此 About 部分的部分</string>
     <string name="alert_positive_message_1">确认</string>
     <string name="alert_negative_message_1">取消</string>
     <string name="alert_positive_message_2">好的</string>

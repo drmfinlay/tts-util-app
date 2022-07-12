@@ -68,13 +68,13 @@
     <string name="link_source_code" translatable="false">&lt;a href=&quot;https://github.com/Danesprite/tts-util-app&quot;&gt;GitHub&lt;/a&gt;</string>
     <string name="about_acknowledgements_title">Acknowledgments &amp; Licenses</string>
     <string name="about_acknowledgements_msg">Parts of the following projects were used in the development of this application:</string>
-    <string name="about_ack_material_design_icons">%1$s (%2$s) — icons used in this application</string>
+    <string name="about_ack_material_design_icons">&#8226; %1$s (%2$s) — icons used in this application</string>
     <string name="link_material_design_icons" translatable="false">&lt;a href=&quot;https://material.io/resources/icons/&quot;&gt;Google\'s Material Design Icons&lt;/a&gt;</string>
-    <string name="about_ack_anko">%1$s (%2$s) — Pleasant Android application development</string>
+    <string name="about_ack_anko">&#8226; %1$s (%2$s) — Pleasant Android application development</string>
     <string name="link_anko" translatable="false">&lt;a href=&quot;https://github.com/Kotlin/anko&quot;&gt;Anko&lt;/a&gt;</string>
-    <string name="about_ack_kotlin">%1$s (%2$s) — programming language used</string>
+    <string name="about_ack_kotlin">&#8226; %1$s (%2$s) — programming language used</string>
     <string name="link_kotlin" translatable="false">&lt;a href=&quot;https://kotlinlang.org/&quot;&gt;Kotlin&lt;/a&gt;</string>
-    <string name="about_ack_free_otp">%1$s (%2$s) — portions used to create this About section</string>
+    <string name="about_ack_free_otp">&#8226; %1$s (%2$s) — portions used to create this About section</string>
     <string name="link_freeotp" translatable="false">&lt;a href=&quot;https://freeotp.github.io&quot;&gt;FreeOTP&lt;/a&gt;</string>
     <string name="about_translations_title">Translations</string>
     <string name="about_translations_msg">TTS Util has been translated into the following languages:</string>
