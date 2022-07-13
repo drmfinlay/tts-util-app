@@ -31,8 +31,8 @@ import android.os.Build
 import android.speech.tts.TextToSpeech
 import android.speech.tts.TextToSpeech.OnInitListener
 import android.speech.tts.TextToSpeech.QUEUE_FLUSH
-import android.support.v4.app.NotificationCompat
-import android.support.v7.preference.PreferenceManager
+import androidx.core.app.NotificationCompat
+import androidx.preference.PreferenceManager
 import org.jetbrains.anko.*
 import java.io.InputStream
 import java.util.*
@@ -43,9 +43,7 @@ class ApplicationEx : Application(), OnInitListener {
     var mTTS: TextToSpeech? = null
         private set
 
-    var ttsInitializing: Boolean = false
-        private set
-
+    private var ttsInitialized: Boolean = false
     private var lastAttemptedTaskId: Int? = null
     private var currentTask: Task? = null
     private val taskQueue = ArrayDeque<TaskData>()
@@ -57,7 +55,6 @@ class ApplicationEx : Application(), OnInitListener {
 
     @Volatile
     private var notificationsEnabled: Boolean = false
-
 
     private val asyncProgressObserver = object : TaskProgressObserver {
         override fun notifyProgress(progress: Int, taskId: Int,
@@ -86,16 +83,14 @@ class ApplicationEx : Application(), OnInitListener {
     val taskInProgress: Boolean
         get () = taskQueue.peek()?.progress in 0..99
 
-    val unfinishedTaskCount: Int
+    private val unfinishedTaskCount: Int
         get() {
             // Determine the total number of unfinished tasks.
             val queueSize = taskQueue.size
             var result = queueSize
-            if (queueSize > 0) {
-                val taskData = taskQueue.peek()
-                if (taskData.progress == 100) result -= 1
-                else if (taskData.progress == -1) result = 0
-            }
+            val taskData = taskQueue.peek()
+            if (taskData?.progress == 100) result -= 1
+            else if (taskData?.progress == -1) result = 0
             return result
         }
 
@@ -195,8 +190,10 @@ class ApplicationEx : Application(), OnInitListener {
         // Note: Exclude persistent data files here if the application ever requires
         // them.
 
-        // Clean up no longer needed internal files.
-        (filesDir.listFiles() + cacheDir.listFiles()).forEach { f ->
+        // Clean up application files that are no longer needed.
+        val filesDirFiles = filesDir.listFiles() ?: arrayOf()
+        val cacheDirFiles = cacheDir.listFiles() ?: arrayOf()
+        for (f in filesDirFiles + cacheDirFiles) {
             if (f.isFile && f.canWrite()) {
                 f.delete()
             }
@@ -222,7 +219,6 @@ class ApplicationEx : Application(), OnInitListener {
         runOnUiThread { toast(R.string.tts_initializing_message) }
 
         // Begin text-to-speech initialization.
-        ttsInitializing = true
         mTTS = TextToSpeech(this, wrappedListener, engineName)
     }
 
@@ -331,7 +327,7 @@ class ApplicationEx : Application(), OnInitListener {
         }
 
         // Initialization complete.
-        ttsInitializing = false
+        ttsInitialized = true
 
         // If there are one or more tasks in the queue, begin processing.
         val taskData = taskQueue.peek()
@@ -369,6 +365,7 @@ class ApplicationEx : Application(), OnInitListener {
     }
 
     fun handleTTSOperationResult(result: Int) {
+        // FIXME Cleanup this repetitive function.
         when (result) {
             TTS_NOT_READY -> {
                 val defaultMessage = getString(R.string.tts_not_ready_message)
@@ -379,8 +376,7 @@ class ApplicationEx : Application(), OnInitListener {
             TTS_BUSY -> {
                 // Inform the user that the application is currently busy performing
                 // another operation.
-                val taskId = taskQueue.peek()?.taskId
-                val currentTaskTextId = when (taskId) {
+                val currentTaskTextId = when (taskQueue.peek()?.taskId) {
                     TASK_ID_READ_TEXT ->
                         R.string.reading_notification_title
                     TASK_ID_WRITE_FILE ->
@@ -401,6 +397,10 @@ class ApplicationEx : Application(), OnInitListener {
                 val message = getString(R.string.unavailable_input_src_message)
                 runOnUiThread { longToast(message) }
             }
+            UNWRITABLE_OUT_DIR -> {
+                val message = getString(R.string.unwritable_out_dir_message)
+                runOnUiThread { longToast(message) }
+            }
             ZERO_LENGTH_INPUT -> {
                 val messageId = when (lastAttemptedTaskId) {
                     TASK_ID_READ_TEXT -> R.string.cannot_read_empty_input_message
@@ -417,7 +417,7 @@ class ApplicationEx : Application(), OnInitListener {
         stopSpeech()
         mTTS?.shutdown()
         mTTS = null
-        ttsInitializing = false
+        ttsInitialized = false
         taskQueue.clear()
         currentTask = null
 
@@ -492,7 +492,7 @@ class ApplicationEx : Application(), OnInitListener {
         val totalUnfinishedTasks = remainingTasks + unfinishedTaskCount
 
         // Post a progress notification, if necessary.
-        if (notificationsEnabled) {
+        if (notificationsEnabled && taskData != null) {
             postNotification(taskData, totalUnfinishedTasks)
         }
 
@@ -512,8 +512,8 @@ class ApplicationEx : Application(), OnInitListener {
         // If the task finished successfully and there are more tasks in the queue,
         // then start the next one.  If the task finished unsuccessfully, clear the
         // queue.
-        if (progress == 100 && taskQueue.size > 0) {
-            val nextTaskData = taskQueue.peek()
+        val nextTaskData = taskQueue.peek()
+        if (progress == 100 && nextTaskData != null) {
             val result = beginTaskOrNotify(nextTaskData, true)
             handleTTSOperationResult(result)
         } else if (progress == -1) {
@@ -578,10 +578,12 @@ class ApplicationEx : Application(), OnInitListener {
         // Verify that the input stream is at least one byte long.
         if (inputSize == 0L) return ZERO_LENGTH_INPUT
 
-        // Verify that the out directory exists.  Return early if it does not.
+        // Verify that the out directory exists and that we have permission to
+        // create files in it.
         val outDirectory = taskData.outDirectory
         val waveFilename = taskData.waveFilename
         if (!outDirectory.exists(this)) return UNAVAILABLE_OUT_DIR
+        if (!outDirectory.canWrite(this)) return UNWRITABLE_OUT_DIR
 
         // Retrieve the mutable file list initialized earlier on.  This list will
         // be used by the next task if this one is successful.
@@ -609,7 +611,7 @@ class ApplicationEx : Application(), OnInitListener {
         val waveFilename = prevTaskData.waveFilename
         if (!outDirectory.exists(this)) return UNAVAILABLE_OUT_DIR
         val outputStream = outDirectory.openDocumentOutputStream(this,
-                waveFilename, "audio/x-wav") ?: return UNAVAILABLE_OUT_DIR
+                waveFilename, "audio/x-wav") ?: return UNWRITABLE_OUT_DIR
 
         // Initialize the task, begin it asynchronously and return.
         val task = ProcessWaveFilesTask(this, asyncProgressObserver,
@@ -621,13 +623,13 @@ class ApplicationEx : Application(), OnInitListener {
 
     private fun beginTaskOrNotify(taskData: TaskData, priorTask: Boolean): Int {
         // Return early if TTS is not yet initialized.
-        if (ttsInitializing) return SUCCESS
+        if (!ttsInitialized) return SUCCESS
 
-        // If the specified task is at the head of the queue, begin it associated
-        // with.  Otherwise, notify the observer.
+        // If the specified task is at the head of the queue, begin it.
+        // Otherwise, notify the observer.
         val observer = asyncProgressObserver
         val result: Int
-        if (taskQueue.peek() === taskData) {
+        if (taskQueue.peek() === taskData && ttsInitialized) {
             // Begin the task, taking note of information that might be used later.
             val infoMessageId: Int
             val srcDescription: CharSequence
@@ -667,7 +669,7 @@ class ApplicationEx : Application(), OnInitListener {
                 observer.notifyProgress(-1, taskData.taskId, 0)
             }
         } else {
-            val item1 = taskQueue.peek()
+            val item1: TaskData = taskQueue.peek()!!
             observer.notifyProgress(item1.progress, item1.taskId, 0)
             result = SUCCESS
         }

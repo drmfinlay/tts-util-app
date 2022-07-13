@@ -32,8 +32,6 @@ import android.widget.ImageButton
 import android.widget.TextView
 import com.danefinlay.ttsutil.*
 import org.jetbrains.anko.*
-import org.jetbrains.anko.support.v4.find
-
 
 abstract class FileChooserFragment : MyFragment() {
 
@@ -214,7 +212,10 @@ class ReadFilesFragment : FileChooserFragment() {
             when (result) {
                 UNAVAILABLE_INPUT_SRC ->
                     buildUnavailableFileAlertDialog(event.uriList).show()
-                UNAVAILABLE_OUT_DIR -> buildUnavailableDirAlertDialog().show()
+                UNAVAILABLE_OUT_DIR ->
+                    buildUnavailableDirAlertDialog().show()
+                UNWRITABLE_OUT_DIR ->
+                    buildUnwritableOutDirAlertDialog().show()
                 else -> myApplication.handleTTSOperationResult(result)
             }
             if (result != SUCCESS) break

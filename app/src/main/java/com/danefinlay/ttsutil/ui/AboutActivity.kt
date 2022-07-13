@@ -21,7 +21,7 @@
 package com.danefinlay.ttsutil.ui
 
 import android.os.Bundle
-import android.support.v4.content.pm.PackageInfoCompat
+import androidx.core.content.pm.PackageInfoCompat
 import android.view.MenuItem
 import android.widget.TextView
 import com.danefinlay.ttsutil.APP_NAME

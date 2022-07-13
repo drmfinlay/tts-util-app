@@ -1,7 +1,7 @@
 TTS Util
 ========
 
-*TTS Util* is a utility app for synthesising text into audible speech using Android's text-to-speech framework.
+*TTS Util* is a utility Android app for synthesising text into audible speech.
 [中文Readme](README_CN.md)
 
 [<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png"
@@ -14,18 +14,17 @@ TTS Util
 Features
 --------
 
-- Read input text, clipboard text or text files using text-to-speech.
-- Create speech wave files from input text, clipboard text or text files.
-- Share text to read using share menu entries.
-- Read clipboard text using launcher shortcuts (requires Android 8 or higher).
-- Configurable app-specific text-to-speech settings: engine, voice, pitch and speech rate.
-- Supports any text-to-speech engine that uses Android's TTS framework.
-- Supports Android 5.0 and above.
+- Read or create wave files from input text, clipboard text or text files using text-to-speech.
+- Configure app-specific text-to-speech settings: engine, voice, pitch and speech rate.
+- Configure silence for line endings, sentences, exclamations and questions.
+- Configure text filters to omit certain text elements prior to processing.
+- A read-on-input mode for reading letters and words as they are typed.
+- Buttons for retrieving commonly read text.
 
-TTS Engine Requirement
-----------------------
-
-This app is **not** itself a TTS engine. A separate text-to-speech engine app is **required** in order for this app to function. Most devices should come with one preinstalled.
+Requirements
+------------
+- A device running Android version 4.0.3 or higher.
+- A text-to-speech engine app that uses Android's text-to-speech framework.
 
 Building
 --------
@@ -42,4 +41,4 @@ Any help in translating this app's resource strings and/or its documentation int
 Licence
 -------
 
-TTS Util is free software licensed under the [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0.html) licence.
+TTS Util is open source software licensed under the [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0.html) licence.

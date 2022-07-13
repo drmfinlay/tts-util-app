@@ -20,7 +20,7 @@
 
 package com.danefinlay.ttsutil.ui
 
-import android.support.v4.text.HtmlCompat
+import androidx.core.text.HtmlCompat
 import android.text.method.LinkMovementMethod
 import android.widget.TextView
 

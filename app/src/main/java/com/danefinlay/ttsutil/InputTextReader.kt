@@ -55,7 +55,7 @@ import android.text.TextWatcher
     protected open fun charIsDelimiter(char: Char): Boolean {
         // Note: Since it is not too much trouble, we include the Unicode
         // "Halfwidth and Fullwidth Forms" for each specific delimiter.
-        val cp = char.toInt()
+        val cp = char.code
         return     cp == 0x0021 || cp == 0xff01 // Exclamation marks.
                 || cp == 0x0022 || cp == 0xff02 // Quotation marks.
                 || cp == 0x002c || cp == 0xff0c // Commas.

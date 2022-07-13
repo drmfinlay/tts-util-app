@@ -26,12 +26,13 @@ import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.speech.tts.TextToSpeech.QUEUE_FLUSH
 import android.speech.tts.Voice
-import android.support.annotation.RequiresApi
-import android.support.v4.app.Fragment
-import android.support.v7.app.AlertDialog
-import android.support.v7.preference.Preference
-import android.support.v7.preference.PreferenceFragmentCompat
-import android.support.v7.view.ContextThemeWrapper
+import androidx.annotation.RequiresApi
+import androidx.fragment.app.Fragment
+import androidx.appcompat.app.AlertDialog
+import androidx.preference.Preference
+import androidx.preference.PreferenceFragmentCompat
+import androidx.appcompat.view.ContextThemeWrapper
+import androidx.preference.PreferenceManager
 import com.danefinlay.ttsutil.*
 import org.jetbrains.anko.longToast
 import org.jetbrains.anko.runOnUiThread
@@ -42,7 +43,7 @@ import org.jetbrains.anko.toast
  */
 class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
 
-    private val Fragment.myApplication: ApplicationEx
+    private val myApplication: ApplicationEx
         get() = requireContext().applicationContext as ApplicationEx
 
     private val activityInterface: ActivityInterface?
@@ -62,7 +63,7 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
         setPreferencesFromResource(R.xml.prefs, rootKey)
     }
 
-    override fun onPreferenceTreeClick(preference: Preference?): Boolean {
+    override fun onPreferenceTreeClick(preference: Preference): Boolean {
         // Handle TTS engine preferences.
         if (handleTtsEnginePrefs(preference)) return true
 
@@ -176,8 +177,9 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
         if (!key.startsWith("pref_tts")) return false
 
         // Handle opening the system settings.
+        val application: ApplicationEx = myApplication
         if (key == "pref_tts_system_settings") {
-            myApplication.openSystemTTSSettings(requireContext())
+            application.openSystemTTSSettings(requireContext())
             return true
         }
 
@@ -187,20 +189,23 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
         // voice, pitch and/or speech rate during long-running reading or file
         // synthesis tasks.
         val block: (TextToSpeech?) -> Boolean = { tts ->
-            if (tts != null) when (key) {
-                "pref_tts_engine" -> handleSetTtsEngine(key, tts)
-                "pref_tts_voice" -> handleSetTtsVoice(key, tts)
-                "pref_tts_pitch" -> handleSetTtsPitch(key, tts)
-                "pref_tts_speech_rate" -> handleSetTtsSpeechRate(key, tts)
-                else -> false  // not a TTS engine preference.
-            }
-            else {
-                myApplication.handleTTSOperationResult(TTS_NOT_READY)
+            if (tts != null) {
+                val prefs = PreferenceManager.getDefaultSharedPreferences(application)
+                when (key) {
+                    "pref_tts_engine" -> handleSetTtsEngine(key, prefs, tts)
+                    "pref_tts_voice" -> handleSetTtsVoice(key, prefs, tts)
+                    "pref_tts_pitch" -> handleSetTtsPitch(key, prefs, tts)
+                    "pref_tts_speech_rate" -> handleSetTtsSpeechRate(key, prefs, tts)
+                    else -> false  // not a TTS engine preference.
+                }
+            } else {
+                application.handleTTSOperationResult(TTS_NOT_READY)
                 true
             }
         }
-        if (myApplication.mTTS != null) {
-            return block(myApplication.mTTS)
+        val tts = application.mTTS
+        if (tts != null) {
+            return block(tts)
         } else {
             activityInterface?.initializeTTS {
                 context?.runOnUiThread { block(myApplication.mTTS) }
@@ -270,6 +275,7 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
     }
 
     private fun handleSetTtsEngine(preferenceKey: String,
+                                   prefs: SharedPreferences,
                                    tts: TextToSpeech): Boolean {
         // Get a list of the available TTS engines.
         val engines = tts.engines?.toList()?.sortedBy { it.label } ?: return true
@@ -277,7 +283,6 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
         val enginePackages = engines.map { it.name }
 
         // Get the previous or default engine.
-        val prefs = preferenceManager.sharedPreferences
         val currentValue = prefs.getString(preferenceKey, tts.defaultEngine)
         val currentIndex = enginePackages.indexOf(currentValue)
 
@@ -367,6 +372,7 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
     }
 
     private fun handleSetTtsVoice(preferenceKey: String,
+                                  prefs: SharedPreferences,
                                   tts: TextToSpeech): Boolean {
         // Return early if this is not Android Lollipop (21) or above.
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
@@ -388,7 +394,6 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
         // Retrieve the previous voice, falling back on the current or default.
         val defaultVoice = tts.defaultVoiceEx
         var currentVoice: Voice? = tts.voiceEx ?: defaultVoice
-        val prefs = preferenceManager.sharedPreferences
         val prevVoiceName = prefs.getString(preferenceKey, currentVoice?.name)
         val prevVoice = voicesList.find { it.name == prevVoiceName }
         if (prevVoice != null) currentVoice = prevVoice
@@ -398,7 +403,9 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
         val voicesByDisplayName = voicesList.groupBy { it.locale.displayName }
         val displayNames = voicesByDisplayName.map { it.value[0].locale }
                 .sortedBy { it.displayLanguage }.map { it.displayName }
-        val currentIndex = displayNames.indexOf(currentVoice?.locale?.displayName)
+        val currentIndex: Int = if (currentVoice == null) -1 else {
+            displayNames.indexOf(currentVoice.locale.displayName)
+        }
 
         // Define callbacks.
         val onItemSelected = { index: Int ->
@@ -459,13 +466,13 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
     }
 
     private fun handleSetTtsPitch(preferenceKey: String,
+                                  prefs: SharedPreferences,
                                   tts: TextToSpeech): Boolean {
         // Define a list of pitch values and their string representations.
         val pitches = listOf(0.25f, 0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f)
         val pitchStrings = pitches.map { it.toString() }
 
         // Get the previous or default pitch value.
-        val prefs = preferenceManager.sharedPreferences
         val currentValue = prefs.getFloat(preferenceKey, 1.0f)
         val currentIndex = pitches.indexOf(currentValue)
 
@@ -511,6 +518,7 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
     }
 
     private fun handleSetTtsSpeechRate(preferenceKey: String,
+                                       prefs: SharedPreferences,
                                        tts: TextToSpeech): Boolean {
         // Define a list of speech rate values and their string representations.
         val speechRates = listOf(0.25f, 0.5f, 0.75f, 1.0f, 1.5f, 2.0f, 2.5f, 3.0f,
@@ -518,7 +526,6 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
         val speechRateStrings = speechRates.map { it.toString() }
 
         // Get the previous or default speech rate value.
-        val prefs = preferenceManager.sharedPreferences
         val currentValue = prefs.getFloat(preferenceKey, 1.0f)
         val currentIndex = speechRates.indexOf(currentValue)
 

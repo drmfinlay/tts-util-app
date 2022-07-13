@@ -33,47 +33,72 @@ import java.io.OutputStream
 
 sealed class Directory {
     abstract fun exists(ctx: Context): Boolean
+    abstract fun canRead(ctx: Context): Boolean
+    abstract fun canWrite(ctx: Context): Boolean
     abstract fun openDocumentOutputStream(ctx: Context,
                                           documentName: String,
                                           mimeType: String): OutputStream?
 
-    class File(val file: java.io.File) : Directory() {
+    class File(private val file: java.io.File) : Directory() {
         override fun exists(ctx: Context): Boolean = file.exists()
+        override fun canRead(ctx: Context): Boolean = file.canRead()
+        override fun canWrite(ctx: Context): Boolean = file.canWrite()
 
         override fun openDocumentOutputStream(ctx: Context,
                                               documentName: String,
-                                              mimeType: String): OutputStream {
+                                              mimeType: String): OutputStream? {
+            // Open an output stream on the specified file, if possible.
             val file = File(file, documentName)
-            return FileOutputStream(file)
+            if (file.canWrite()) {
+                return FileOutputStream(file)
+            } else {
+                return null
+            }
         }
     }
 
-    class DocumentFile(val uri: Uri) : Directory() {
+    class DocumentFile(private val uri: Uri) : Directory() {
+        private fun getDocumentFileDir(ctx: Context):
+                androidx.documentfile.provider.DocumentFile? {
+            return androidx.documentfile.provider.DocumentFile
+                    .fromTreeUri(ctx, uri)
+        }
+
+        override fun canRead(ctx: Context): Boolean {
+            return getDocumentFileDir(ctx)?.canRead() ?: false
+        }
+
+        override fun canWrite(ctx: Context): Boolean {
+            return getDocumentFileDir(ctx)?.canWrite() ?: false
+        }
+
         private fun isValidDirectory(
-                dir: android.support.v4.provider.DocumentFile): Boolean {
+                dir: androidx.documentfile.provider.DocumentFile): Boolean {
             return dir.isDirectory && dir.exists()
         }
 
         override fun exists(ctx: Context): Boolean {
-            val dir = android.support.v4.provider.DocumentFile
-                    .fromTreeUri(ctx, uri)
+            val dir = getDocumentFileDir(ctx)
             return if (dir != null) isValidDirectory(dir) else false
         }
 
         override fun openDocumentOutputStream(ctx: Context,
                                               documentName: String,
                                               mimeType: String): OutputStream? {
-            // Open an output stream on the specified document.
-            val dir = android.support.v4.provider.DocumentFile.fromTreeUri(ctx, uri)
-            if (dir == null || !isValidDirectory(dir)) return null
+            // Get a DocumentFile object using the specified URI.
+            val dir = androidx.documentfile.provider.DocumentFile.fromTreeUri(ctx,
+                    uri)
 
-            // TODO Handle already existing wave files by creating new files:
-            //  '<filename>.wav (1)', <filename>.wav (2), etc.
+            // Return early if the directory is invalid or if we do not have read/
+            // write permission.
+            if (dir == null || !isValidDirectory(dir) || !dir.canRead() ||
+                    !dir.canWrite()) return null
+
             // Create a new file, if necessary.
             var file = dir.findFile(documentName)
             if (file == null) file = dir.createFile(mimeType, documentName)
 
-            // If successful, open and return an output stream.
+            // Open an output stream on the specified document, if possible.
             return file?.uri?.openContentOutputStream(ctx, false)
         }
     }

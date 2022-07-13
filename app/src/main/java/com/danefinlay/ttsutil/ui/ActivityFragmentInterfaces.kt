@@ -22,7 +22,7 @@ package com.danefinlay.ttsutil.ui
 
 import android.os.Build
 import android.speech.tts.TextToSpeech
-import android.support.annotation.RequiresApi
+import androidx.annotation.RequiresApi
 
 /**
  * Interface between fragments and their activity.
