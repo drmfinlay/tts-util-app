@@ -132,8 +132,7 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
     }
 
     override fun initializeTTS(initListener: TextToSpeech.OnInitListener?) {
-        // Initialize TTS, if necessary.  Since this may take some time, inform the
-        // user with a short message.
+        // Initialize TTS, if necessary.
         if (myApplication.mTTS == null) {
             val wrappedListener = TextToSpeech.OnInitListener { status ->
                 this.onInit(status)

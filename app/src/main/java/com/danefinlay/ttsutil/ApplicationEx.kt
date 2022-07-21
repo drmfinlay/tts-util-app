@@ -29,8 +29,7 @@ import android.media.AudioManager
 import android.media.AudioManager.OnAudioFocusChangeListener
 import android.os.Build
 import android.speech.tts.TextToSpeech
-import android.speech.tts.TextToSpeech.OnInitListener
-import android.speech.tts.TextToSpeech.QUEUE_FLUSH
+import android.speech.tts.TextToSpeech.*
 import androidx.core.app.NotificationCompat
 import androidx.preference.PreferenceManager
 import org.jetbrains.anko.*
@@ -44,12 +43,12 @@ class ApplicationEx : Application(), OnInitListener {
         private set
 
     private var ttsInitialized: Boolean = false
+    private var ttsInitErrorMessage: String? = null
     private var lastAttemptedTaskId: Int? = null
     private var currentTask: Task? = null
     private val taskQueue = ArrayDeque<TaskData>()
     private val userTaskExecService by lazy { Executors.newSingleThreadExecutor() }
     private val notifyingExecService by lazy { Executors.newSingleThreadExecutor() }
-    private var errorMessage: String? = null
     private val progressObservers = mutableSetOf<TaskProgressObserver>()
     private var notificationBuilder: NotificationCompat.Builder? = null
 
@@ -164,8 +163,8 @@ class ApplicationEx : Application(), OnInitListener {
     fun enableNotifications() {
         if (notificationsEnabled) return
 
-        // Post the current notification, if any.
-        if (taskQueue.size > 0) notifyingExecService.submit {
+        // Post the current notification, if necessary.
+        if (ttsInitialized && taskQueue.size > 0) notifyingExecService.submit {
             val taskData = taskQueue.peek()
             if (taskData != null) postNotification(taskData, unfinishedTaskCount)
         }
@@ -178,7 +177,7 @@ class ApplicationEx : Application(), OnInitListener {
         if (!notificationsEnabled) return
 
         // Cancel any TTS notifications present, if necessary.
-        if (taskQueue.size > 0) notifyingExecService.submit {
+        if (ttsInitialized && taskQueue.size > 0) notifyingExecService.submit {
             notificationTasks.forEach { notificationManager.cancel(it) }
         }
 
@@ -201,7 +200,9 @@ class ApplicationEx : Application(), OnInitListener {
     }
 
     fun setupTTS(initListener: OnInitListener, preferredEngine: String?) {
-        if (mTTS != null) return
+        // Set initialization variables.
+        ttsInitialized = false
+        ttsInitErrorMessage = null
 
         // Try to get the preferred engine package from shared preferences if
         // it is null.
@@ -213,6 +214,7 @@ class ApplicationEx : Application(), OnInitListener {
         val wrappedListener = OnInitListener { status ->
             this.onInit(status)
             initListener.onInit(status)
+            if (!ttsInitialized) freeTTS()
         }
 
         // Display a message to the user.
@@ -262,7 +264,7 @@ class ApplicationEx : Application(), OnInitListener {
         if (message != null)  runOnUiThread { longToast(message) }
 
         // Save the message if failure is indicated.
-        if (!success) errorMessage = message
+        if (!success) ttsInitErrorMessage = message
 
         // Set the language if it is available.
         if (success) tts.language = locale
@@ -272,7 +274,6 @@ class ApplicationEx : Application(), OnInitListener {
     override fun onInit(status: Int) {
         // Handle errors.
         val tts = mTTS
-        errorMessage = null
         if (status == TextToSpeech.ERROR || tts == null) {
             // Check the number of available TTS engines and set an appropriate
             // error message.
@@ -286,7 +287,7 @@ class ApplicationEx : Application(), OnInitListener {
             }
             runOnUiThread { longToast(messageId) }
             // Save the error message ID for later use, free TTS and return.
-            errorMessage = getString(messageId)
+            ttsInitErrorMessage = getString(messageId)
             freeTTS()
             return
         }
@@ -369,7 +370,7 @@ class ApplicationEx : Application(), OnInitListener {
         when (result) {
             TTS_NOT_READY -> {
                 val defaultMessage = getString(R.string.tts_not_ready_message)
-                val errorMessage = errorMessage
+                val errorMessage = ttsInitErrorMessage
                 val notReadyMessage = errorMessage ?: defaultMessage
                 runOnUiThread { longToast(notReadyMessage) }
             }
