@@ -62,20 +62,24 @@
     <!--This was adapted from the FreeOTP app's source code (also licensed under
         Apache 2.0).-->
     <string name="about_version">TTS Util Version %1$s (%2$d)</string>
-    <string name="about_copyright">&#169; 2019 - Dane Finlay</string>
+    <string name="about_copyright" translatable="false">&#169; 2019 - Dane Finlay</string>
     <string name="about_app">TTS Util is open source software licensed under the %1$s license. The application source code is available from %2$s.</string>
     <string name="link_apache2" translatable="false">&lt;a href=&quot;https://www.apache.org/licenses/LICENSE-2.0.html&quot;&gt;Apache 2.0&lt;/a&gt;</string>
     <string name="link_source_code" translatable="false">&lt;a href=&quot;https://github.com/Danesprite/tts-util-app&quot;&gt;GitHub&lt;/a&gt;</string>
     <string name="about_acknowledgements_title">Acknowledgments &amp; Licenses</string>
     <string name="about_acknowledgements_msg">Parts of the following projects were used in the development of this application:</string>
-    <string name="about_ack_material_design_icons">%1$s (%2$s) — icons used in this application</string>
+    <string name="about_ack_material_design_icons">&#8226; %1$s (%2$s) — icons used in this application</string>
     <string name="link_material_design_icons" translatable="false">&lt;a href=&quot;https://material.io/resources/icons/&quot;&gt;Google\'s Material Design Icons&lt;/a&gt;</string>
-    <string name="about_ack_anko">%1$s (%2$s) — Pleasant Android application development</string>
+    <string name="about_ack_anko">&#8226; %1$s (%2$s) — Pleasant Android application development</string>
     <string name="link_anko" translatable="false">&lt;a href=&quot;https://github.com/Kotlin/anko&quot;&gt;Anko&lt;/a&gt;</string>
-    <string name="about_ack_kotlin">%1$s (%2$s) — programming language used</string>
+    <string name="about_ack_kotlin">&#8226; %1$s (%2$s) — programming language used</string>
     <string name="link_kotlin" translatable="false">&lt;a href=&quot;https://kotlinlang.org/&quot;&gt;Kotlin&lt;/a&gt;</string>
-    <string name="about_ack_free_otp">%1$s (%2$s) — portions used to create this About section</string>
+    <string name="about_ack_free_otp">&#8226; %1$s (%2$s) — portions used to create this About section</string>
     <string name="link_freeotp" translatable="false">&lt;a href=&quot;https://freeotp.github.io&quot;&gt;FreeOTP&lt;/a&gt;</string>
+    <string name="about_translations_title">Translations</string>
+    <string name="about_translations_msg">TTS Util has been translated into the following languages:</string>
+    <string name="about_translations_chinese">&#8226; Chinese (Simplified).  Translation by GitHub user %1$s.</string>
+    <string name="link_mahongyin" translatable="false">&lt;a href=&quot;https://github.com/1976222027&quot;&gt;Mahongyin&lt;/a&gt;</string>
 
     <!--Dialog strings.-->
     <string name="alert_positive_message_1">Okay</string>

@@ -2,6 +2,7 @@ TTS Util
 ========
 
 *TTS Util* is a utility Android app for synthesising text into audible speech.
+[中文Readme](README_CN.md)
 
 [<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png"
      alt="Get it on F-Droid"
@@ -29,6 +30,15 @@ Building
 --------
 
 *TTS Util* can be built by importing the project into [Android Studio](https://developer.android.com/studio). It can also be [built from the command-line](https://developer.android.com/studio/build/building-cmdline.html) with Gradle if you don't use Android Studio.
+
+Translations
+------------
+
+Currently, this app is available in English and Chinese (Simplified).  The Chinese translation was provided by GitHub user [Mahongyin](https://github.com/1976222027).
+
+Any help in translating this app's resource strings and/or its documentation into other languages would be appreciated.
+
+It should be noted that translation of *TTS Util* resource strings into a given language is not required to read/synthesise text in that language using text-to-speech.  This type of language "support" is handled by the text-to-speech *engine*, not *TTS Util*.
 
 Licence
 -------
