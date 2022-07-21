@@ -48,8 +48,9 @@ sealed class Directory {
                                               documentName: String,
                                               mimeType: String): OutputStream? {
             // Open an output stream on the specified file, if possible.
-            val file = File(file, documentName)
-            if (file.canWrite()) {
+            val dir = this.file
+            if (dir.canWrite()) {
+                val file = File(dir, documentName)
                 return FileOutputStream(file)
             } else {
                 return null
