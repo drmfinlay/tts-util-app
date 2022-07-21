@@ -181,15 +181,14 @@ abstract class ReadTextFragmentBase : MyFragment() {
     override fun onClickPlay() {
         super.onClickPlay()
 
-        // Retrieve input field text.  If blank, read the hint text and display a
-        // message.
-        var text = inputLayoutContent ?: ""
-        if (text.isBlank()) {
-            ctx.toast(R.string.cannot_read_empty_input_message)
-            text = inputLayout.hint?.toString() ?: return
+        // Retrieve the input field text.  If the field is empty, use the hint
+        // text instead.
+        var text: String? = inputLayoutContent
+        if (text == null || text.length == 0) {
+            text = inputLayout.hint?.toString() ?: ""
         }
 
-        // Speak *text* and handle the result.
+        // Read text and handle the result.
         val inputSource = InputSource.CharSequence(text, textSourceDescription)
         val result = myApplication.enqueueReadInputTask(inputSource, QUEUE_ADD)
         myApplication.handleTTSOperationResult(result)
@@ -207,14 +206,9 @@ abstract class ReadTextFragmentBase : MyFragment() {
             return
         }
 
-        // Retrieve input field text.  If blank, display a message.
+        // Retrieve input field text, begin synthesizing it into a wave file and
+        // handle the result.
         val text = inputLayoutContent ?: ""
-        if (text.isBlank()) {
-            ctx.toast(R.string.cannot_read_empty_input_message)
-            return
-        }
-
-        // Start synthesizing the text into a wave file and handle the result.
         val inputSource = InputSource.CharSequence(text, textSourceDescription)
         val result = myApplication.enqueueFileSynthesisTasks(inputSource, directory,
                 waveFilename)

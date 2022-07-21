@@ -74,16 +74,8 @@ class TTSIntentService : IntentService("TTSIntentService") {
      * parameters.
      */
     private fun handleActionReadText(text: String?, sourceDescription: String) {
-        // Display a message if 'text' is blank/empty.
-        if (text == null || text.isBlank()) {
-            runOnUiThread {
-                longToast(R.string.cannot_read_empty_input_message)
-            }
-            return
-        }
-
-        // Speak *text* and handle the result.
-        val inputSource = InputSource.CharSequence(text, sourceDescription)
+        // Read specified text and handle the result.
+        val inputSource = InputSource.CharSequence(text ?: "", sourceDescription)
         val result = myApplication.enqueueReadInputTask(inputSource, QUEUE_ADD)
         myApplication.handleTTSOperationResult(result)
     }
