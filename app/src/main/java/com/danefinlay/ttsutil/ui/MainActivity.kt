@@ -1,7 +1,7 @@
 /*
  * TTS Util
  *
- * Authors: Dane Finlay <Danesprite@posteo.net>
+ * Authors: Dane Finlay <dane@danefinlay.net>
  *
  * Copyright (C) 2019 Dane Finlay
  *
