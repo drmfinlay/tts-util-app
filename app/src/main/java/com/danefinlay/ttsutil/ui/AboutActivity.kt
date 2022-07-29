@@ -68,9 +68,9 @@ class AboutActivity : MyAppCompatActivity() {
                 R.string.link_freeotp, apache2)
 
         // Set links under the Translations heading.
-        val contribLink = getString(R.string.link_mahongyin)
-        val linkText = getString(R.string.about_translations_chinese, contribLink)
-        find<TextView>(R.id.about_translations_chinese).setLinkText(linkText)
+        val zhContribLink = getString(R.string.link_mahongyin)
+        val zhText = getString(R.string.about_translation_chinese, zhContribLink)
+        find<TextView>(R.id.about_translation_chinese).setLinkText(zhText)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {

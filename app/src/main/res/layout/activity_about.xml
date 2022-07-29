@@ -142,8 +142,8 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/about_translations_chinese"
-            android:text="@string/about_translations_chinese"
+            android:id="@+id/about_translation_chinese"
+            android:text="@string/about_translation_chinese"
             android:textAppearance="@style/TextAppearance.AppCompat.Body2"
             android:layout_marginTop="8dp"
             app:layout_constraintStart_toStartOf="parent"

@@ -40,6 +40,9 @@
     <string name="about_ack_anko">&#8226; %1$s (%2$s) — 愉快的 Android 应用程序开发</string>
     <string name="about_ack_kotlin">&#8226; %1$s (%2$s) — 使用的编程语言</string>
     <string name="about_ack_free_otp">&#8226; %1$s (%2$s) — 用于创建此 About 部分的部分</string>
+    <string name="about_translations_title">翻译</string>
+    <string name="about_translations_msg">该应用程序已翻译成以下语言：</string>
+    <string name="about_translation_chinese">&#8226; 简体中文 — 翻译者 GitHub 用户 %1$s</string>
     <string name="alert_positive_message_1">确认</string>
     <string name="alert_negative_message_1">取消</string>
     <string name="alert_positive_message_2">好的</string>
@@ -55,6 +58,8 @@
     <string name="no_file_chosen_dialog_message">未选择任何文件。你想选择一个吗？</string>
     <string name="unavailable_dir_dialog_title">找不到目录</string>
     <string name="unavailable_dir_dialog_message">找不到指定的输出目录。也许它已被删除或重命名？选择另一个？</string>
+    <string name="unwritable_out_dir_dialog_title">目录是只读的</string>
+    <string name="unwritable_out_dir_dialog_message">应用程序无法在当前输出目录中创建文件。是否要选择其他目录？</string>
     <string name="write_to_file_alert_title">写入音频文件</string>
     <string name="write_to_file_alert_message_1">当前文件是“%1$s”。该文件的内容将被合成，写入“%2$s”并放入 %3$s。可以吗？</string>
     <string name="write_to_file_alert_message_2">\"%1$s\" 和另外 %2$d 个 %3$s 的内容将被合成为音频文件并放入 %4$s。可以吗？</string>
@@ -92,6 +97,7 @@
     <string name="tts_busy_message">无法执行操作：%1$s。</string>
     <string name="unavailable_out_dir_message">找不到指定的输出目录。</string>
     <string name="unavailable_input_src_message">无法从所选文件中读取。</string>
+    <string name="unwritable_out_dir_message">输出目录是只读的。</string>
     <string name="synthesis_error_msg_generic">文本合成时出错。</string>
     <string name="synthesis_error_msg_synthesis">文本转语音引擎无法合成文本。</string>
     <string name="synthesis_error_msg_service">文本转语音服务异常失败。</string>

@@ -78,7 +78,7 @@
     <string name="link_freeotp" translatable="false">&lt;a href=&quot;https://freeotp.github.io&quot;&gt;FreeOTP&lt;/a&gt;</string>
     <string name="about_translations_title">Translations</string>
     <string name="about_translations_msg">TTS Util has been translated into the following languages:</string>
-    <string name="about_translations_chinese">&#8226; Chinese (Simplified).  Translation by GitHub user %1$s.</string>
+    <string name="about_translation_chinese">&#8226; Chinese (Simplified) — translation by GitHub user %1$s</string>
     <string name="link_mahongyin" translatable="false">&lt;a href=&quot;https://github.com/1976222027&quot;&gt;Mahongyin&lt;/a&gt;</string>
 
     <!--Dialog strings.-->

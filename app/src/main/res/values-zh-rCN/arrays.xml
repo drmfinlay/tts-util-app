@@ -21,6 +21,7 @@
 <resources>
     <string-array name="silence_entries">
         <item>自动</item>
+        <item>50 ms</item>
         <item>100 ms</item>
         <item>200 ms</item>
         <item>300 ms</item>
@@ -31,6 +32,7 @@
     </string-array>
     <string-array name="silence_values">
         <item>0</item>
+        <item>50</item>
         <item>100</item>
         <item>200</item>
         <item>300</item>
