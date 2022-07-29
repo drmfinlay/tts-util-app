@@ -23,19 +23,23 @@ package com.danefinlay.ttsutil.ui
 import android.net.Uri
 import android.os.Parcel
 import android.os.Parcelable
+import java.util.*
 
 sealed class ActivityEvent : Parcelable {
     class ChosenFileEvent(val uriList: List<Uri>,
                           val displayNameList: List<String>,
+                          val locale: Locale,
                           var requestCode: Int) : ActivityEvent() {
         constructor(parcel: Parcel) : this(
                 parcel.createTypedArrayList(Uri.CREATOR)!!,
                 parcel.createStringArrayList()!!,
+                parcel.readSerializable() as Locale,
                 parcel.readInt())
 
         override fun writeToParcel(parcel: Parcel, flags: Int) {
             parcel.writeTypedList(uriList)
             parcel.writeStringList(displayNameList)
+            parcel.writeSerializable(locale)
             parcel.writeInt(requestCode)
         }
 

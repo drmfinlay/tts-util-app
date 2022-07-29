@@ -30,7 +30,6 @@ import android.speech.tts.TextToSpeech
 import android.speech.tts.TextToSpeech.LANG_MISSING_DATA
 import androidx.annotation.RequiresApi
 import androidx.fragment.app.Fragment
-import androidx.documentfile.provider.DocumentFile
 import com.danefinlay.ttsutil.*
 import org.jetbrains.anko.AlertDialogBuilder
 import org.jetbrains.anko.longToast
@@ -52,7 +51,8 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
     private var mLastChosenFileEvent: ActivityEvent.ChosenFileEvent? = null
 
     private fun retrieveChosenFileData(prefs: SharedPreferences, uriKey: String,
-                                       nameKey: String, fileType: Int):
+                                       nameKey: String, localeKeyPrefix: String,
+                                       requestCode: Int):
             ActivityEvent.ChosenFileEvent? {
         // Retrieve the saved chosen file data.
         val uriPrefString = prefs.getString(uriKey, "") ?: return null
@@ -62,15 +62,41 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
         // Note: The Uri and display names are delimited by null characters to
         // This is done to avoid mangling; filenames cannot typically include this
         // character.
-        val uri = uriPrefString.split(Char.MIN_VALUE).filter { it.length > 0 }
+        val uriList = uriPrefString.split(Char.MIN_VALUE).filter { it.length > 0 }
                 .map { Uri.parse(it) }
-        val displayNames = displayNamePrefString.split(Char.MIN_VALUE)
+        var displayNames = displayNamePrefString.split(Char.MIN_VALUE)
                 .filter { it.length > 0 }
-        return ActivityEvent.ChosenFileEvent(uri, displayNames, fileType)
+
+        // Retrieve the locale associated with the display names from shared
+        // preferences.
+        val localeLang = prefs.getString(localeKeyPrefix + "_LANG", "en")!!
+        val localeCountry = prefs.getString(localeKeyPrefix + "_COUNTRY", "US")!!
+        val localeVariant = prefs.getString(localeKeyPrefix + "_VARIANT", "")!!
+        val locale = Locale(localeLang, localeCountry, localeVariant)
+
+        // Re-retrieve the display names if the current system locale doesn't match
+        // the associated locale, falling back on stored display names where new
+        // ones could not be retrieved.
+        val newLocale = currentSystemLocale ?: Locale.getDefault()
+        if (locale != newLocale) {
+            val newDisplayNames = mutableListOf<String>()
+            for ((uri, name) in uriList.zip(displayNames)) {
+                val newName: String?
+                if (requestCode == FILE_SELECT_CODE) {
+                    newName = uri.retrieveFileDisplayName(this, true)
+                } else {
+                    newName = uri.retrieveDirDisplayName(this)
+                }
+                newDisplayNames.add(newName ?: name)
+            }
+            displayNames = newDisplayNames
+        }
+        return ActivityEvent.ChosenFileEvent(uriList, displayNames, newLocale,
+                requestCode)
     }
 
     private fun saveChosenFileData(prefs: SharedPreferences, uriKey: String,
-                                   nameKey: String,
+                                   nameKey: String, localeKeyPrefix: String,
                                    event: ActivityEvent.ChosenFileEvent) {
         // Save chosen file data delimited by null characters.
         val uriString = event.uriList.fold("") { acc, uri ->
@@ -79,9 +105,18 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
         val displayNamesString = event.displayNameList.fold("") { acc, s ->
             acc + s + Char.MIN_VALUE
         }
+
+        // Retrieve the locale to be stored with the display names.
+        // Note: This will always be the current system locale.
+        val locale = event.locale
+
+        // Save data to shared preferences.
         prefs.edit()
                 .putString(uriKey, uriString)
                 .putString(nameKey, displayNamesString)
+                .putString(localeKeyPrefix + "_LANG", locale.language)
+                .putString(localeKeyPrefix + "_COUNTRY", locale.country)
+                .putString(localeKeyPrefix + "_VARIANT", locale.variant)
                 .apply()  // apply() is asynchronous.
     }
 
@@ -273,24 +308,36 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
     override fun getLastStatusUpdate() = mLastStatusUpdate
 
     override fun getLastFileChosenEvent(): ActivityEvent.ChosenFileEvent? {
+        // Check if the last event's locale differs from the current system locale.
+        // If it does, then the event should be re-retrieved.
+        if (mLastChosenFileEvent?.locale != currentSystemLocale) {
+            mLastChosenFileEvent = null
+        }
+
         // Attempt to restore the data concerning the last chosen file(s) from
         // shared preferences, if necessary.
         if (mLastChosenFileEvent == null) {
             val prefs = getSharedPreferences(packageName, MODE_PRIVATE)
             val event = retrieveChosenFileData(prefs, CHOSEN_FILE_URI_KEY,
-                    CHOSEN_FILE_NAME_KEY, FILE_SELECT_CODE)
+                    CHOSEN_FILE_NAME_KEY, CHOSEN_FILE_LOCALE_KEY, FILE_SELECT_CODE)
             if (event != null) mLastChosenFileEvent = event
         }
         return mLastChosenFileEvent
     }
 
     override fun getLastDirChosenEvent(): ActivityEvent.ChosenFileEvent? {
+        // Check if the last event's locale differs from the current system locale.
+        // If it does, then the event should be re-retrieved.
+        if (mLastChosenDirEvent?.locale != currentSystemLocale) {
+            mLastChosenDirEvent = null
+        }
+
         // Attempt to restore the data concerning the last chosen directory from
         // shared preferences, if necessary.
         if (mLastChosenDirEvent == null) {
             val prefs = getSharedPreferences(packageName, MODE_PRIVATE)
             val event = retrieveChosenFileData(prefs, CHOSEN_DIR_URI_KEY,
-                    CHOSEN_DIR_NAME_KEY, DIR_SELECT_CODE)
+                    CHOSEN_DIR_NAME_KEY, CHOSEN_DIR_LOCALE_KEY, DIR_SELECT_CODE)
             if (event != null) mLastChosenDirEvent = event
         }
         return mLastChosenDirEvent
@@ -340,31 +387,23 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
                 // Get the Uri of the selected directory, if possible.
                 val uri = data?.data ?: return
 
-                // Determine the display name.
-                val documentFile = DocumentFile.fromTreeUri(this, uri)
-                val dirName = documentFile?.name
-                var displayName: String
-                if (dirName == null) {
-                    displayName = getString(R.string.generic_output_dir)
-                } else {
-                    displayName = """"$dirName""""
-                }
+                // Retrieve the display name.
+                val displayName = uri.retrieveDirDisplayName(this)
 
-                // Use a description of the storage volume instead, if appropriate.
-                if (uri.path?.endsWith(":") == true) {
-                    val volumeDesc = documentFile?.uri
-                            ?.resolveStorageVolumeDescription(this)
-                    if (volumeDesc != null) displayName = volumeDesc
-                }
+                // Retrieve the current system locale.
+                val systemLocale = currentSystemLocale ?: return
+
+                // Create a file chosen event.
+                val event = ActivityEvent.ChosenFileEvent(listOf(uri),
+                        listOf(displayName), systemLocale, requestCode)
 
                 // Set shared preference and property values.
-                val event = ActivityEvent.ChosenFileEvent(listOf(uri),
-                        listOf(displayName), requestCode)
-                saveChosenFileData(getSharedPreferences(packageName, MODE_PRIVATE),
-                        CHOSEN_DIR_URI_KEY, CHOSEN_DIR_NAME_KEY, event)
+                val prefs = getSharedPreferences(packageName, MODE_PRIVATE)
+                saveChosenFileData(prefs, CHOSEN_DIR_URI_KEY, CHOSEN_DIR_NAME_KEY,
+                        CHOSEN_DIR_LOCALE_KEY, event)
                 mLastChosenDirEvent = event
 
-                // Send a file chosen event.
+                // Dispatch the event.
                 handleActivityEvent(event)
             }
             requestCode == FILE_SELECT_CODE && resultCode == RESULT_OK -> {
@@ -396,15 +435,20 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
                     displayNames.add(displayName ?: fallbackName)
                 }
 
+                // Retrieve the current system locale.
+                val systemLocale = currentSystemLocale ?: return
+
+                // Create the file chosen event.
                 val event = ActivityEvent.ChosenFileEvent(uriList, displayNames,
-                        requestCode)
+                        systemLocale, requestCode)
 
                 // Set shared preference and property values.
                 saveChosenFileData(getSharedPreferences(packageName, MODE_PRIVATE),
-                        CHOSEN_FILE_URI_KEY, CHOSEN_FILE_NAME_KEY, event)
+                        CHOSEN_FILE_URI_KEY, CHOSEN_FILE_NAME_KEY,
+                        CHOSEN_FILE_LOCALE_KEY, event)
                 mLastChosenFileEvent = event
 
-                // Send a file chosen event.
+                // Dispatch the event.
                 handleActivityEvent(event)
             }
         }

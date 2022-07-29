@@ -26,6 +26,7 @@ import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
 import androidx.annotation.RequiresApi
+import androidx.documentfile.provider.DocumentFile
 import org.jetbrains.anko.storageManager
 import java.io.InputStream
 import java.io.OutputStream
@@ -105,6 +106,32 @@ fun Uri.retrieveFileDisplayName(ctx: Context, takePermission: Boolean): String? 
         }
     }
     return lastPathSegment
+}
+
+/**
+ * Get a display name for the directory associated with the URI.
+ */
+fun Uri.retrieveDirDisplayName(ctx: Context): String {
+    var displayName: String
+
+    // Use the directory name, if it is available.
+    val documentFile = DocumentFile.fromTreeUri(ctx, this)
+    val dirName = documentFile?.name
+    if (dirName == null) {
+        displayName = ctx.getString(R.string.generic_output_dir)
+    } else {
+        displayName = """"$dirName""""
+    }
+
+    // Use a description of the storage volume instead, if appropriate.
+    if (this.path?.endsWith(":") == true) {
+        val volumeDesc = documentFile?.uri
+                ?.resolveStorageVolumeDescription(ctx)
+        if (volumeDesc != null) displayName = volumeDesc
+    }
+
+    // Return the display name.
+    return displayName
 }
 
 
