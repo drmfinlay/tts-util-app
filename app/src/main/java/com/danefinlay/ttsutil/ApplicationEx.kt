@@ -474,10 +474,12 @@ class ApplicationEx : Application(), OnInitListener {
         // Note: This is to prevent the scenario where our notification is canceled
         // once one task is finished only for another, very similar notification to
         // be posted a fraction of a second later!
-        else if (remainingTasks == 0) {
-            notificationManager.cancel(taskId)
-            notificationBuilder = null
-        }
+        else if (remainingTasks == 0) cancelNotification(taskId)
+    }
+
+    private fun cancelNotification(taskId: Int) {
+        notificationManager.cancel(taskId)
+        notificationBuilder = null
     }
 
     private fun notifyProgress(progress: Int, taskId: Int, remainingTasks: Int) {
@@ -511,10 +513,11 @@ class ApplicationEx : Application(), OnInitListener {
         }
 
         // If the task finished successfully and there are more tasks in the queue,
-        // then start the next one.  If the task finished unsuccessfully, clear the
-        // queue.
+        // then start the next one, cancelling the previous task's notification if
+        // necessary.  If the task finished unsuccessfully, clear the queue instead.
         val nextTaskData = taskQueue.peek()
         if (progress == 100 && nextTaskData != null) {
+            if (taskId != nextTaskData.taskId) cancelNotification(taskId)
             val result = beginTaskOrNotify(nextTaskData, true)
             handleTTSOperationResult(result)
         } else if (progress == -1) {
