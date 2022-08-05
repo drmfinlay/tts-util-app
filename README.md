@@ -2,6 +2,7 @@ TTS Util
 ========
 
 *TTS Util* is a utility Android app for synthesising text into audible speech.
+
 [中文Readme](README_CN.md)
 
 [<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png"
@@ -16,15 +17,16 @@ Features
 
 - Read or create wave files from input text, clipboard text or text files using text-to-speech.
 - Configure app-specific text-to-speech settings: engine, voice, pitch and speech rate.
-- Configure silence for line endings, sentences, exclamations and questions.
-- Configure text filters to omit certain text elements prior to processing.
-- A read-on-input mode for reading letters and words as they are typed.
+- Custom silence for line endings, sentences, exclamations and questions.
+- Text filters for omitting certain text elements from the audio.
+- A playback-on-input mode for reading letters and words as they are typed.
 - Buttons for retrieving commonly read text.
+- Share menu entries and shortcuts for sharing input text to the app.
 
 Requirements
 ------------
 - A device running Android version 4.0.3 or higher.
-- A text-to-speech engine app that uses Android's text-to-speech framework.
+- A separate Android text-to-speech engine app.
 
 Building
 --------

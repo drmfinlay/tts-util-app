@@ -1,13 +1,16 @@
-<p>TTS Util is a utility app for synthesising text into audible speech using Android's text-to-speech framework.</p>
+<p><i>TTS Util</i> is a utility Android app for synthesising text into audible speech.</p>
 <p>Features:</p>
 <ul>
-<li>Read input text, clipboard text or text files using text-to-speech.</li>
-<li>Create speech wave files from input text, clipboard text or text files.</li>
-<li>Share text to read using share menu entries.</li>
-<li>Read clipboard text using launcher shortcuts (requires Android 8 or higher).</li>
-<li>Configurable app-specific text-to-speech settings: engine, voice, pitch and speech rate.</li>
-<li>Supports any text-to-speech engine that uses Android’s TTS framework.</li>
-<li>Supports Android 5.0 and above.</li>
+<li>Read or create wave files from input text, clipboard text or text files using text-to-speech.</li>
+<li>Configure app-specific text-to-speech settings: engine, voice, pitch and speech rate.</li>
+<li>Custom silence for line endings, sentences, exclamations and questions.</li>
+<li>Text filters for omitting certain text elements from the audio.</li>
+<li>A playback-on-input mode for reading letters and words as they are typed.</li>
+<li>Buttons for retrieving commonly read text.</li>
+<li>Share menu entries and shortcuts for sharing input text to the app.</li>
 </ul>
-<p>TTS Engine Requirement:</p>
-<p>This app is <strong>not</strong> itself a TTS engine. A separate text-to-speech engine app is <strong>required</strong> in order for this app to function. Most devices should come with one preinstalled.</p>
+<p>Requirements:</p>
+<ul>
+<li>A device running Android version 4.0.3 or higher.</li>
+<li>A separate Android text-to-speech engine app.</li>
+</ul>
