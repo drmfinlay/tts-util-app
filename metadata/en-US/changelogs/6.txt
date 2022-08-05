@@ -1,0 +1,8 @@
+* Add configurable silence options for line endings, sentences, exclamations and questions.
+* Add playback-on-input mode.
+* Add support for reading text through the text action (thanks to @KevinSJ).
+* Add text filters for omitting certain text elements from the audio.
+* Allow queueing tasks and processing multiple text files.
+* Backport the application to Android 4.0.3.
+* Translate the app into Simplified Chinese (thanks to mahongyin).
+* Various other improvements and error corrections.
