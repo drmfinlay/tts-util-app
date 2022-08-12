@@ -28,6 +28,12 @@
         android:maxSdkVersion="28"
         tools:ignore="ScopedStorage" />
 
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
+    </queries>
+
     <application
         android:name=".ApplicationEx"
         android:allowBackup="true"
