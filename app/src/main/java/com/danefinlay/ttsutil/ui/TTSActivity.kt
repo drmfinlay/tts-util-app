@@ -370,12 +370,14 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
                 // behaves like a trampoline.
 
                 // Retrieve the sample text, falling back on ours if the engine's
-                // is unavailable.
+                // is unavailable or invalid.
                 val key = TextToSpeech.Engine.EXTRA_SAMPLE_TEXT
-                val sampleText: String = if (data != null && data.hasExtra(key)) {
-                    data.getStringExtra(key)!!
-                } else {
-                    getString(R.string.sample_tts_sentence)
+                var sampleText: String? = null
+                if (data != null && data.hasExtra(key)) {
+                    sampleText = data.getStringExtra(key)
+                }
+                if (sampleText == null || sampleText.isBlank()){
+                    sampleText = getString(R.string.sample_tts_sentence)
                 }
 
                 // Dispatch an event with the sample text.
