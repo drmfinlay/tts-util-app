@@ -300,7 +300,15 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     override fun showDirChooser(requestCode: Int) {
+        // Start a file chooser activity for choosing a directory with persistable
+        // read/write permission.
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+        val flags =
+                Intent.FLAG_GRANT_READ_URI_PERMISSION
+                Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
+                Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION or
+                Intent.FLAG_GRANT_PREFIX_URI_PERMISSION
+        intent.addFlags(flags)
         val title = getString(R.string.dir_chooser_title)
         startFileChooserActivity(intent, title, requestCode)
     }
@@ -388,6 +396,15 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
             requestCode == DIR_SELECT_CONT_CODE && resultCode == RESULT_OK -> {
                 // Get the Uri of the selected directory, if possible.
                 val uri = data?.data ?: return
+
+                // Take the persistable URI grant that has been offered, if
+                // necessary.
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    val flags =
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                            Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                    contentResolver.takePersistableUriPermission(uri, flags)
+                }
 
                 // Retrieve the display name.
                 val displayName = uri.retrieveDirDisplayName(this)
