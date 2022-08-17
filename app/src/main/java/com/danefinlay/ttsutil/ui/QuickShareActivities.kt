@@ -40,9 +40,10 @@ abstract class QuickShareActivity : TTSActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // If TTS is ready, start the appropriate service action and finish the
-        // activity.  Otherwise, wait until TTS is ready.
-        if (myApplication.mTTS != null) {
+        // If TTS is not yet initialized, attempt to initialize it.  Otherwise,
+        // start the service action and finish the activity.
+        if (myApplication.mTTS == null) initializeTTS(null)
+        else {
             startServiceAction()
             finish()
         }
@@ -51,14 +52,13 @@ abstract class QuickShareActivity : TTSActivity() {
     override fun onInit(status: Int) {
         super.onInit(status)
 
-        // If TTS is ready, start the appropriate service action and finish the
-        // activity.  Otherwise, handle TTS_NOT_READY.
-        if (status == TextToSpeech.SUCCESS) {
-            startServiceAction()
-            finish()
-        } else {
-            myApplication.handleTTSOperationResult(TTS_NOT_READY)
-        }
+        // If TTS is ready, start the service action.
+        // Otherwise, handle TTS_NOT_READY.
+        if (status == TextToSpeech.SUCCESS) startServiceAction()
+        else myApplication.handleTTSOperationResult(TTS_NOT_READY)
+
+        // Finish the activity.
+        finish()
     }
 
     override fun handleActivityEvent(event: ActivityEvent) {}
@@ -82,6 +82,7 @@ class ReadTextActivity : QuickShareActivity() {
         }
     }
 }
+
 class TextActionActivity : QuickShareActivity() {
     @RequiresApi(Build.VERSION_CODES.M)
     override fun startServiceAction() {
