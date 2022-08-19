@@ -1,0 +1,1 @@
+* Fix a problem that can occur when sharing text to be read out loud.
