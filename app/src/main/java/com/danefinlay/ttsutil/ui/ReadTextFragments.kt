@@ -20,6 +20,7 @@
 
 package com.danefinlay.ttsutil.ui
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -32,8 +33,10 @@ import android.speech.tts.TextToSpeech.QUEUE_FLUSH
 import com.google.android.material.textfield.TextInputLayout
 import androidx.preference.PreferenceManager
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.TextView
 import com.danefinlay.ttsutil.*
@@ -74,6 +77,40 @@ abstract class ReadTextFragmentBase : MyFragment() {
                     application.enqueueReadInputTask(inputSource, QUEUE_FLUSH)
                 }
             }
+        }
+    }
+
+    protected class ScrollingEditTextOnTouchListener(val editText: EditText) :
+            View.OnTouchListener {
+        // Note:
+        //
+        //  The following accessibility warning is suppressed, here and later in
+        //  this file.  I have done this because the purported "solution" requires
+        //  sub-classing, (and performing some arcane magic with,) every EditView
+        //  class used with this listener.  I find this "solution" unacceptable.
+        //  It is unreasonable to expect developers using the View.OnTouchListener
+        //  interface to go out of their way to handle something that should be
+        //  handled by the system itself.
+        //
+        //  This may be revisited down the line if there is significant demand.
+        //  In that event, I'd rather just add an option for disabling use of this
+        //  listener.
+        //
+        @SuppressLint("ClickableViewAccessibility")
+        override fun onTouch(view: View, event: MotionEvent): Boolean {
+            // If *view* is *editText*, allow it to intercept and process events,
+            // rather than the parent (or other ancestors).  This allows the user
+            // to scroll the EditText view independently, without scrolling the
+            // whole screen.
+            if (view.id == editText.id) {
+                val parent = view.parent
+                parent.requestDisallowInterceptTouchEvent(true)
+                val action = event.action and MotionEvent.ACTION_MASK
+                if (action == MotionEvent.ACTION_UP) {
+                    parent.requestDisallowInterceptTouchEvent(false)
+                }
+            }
+            return false
         }
     }
 
@@ -347,6 +384,7 @@ class ReadTextFragment : ReadTextFragmentBase() {
         }
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     override fun initializeInputField() {
         // Restore persistent data as necessary.
         // The content of the input field is set to persist unless ACTION_SEND is
@@ -360,6 +398,10 @@ class ReadTextFragment : ReadTextFragmentBase() {
             persistentContent = true
             inputLayoutContent = prefs.getString(CONTENT_PREF_KEY, "")
         }
+
+        // Set the OnTouchListener that enables scrolling the EditText view.
+        val editText = inputLayout.editText
+        editText?.setOnTouchListener(ScrollingEditTextOnTouchListener(editText))
 
         // Enable the playback-on-input feature, if appropriate.
         // Note: Since this feature uses a TextWatcher it should only be enabled
@@ -414,6 +456,7 @@ class ReadClipboardFragment : ReadTextFragmentBase() {
         find<ImageButton>(R.id.paste_button).onClick { onClickPaste() }
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     override fun initializeInputField() {
         // Set the (initial) content of the input layout.
         // Note: The safety check on *view* is necessary because of how the
@@ -421,6 +464,10 @@ class ReadClipboardFragment : ReadTextFragmentBase() {
         ctx.useClipboardText(true) { text: String? ->
             if (view != null) onClipboardTextReceived(text)
         }
+
+        // Set the OnTouchListener that enables scrolling the EditText view.
+        val editText = inputLayout.editText
+        editText?.setOnTouchListener(ScrollingEditTextOnTouchListener(editText))
 
         // Enable the playback-on-input feature, if appropriate.
         // Note: Since this feature uses a TextWatcher it should only be

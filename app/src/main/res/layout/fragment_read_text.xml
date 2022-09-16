@@ -150,11 +150,14 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_centerHorizontal="false"
-            android:maxWidth="40dp"
+            android:maxHeight="250dp"
             android:inputType="textAutoComplete|textMultiLine"
             android:singleLine="false"
             android:nextFocusLeft="@id/input_layout"
             android:nextFocusUp="@id/input_layout"
+            android:overScrollMode="always"
+            android:scrollbarStyle="insideInset"
+            android:scrollbars="vertical"
             android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
     </com.google.android.material.textfield.TextInputLayout>
 
