@@ -82,9 +82,17 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
                        private val observer: TaskProgressObserver) :
         MyUtteranceProgressListener(ctx, tts), Task {
 
+    private class UtteranceInfo(val id: String,
+                                val text: CharSequence,
+                                val bytesRead: Int,
+                                val silenceDuration: Long,
+                                @Volatile
+                                var silenceEnqueued: Boolean)
+
     private val streamReader: Reader = inputStream.reader().buffered(maxInputLength)
-    protected val utteranceBytesQueue: MutableList<Int> =
-            Collections.synchronizedList(mutableListOf<Int>())
+
+    private val utteranceInfoList: MutableList<UtteranceInfo> =
+            Collections.synchronizedList(mutableListOf())
 
     private val scaleSilenceToRate: Boolean
     private val speechRate: Float
@@ -110,8 +118,8 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
     @Volatile
     private var streamHasFurtherInput: Boolean = true
 
-    abstract fun enqueueText(text: CharSequence, bytesRead: Int)
-    abstract fun enqueueSilence(durationInMs: Long)
+    abstract fun enqueueText(text: CharSequence, utteranceId: String): Boolean
+    abstract fun enqueueSilence(durationInMs: Long): Boolean
 
     init {
         // Retrieve values from shared preferences.
@@ -157,18 +165,20 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
     override fun begin(): Boolean {
         if (!super.begin()) return false
 
-        // Notify the progress listener that work has begun.
+        // Notify the observer that work has begun.
         observer.notifyProgress(0, taskId, 0)
 
-        // Enqueue the first input bytes, catching any IO exceptions.  This
+        // Enqueue the first input bytes, catching any IO exception.  This
         // jumpstarts the processing of the entire stream.
         try {
             streamHasFurtherInput = enqueueNextInput()
-            if (!streamHasFurtherInput && utteranceBytesQueue.size == 0) {
-                finish(true)
-            }
         } catch (exception: IOException) {
             return finish(false)
+        }
+
+        // If there were zero input bytes, finish and return.
+        if (!streamHasFurtherInput && utteranceInfoList.size == 0) {
+            finish(true)
         }
         return true
     }
@@ -292,26 +302,39 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
         // Return early if no bytes were read (end of stream).
         if (bytesRead == 0) return false
 
-        // Process the buffer.
         // If text filters are enabled, apply them.
         if (filtersEnabled) applyTextFilters(buffer)
 
-        // Enqueue the final string.
+        // Build the final string.
         val stringBuilder = StringBuilder()
         for (i in 0 until buffer.size) stringBuilder.append(buffer[i])
-        enqueueText(stringBuilder.toString(), bytesRead)
+        val text = stringBuilder.toString()
 
-        // Enqueue silence, if necessary.  Scale silence by the speech rate, if
-        // appropriate.
+        // Gather utterance information and add it to the utterance info list.
+        val utteranceId = nextUtteranceId()
         if (silenceDuration > 0L) {
+            // Scale silence by the speech rate, if appropriate.
             if (scaleSilenceToRate) {
                 silenceDuration = (silenceDuration / speechRate).toLong()
             }
-            enqueueSilence(silenceDuration)
         }
+        val utteranceInfo = UtteranceInfo(utteranceId, text, bytesRead,
+                silenceDuration, false)
+        utteranceInfoList.add(utteranceInfo)
+
+        // Use the utterance info to enqueue text and silence.
+        enqueueFromInfo(utteranceInfo)
 
         // Return whether there is further input.
         return byte >= 0
+    }
+
+    private fun enqueueFromInfo(utteranceInfo: UtteranceInfo) {
+        val text = utteranceInfo.text
+        val silenceDuration = utteranceInfo.silenceDuration
+        if (enqueueText(text, utteranceInfo.id)) {
+            utteranceInfo.silenceEnqueued = enqueueSilence(silenceDuration)
+        }
     }
 
     override fun finish(success: Boolean): Boolean {
@@ -319,7 +342,7 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
         streamReader.close()
         inputStream.close()
 
-        // Notify the progress observer that the task is finished.
+        // Notify the observer that the task is finished.
         val progress = if (success) 100 else -1
         observer.notifyProgress(progress, taskId, 0)
 
@@ -337,7 +360,11 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
         return super.finish(success)
     }
 
-    override fun onStart(utteranceId: String?) {}
+    override fun onStart(utteranceId: String?) {
+        if (utteranceId == null || utteranceInfoList.size == 0) return
+
+        // Log.e(TAG, "onStart(): $utteranceId")
+    }
 
     override fun onError(utteranceId: String?) { // deprecated
         handleProcessingError(-1)
@@ -370,37 +397,47 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
 
     override fun onStop(utteranceId: String?, interrupted: Boolean) {
         super.onStop(utteranceId, interrupted)
+
+        // Finish.
         finish(false)
     }
 
     override fun onDone(utteranceId: String?) {
-        // Add processed bytes to *inputProcessed*.
-        if (utteranceBytesQueue.size > 0) {
-            inputProcessed += utteranceBytesQueue.removeAt(0)
-        }
+        if (utteranceId == null || utteranceInfoList.size == 0) return
 
-        // Call finish() if we have reached the end of the stream or have been
-        // requested to finalize.
-        val success = !streamHasFurtherInput
-        if (success || finalize) {
-            finish(success)
+        // Log.e(TAG, "onDone(): $utteranceId")
+
+        // Most of this method should only be run once per utterance info.  Return
+        // early if there is silence enqueued after this utterance.
+        val utteranceInfo = utteranceInfoList[0]
+        if (utteranceId == utteranceInfo.id && utteranceInfo.silenceEnqueued)
             return
-        }
 
-        // Calculate progress and notify the progress listener.
+        // Add processed bytes to *inputProcessed* and discard the utterance info.
+        inputProcessed += utteranceInfo.bytesRead
+        utteranceInfoList.removeAt(0)
+
+        // Calculate progress and notify the observer.
         // Note: progress=[-1, 100] is dispatched by the finish() method.
         val progress = (inputProcessed.toFloat() / inputSize * 100).toInt()
         if (progress in 0..99) observer.notifyProgress(progress, taskId, 0)
 
-        // Enqueue the next input.
+        // Finalize the task, if this has been requested.
+        if (finalize) {
+            finish(!streamHasFurtherInput)
+            return
+        }
+
+        // Enqueue the next input, catching any IO exception.
         try {
             streamHasFurtherInput = enqueueNextInput()
-            if (!streamHasFurtherInput && utteranceBytesQueue.size == 0) {
-                finish(true)
-            }
         } catch (exception: IOException) {
             finish(false)
+            return
         }
+
+        // Finish if this is the last utterance and there is no further input.
+        if (utteranceInfoList.size == 0 && !streamHasFurtherInput) finish(true)
     }
 
     override fun finalize() {
@@ -447,53 +484,45 @@ class ReadInputTask(ctx: Context, tts: TextToSpeech, inputStream: InputStream,
         return super.begin()
     }
 
-    override fun enqueueSilence(durationInMs: Long) {
-        if (durationInMs == 0L) return
+    override fun enqueueSilence(durationInMs: Long): Boolean {
+        // No silence enqueued.
+        if (durationInMs == 0L) return false
 
         // The queue mode initially specified for the task is ignored here; it only
         // makes sense to use QUEUE_ADD for silence.
-        val uttId = nextUtteranceId()
+        val result: Int
+        val utteranceId = nextUtteranceId()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            tts.playSilentUtterance(durationInMs, QUEUE_ADD, uttId)
+            result = tts.playSilentUtterance(durationInMs, QUEUE_ADD, utteranceId)
         } else {
             val params = HashMap<String, String>()
-            params[KEY_PARAM_UTTERANCE_ID] = uttId
+            params[KEY_PARAM_UTTERANCE_ID] = utteranceId
             @Suppress("deprecation")
-            tts.playSilence(durationInMs, QUEUE_ADD, params)
+            result = tts.playSilence(durationInMs, QUEUE_ADD, params)
         }
+        return result == TextToSpeech.SUCCESS
     }
 
-    override fun enqueueText(text: CharSequence, bytesRead: Int) {
-        // Add *bytesRead* to the queue.
-        utteranceBytesQueue.add(bytesRead)
-
+    override fun enqueueText(text: CharSequence, utteranceId: String): Boolean {
         // Add text to the queue as an utterance.
         // Note: This is necessary even when the text is blank because progress
         // callbacks are used to process the input stream in order.
-        val uttId = nextUtteranceId()
+        val result: Int
         val audioStream: Int = AudioManager.STREAM_MUSIC
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             val bundle = Bundle()
             bundle.putInt(Engine.KEY_PARAM_STREAM, audioStream)
             @Suppress("deprecation")
-            tts.speak(text, queueMode, bundle, uttId)
+            result = tts.speak(text, queueMode, bundle, utteranceId)
         }
         else {
             val params = HashMap<String, String>()
-            params[KEY_PARAM_UTTERANCE_ID] = uttId
+            params[KEY_PARAM_UTTERANCE_ID] = utteranceId
             params[Engine.KEY_PARAM_STREAM] = "$audioStream"
             @Suppress("deprecation")
-            tts.speak(text.toString(), queueMode, params)
+            result = tts.speak(text.toString(), queueMode, params)
         }
-    }
-
-    override fun onDone(utteranceId: String?) {
-        // Note: This function may be called before an utterance is completely
-        // processed.  This appears to be related to our use of silent utterances.
-        // With this in mind, wait until the utterance is *really* done before we
-        // proceed.
-        while (tts.isSpeaking) Thread.sleep(5)
-        super.onDone(utteranceId)
+        return result == TextToSpeech.SUCCESS
     }
 
     override fun finish(success: Boolean): Boolean {
@@ -506,9 +535,9 @@ class FileSynthesisTask(ctx: Context, tts: TextToSpeech,
                         inputStream: InputStream, inputSize: Long,
                         private val waveFilename: String,
                         private val inWaveFiles: MutableList<File>,
-                        progressObserver: TaskProgressObserver) :
+                        observer: TaskProgressObserver) :
         TTSTask(ctx, tts, inputStream, inputSize,
-                TASK_ID_WRITE_FILE, progressObserver) {
+                TASK_ID_WRITE_FILE, observer) {
 
     override fun begin(): Boolean {
         // Delete silent wave files because they may be incompatible with current
@@ -517,9 +546,7 @@ class FileSynthesisTask(ctx: Context, tts: TextToSpeech,
         for (file in workingDirectoryFiles) {
             if (file.name.endsWith("ms_sil.wav")) file.delete()
         }
-
-        if (!super.begin()) return false
-        return true
+        return super.begin()
     }
 
     private fun getWorkingDirectory(): File {
@@ -541,8 +568,9 @@ class FileSynthesisTask(ctx: Context, tts: TextToSpeech,
         return dir
     }
 
-    override fun enqueueSilence(durationInMs: Long) {
-        if (durationInMs == 0L) return
+    override fun enqueueSilence(durationInMs: Long): Boolean {
+        // No silence enqueued.
+        if (durationInMs == 0L) return false
 
         // Android's text-to-speech framework does not allow adding silence to wave
         // files, so we add references to special wave files that contain Xms of
@@ -561,29 +589,34 @@ class FileSynthesisTask(ctx: Context, tts: TextToSpeech,
         }
         val file: File = File(getWorkingDirectory(), filename)
         inWaveFiles.add(file)
+
+        // Silence is not technically enqueued here.  The super class should not
+        // expect progress callbacks for this utterance.
+        return false
     }
 
-    override fun enqueueText(text: CharSequence, bytesRead: Int) {
-        // Add *bytesRead* to the queue.
-        utteranceBytesQueue.add(bytesRead)
-
+    override fun enqueueText(text: CharSequence, utteranceId: String): Boolean {
         // Create a wave file for this utterance and enqueue file synthesis.
         // Note: This is necessary even when the text is blank because progress
         // callbacks are used to process the input stream in order.
-        val uttId = nextUtteranceId()
+        val result: Int
         val dir: File = getWorkingDirectory()
         val file: File = File.createTempFile("speech", ".wav", dir)
-        val success = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            tts.synthesizeToFile(text, null, file, uttId)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            result = tts.synthesizeToFile(text, null, file, utteranceId)
         } else {
             val params = HashMap<String, String>()
-            params[KEY_PARAM_UTTERANCE_ID] = uttId
+            params[KEY_PARAM_UTTERANCE_ID] = utteranceId
             @Suppress("deprecation")
-            tts.synthesizeToFile(text.toString(), params, file.absolutePath)
+            result = tts.synthesizeToFile(text.toString(), params, file.absolutePath)
         }
 
         // If successful and the text is not empty, add the file to the list.
-        if (success == SUCCESS && text.length > 0) inWaveFiles.add(file)
+        val success = result == TextToSpeech.SUCCESS
+        if (success && text.length > 0) inWaveFiles.add(file)
+
+        // Return success.
+        return success
     }
 
     override fun finish(success: Boolean): Boolean {
