@@ -30,7 +30,7 @@ import java.io.FileOutputStream
 import java.io.OutputStream
 
 class ProcessWaveFilesTask(private val ctx: Context,
-                           private val observer: TaskProgressObserver,
+                           private val observer: TaskObserver,
                            private val inWaveFiles: MutableList<File>,
                            private val outputStream: OutputStream,
                            private val finalWaveFilename: String):
@@ -40,7 +40,7 @@ class ProcessWaveFilesTask(private val ctx: Context,
     private var finalize: Boolean = false
 
     override fun begin(): Boolean {
-        // Notify the progress observer that post-processing has begun.
+        // Notify the observer that post-processing has begun.
         observer.notifyProgress(0, TASK_ID, 0)
 
         // Find the first proper wave file and read its header.

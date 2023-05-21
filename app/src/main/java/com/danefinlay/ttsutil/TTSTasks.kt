@@ -79,11 +79,12 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
                        private val inputStream: InputStream,
                        private val inputSize: Long,
                        private val taskId: Int,
-                       private val observer: TaskProgressObserver) :
+                       private val observer: TaskObserver) :
         MyUtteranceProgressListener(ctx, tts), Task {
 
     private class UtteranceInfo(val id: String,
                                 val text: CharSequence,
+                                val inputStartIndex: Long,
                                 val bytesRead: Int,
                                 val silenceDuration: Long,
                                 @Volatile
@@ -110,10 +111,13 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
     protected var finalize: Boolean = false
 
     @Volatile
-    protected var inputProcessed: Long = 0
+    protected var inputRead: Long = 0
 
     @Volatile
     private var inputFiltered: Long = 0
+
+    @Volatile
+    protected var inputProcessed: Long = 0
 
     @Volatile
     private var streamHasFurtherInput: Boolean = true
@@ -312,14 +316,14 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
 
         // Gather utterance information and add it to the utterance info list.
         val utteranceId = nextUtteranceId()
-        if (silenceDuration > 0L) {
-            // Scale silence by the speech rate, if appropriate.
-            if (scaleSilenceToRate) {
-                silenceDuration = (silenceDuration / speechRate).toLong()
-            }
+        val inputStartIndex = inputRead
+        inputRead += bytesRead
+        // Scale silence by the speech rate, if appropriate.
+        if (silenceDuration > 0L && scaleSilenceToRate) {
+            silenceDuration = (silenceDuration / speechRate).toLong()
         }
-        val utteranceInfo = UtteranceInfo(utteranceId, text, bytesRead,
-                silenceDuration, false)
+        val utteranceInfo = UtteranceInfo(utteranceId, text, inputStartIndex,
+                bytesRead, silenceDuration, false)
         utteranceInfoList.add(utteranceInfo)
 
         // Use the utterance info to enqueue text and silence.
@@ -364,6 +368,32 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
         if (utteranceId == null || utteranceInfoList.size == 0) return
 
         // Log.e(TAG, "onStart(): $utteranceId")
+
+        val utteranceInfo = utteranceInfoList[0]
+        if (utteranceId == utteranceInfo.id) {
+            // Call onRangeStart() with the appropriate parameters.  This is done in
+            // order to accommodate engines that do not support the callback.
+            // Debugging note: text.length may be shorter than bytesRead due to
+            // silent utterance substitution and filtering.
+            onRangeStart(utteranceId, 0, utteranceInfo.bytesRead, 0)
+        }
+    }
+
+    override fun onRangeStart(utteranceId: String?, start: Int, end: Int,
+                              frame: Int) {
+        super.onRangeStart(utteranceId, start, end, frame)
+
+        val utteranceInfo = utteranceInfoList[0]
+        if (utteranceId == utteranceInfo.id) {
+
+            // Calculate the range of what is about to be spoken relative to the
+            // whole input.  We will call this the current input selection.
+            val selectionStart = utteranceInfo.inputStartIndex + start
+            val selectionEnd = utteranceInfo.inputStartIndex + end
+
+            // Notify the observer of the current input selection.
+            observer.notifyInputSelection(selectionStart, selectionEnd, taskId)
+        }
     }
 
     override fun onError(utteranceId: String?) { // deprecated
@@ -473,7 +503,7 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
 
 class ReadInputTask(ctx: Context, tts: TextToSpeech, inputStream: InputStream,
                     inputSize: Long, private val queueMode: Int,
-                    observer: TaskProgressObserver) :
+                    observer: TaskObserver) :
         TTSTask(ctx, tts, inputStream, inputSize, TASK_ID_READ_TEXT,
                 observer) {
 
@@ -535,7 +565,7 @@ class FileSynthesisTask(ctx: Context, tts: TextToSpeech,
                         inputStream: InputStream, inputSize: Long,
                         private val waveFilename: String,
                         private val inWaveFiles: MutableList<File>,
-                        observer: TaskProgressObserver) :
+                        observer: TaskObserver) :
         TTSTask(ctx, tts, inputStream, inputSize,
                 TASK_ID_WRITE_FILE, observer) {
 

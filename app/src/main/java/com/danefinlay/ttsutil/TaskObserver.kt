@@ -20,6 +20,7 @@
 
 package com.danefinlay.ttsutil
 
-interface TaskProgressObserver {
+interface TaskObserver {
     fun notifyProgress(progress: Int, taskId: Int, remainingTasks: Int)
+    fun notifyInputSelection(start: Long, end: Long, taskId: Int)
 }

@@ -41,7 +41,7 @@ import java.util.*
  * way.
  */
 abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
-        ActivityInterface, TaskProgressObserver {
+        ActivityInterface, TaskObserver {
 
     private val idleStatusEvent =
             ActivityEvent.StatusUpdateEvent(100, TASK_ID_IDLE, 0)
@@ -135,8 +135,8 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Register as a task progress observer.
-        myApplication.addProgressObserver(this)
+        // Register as a task observer.
+        myApplication.addTaskObserver(this)
 
         // Restore instance data.
         savedInstanceState?.run {
@@ -359,6 +359,12 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
         runOnUiThread { handleActivityEvent(event) }
     }
 
+    override fun notifyInputSelection(start: Long, end: Long, taskId: Int) {
+        // Log.e(TAG, "notifyInputSelection(): $start, $end, $taskId")
+
+        // TODO
+    }
+
     override fun onActivityResult(requestCode: Int, resultCode: Int,
                                   data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
@@ -494,6 +500,6 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
 
     override fun onDestroy() {
         super.onDestroy()
-        myApplication.deleteProgressObserver(this)
+        myApplication.deleteTaskObserver(this)
     }
 }
