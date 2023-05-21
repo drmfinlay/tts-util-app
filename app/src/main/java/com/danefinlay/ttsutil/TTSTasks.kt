@@ -386,6 +386,14 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
         val utteranceInfo = utteranceInfoList[0]
         if (utteranceId == utteranceInfo.id) {
 
+            // Calculate progress and notify the observer, if appropriate.
+            // Note: This is done only for engines which call onRangeStart().
+            if (start > 0) {
+                val bytesProcessed = (inputProcessed + start).toFloat()
+                val progress = (bytesProcessed / inputSize * 100).toInt()
+                if (progress in 0..99) observer.notifyProgress(progress, taskId, 0)
+            }
+
             // Calculate the range of what is about to be spoken relative to the
             // whole input.  We will call this the current input selection.
             val selectionStart = utteranceInfo.inputStartIndex + start
