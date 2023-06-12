@@ -55,7 +55,7 @@ abstract class QuickShareActivity : TTSActivity() {
         // If TTS is ready, start the service action.
         // Otherwise, handle TTS_NOT_READY.
         if (status == TextToSpeech.SUCCESS) startServiceAction()
-        else myApplication.handleTTSOperationResult(TTS_NOT_READY)
+        else myApplication.handleTaskResult(TTS_NOT_READY)
 
         // Finish the activity.
         finish()

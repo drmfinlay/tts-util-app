@@ -76,7 +76,9 @@ abstract class MyFragment : Fragment(), FragmentInterface {
 
         // Update the status text field.
         updateStatusField(statusText)
+    }
 
+    private fun onTaskQueueChange(event: ActivityEvent.TaskQueueChangeEvent) {
         // Update the task count field.
         updateTaskCountField(event.remainingTasks)
     }
@@ -85,6 +87,7 @@ abstract class MyFragment : Fragment(), FragmentInterface {
         // Handle events common to all fragments.
         when (event) {
             is ActivityEvent.StatusUpdateEvent -> onStatusUpdate(event)
+            is ActivityEvent.TaskQueueChangeEvent -> onTaskQueueChange(event)
             else -> {}
         }
     }

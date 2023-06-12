@@ -39,48 +39,17 @@ import java.lang.StringBuilder
 import java.net.MalformedURLException
 import java.net.URL
 import java.util.*
+import java.util.concurrent.ExecutorService
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
-abstract class MyUtteranceProgressListener(ctx: Context, val tts: TextToSpeech) :
-        UtteranceProgressListener() {
 
-    val app = ctx.applicationContext as ApplicationEx
-
-    fun displayMessage(string: String, long: Boolean) {
-        app.runOnUiThread {
-            if (long) longToast(string)
-            else toast(string)
-        }
-    }
-
-    fun displayMessage(id: Int, long: Boolean) {
-        app.runOnUiThread {
-            if (long) longToast(id)
-            else toast(id)
-        }
-    }
-
-    @CallSuper
-    open fun begin(): Boolean {
-        tts.setOnUtteranceProgressListener(this)
-        return true
-    }
-
-    @CallSuper
-    open fun finish(success: Boolean): Boolean {
-        tts.setOnUtteranceProgressListener(null)
-        return success
-    }
-}
-
-
-abstract class TTSTask(ctx: Context, tts: TextToSpeech,
-                       private val inputStream: InputStream,
-                       private val inputSize: Long,
-                       private val taskId: Int,
+abstract class TTSTask(val ctx: Context,
+                       private val execService: ExecutorService,
+                       val tts: TextToSpeech,
+                       val inputSource: InputSource,
                        private val observer: TaskObserver) :
-        MyUtteranceProgressListener(ctx, tts), Task {
+        UtteranceProgressListener(), Task {
 
     private class UtteranceInfo(val id: String,
                                 val text: CharSequence,
@@ -90,7 +59,7 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
                                 @Volatile
                                 var silenceEnqueued: Boolean)
 
-    private val streamReader: Reader = inputStream.reader().buffered(maxInputLength)
+    protected val app = ctx.applicationContext as ApplicationEx
 
     private val utteranceInfoList: MutableList<UtteranceInfo> =
             Collections.synchronizedList(mutableListOf())
@@ -107,6 +76,16 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
 
     // Note: Instance variables may be accessed by many (at least three) threads.
     // Hence, we use Java's "volatile" mechanism.
+
+    @Volatile
+    private var inputStream: InputStream? = null
+
+    @Volatile
+    private var inputSize: Long = 0
+
+    @Volatile
+    private var streamReader: Reader? = null
+
     @Volatile
     protected var finalize: Boolean = false
 
@@ -166,25 +145,78 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
         filtersEnabled = filterHashes || filterWebLinks || filterMailToLinks
     }
 
-    override fun begin(): Boolean {
-        if (!super.begin()) return false
+    fun displayMessage(string: String, long: Boolean) {
+        app.runOnUiThread {
+            if (long) longToast(string)
+            else toast(string)
+        }
+    }
+
+    fun displayMessage(id: Int, long: Boolean) {
+        app.runOnUiThread {
+            if (long) longToast(id)
+            else toast(id)
+        }
+    }
+
+    @CallSuper
+    override fun begin(): Int {
+        // Start listening for utterance progress events.
+        tts.setOnUtteranceProgressListener(this)
 
         // Notify the observer that work has begun.
-        observer.notifyProgress(0, taskId, 0)
+        observer.notifyProgress(0, id)
 
+        // Run validation checks, finishing early if unsuccessful.
+        val result = performValidationChecks()
+        if (result != SUCCESS) {
+            finish(false)
+            return result
+        }
+
+        // Delegate the rest of the work to the executor service and return.
+        execService.submit { beginProcessing() }
+        return SUCCESS
+    }
+
+    @CallSuper
+    protected open fun performValidationChecks(): Int {
+        // Use the input source to open an input stream and retrieve the content
+        // size in bytes.  Return early if this is not possible.
+        var inputStream: InputStream? = null
+        var inputSize: Long? = null
+        if (inputSource.isSourceAvailable(app)) {
+            inputStream = inputSource.openInputStream(app)
+            inputSize = inputSource.getSize(app)
+        }
+        if (inputStream == null || inputSize == null) return UNAVAILABLE_INPUT_SRC
+
+        // Verify that the input stream is at least one byte long.
+        if (inputSize == 0L) return ZERO_LENGTH_INPUT
+
+        // Set variables.
+        this.inputStream = inputStream
+        this.inputSize = inputSize
+        this.streamReader = inputStream.reader().buffered(maxInputLength)
+
+        // Everything is OK.
+        return SUCCESS
+    }
+
+    protected open fun beginProcessing() {
         // Enqueue the first input bytes, catching any IO exception.  This
         // jumpstarts the processing of the entire stream.
         try {
             streamHasFurtherInput = enqueueNextInput()
         } catch (exception: IOException) {
-            return finish(false)
+            finish(false)
+            return
         }
 
         // If there were zero input bytes, finish and return.
         if (!streamHasFurtherInput && utteranceInfoList.size == 0) {
             finish(true)
         }
-        return true
     }
 
     private fun filterChar(char: Char): Boolean {
@@ -264,6 +296,7 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
     }
 
     private fun enqueueNextInput(): Boolean {
+        val streamReader: Reader = this.streamReader ?: return false
         val buffer = ArrayList<Char>()
         var bytesRead = 0
 
@@ -341,14 +374,15 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
         }
     }
 
-    override fun finish(success: Boolean): Boolean {
+    @CallSuper
+    open fun finish(success: Boolean): Boolean {
         // Close the reader and input stream.
-        streamReader.close()
-        inputStream.close()
+        streamReader?.close()
+        inputStream?.close()
 
         // Notify the observer that the task is finished.
         val progress = if (success) 100 else -1
-        observer.notifyProgress(progress, taskId, 0)
+        observer.notifyProgress(progress, id)
 
         // If any input was filtered, display a toast message.
         if (inputFiltered > 0) {
@@ -360,8 +394,9 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
             displayMessage(message, false)
         }
 
-        // Call the super method.
-        return super.finish(success)
+        // Stop listening for utterance progress events and return.
+        tts.setOnUtteranceProgressListener(null)
+        return true
     }
 
     override fun onStart(utteranceId: String?) {
@@ -391,7 +426,7 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
             if (start > 0) {
                 val bytesProcessed = (inputProcessed + start).toFloat()
                 val progress = (bytesProcessed / inputSize * 100).toInt()
-                if (progress in 0..99) observer.notifyProgress(progress, taskId, 0)
+                if (progress in 0..99) observer.notifyProgress(progress, id)
             }
 
             // Calculate the range of what is about to be spoken relative to the
@@ -400,7 +435,7 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
             val selectionEnd = utteranceInfo.inputStartIndex + end
 
             // Notify the observer of the current input selection.
-            observer.notifyInputSelection(selectionStart, selectionEnd, taskId)
+            observer.notifyInputSelection(selectionStart, selectionEnd, id)
         }
     }
 
@@ -458,7 +493,7 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
         // Calculate progress and notify the observer.
         // Note: progress=[-1, 100] is dispatched by the finish() method.
         val progress = (inputProcessed.toFloat() / inputSize * 100).toInt()
-        if (progress in 0..99) observer.notifyProgress(progress, taskId, 0)
+        if (progress in 0..99) observer.notifyProgress(progress, id)
 
         // Finalize the task, if this has been requested.
         if (finalize) {
@@ -509,18 +544,50 @@ abstract class TTSTask(ctx: Context, tts: TextToSpeech,
 }
 
 
-class ReadInputTask(ctx: Context, tts: TextToSpeech, inputStream: InputStream,
-                    inputSize: Long, private val queueMode: Int,
-                    observer: TaskObserver) :
-        TTSTask(ctx, tts, inputStream, inputSize, TASK_ID_READ_TEXT,
-                observer) {
+class ReadInputTask(ctx: Context,
+                    execService: ExecutorService,
+                    tts: TextToSpeech,
+                    inputSource: InputSource,
+                    observer: TaskObserver,
+                    private val queueMode: Int) :
+        TTSTask(ctx, execService, tts, inputSource, observer) {
 
-    override fun begin(): Boolean {
-        // Request audio focus.  Finish early if our request was denied.
-        // Otherwise, call the super method.
-        if (!app.requestAudioFocus()) return finish(false)
-        return super.begin()
+    override val id: Int = TASK_ID_READ_TEXT
+
+    override fun beginProcessing() {
+        // Request audio focus.  If our request is denied, finish early.
+        if (!app.requestAudioFocus()) {
+            finish(false)
+            return
+        }
+
+        // Call the super method.
+        super.beginProcessing()
     }
+
+    override fun getBeginTaskMessage(ctx: Context): String {
+        return ctx.getString(
+                R.string.begin_reading_source_message,
+                inputSource.description
+        )
+    }
+
+    override fun getShortDescription(ctx: Context): String =
+            ctx.getString(R.string.reading_notification_title)
+
+    override fun getLongDescription(ctx: Context, remainingTasks: Int): String {
+        // Example: "Reading from abc.txt…
+        //           2 tasks remaining."
+        val textId = R.string.progress_notification_text
+        val beginTextId = R.string.begin_synthesizing_source_message
+        val srcDescription = inputSource.description
+        val beginText = ctx.getString(beginTextId, srcDescription)
+        return ctx.getString(textId, beginText, remainingTasks,
+                ctx.resources.getQuantityString(R.plurals.tasks, remainingTasks))
+    }
+
+    override fun getZeroLengthInputMessage(ctx: Context): String =
+            ctx.getString(R.string.cannot_read_empty_input_message)
 
     override fun enqueueSilence(durationInMs: Long): Boolean {
         // No silence enqueued.
@@ -569,23 +636,66 @@ class ReadInputTask(ctx: Context, tts: TextToSpeech, inputStream: InputStream,
     }
 }
 
-class FileSynthesisTask(ctx: Context, tts: TextToSpeech,
-                        inputStream: InputStream, inputSize: Long,
-                        private val waveFilename: String,
-                        private val inWaveFiles: MutableList<File>,
-                        observer: TaskObserver) :
-        TTSTask(ctx, tts, inputStream, inputSize,
-                TASK_ID_WRITE_FILE, observer) {
+class FileSynthesisTask(ctx: Context,
+                        execService: ExecutorService,
+                        tts: TextToSpeech,
+                        inputSource: InputSource,
+                        observer: TaskObserver,
+                        val outDirectory: Directory,
+                        val waveFilename: String,
+                        val inWaveFiles: MutableList<File>) :
+        TTSTask(ctx, execService, tts, inputSource, observer) {
 
-    override fun begin(): Boolean {
+    override val id: Int = TASK_ID_WRITE_FILE
+
+    override fun performValidationChecks(): Int {
+        val result = super.performValidationChecks()
+        if (result != SUCCESS) return result
+
+        // Verify that the out directory exists and that we have permission to
+        // create files in it.
+        if (!outDirectory.exists(app)) return UNAVAILABLE_OUT_DIR
+        if (!outDirectory.canWrite(app)) return UNWRITABLE_OUT_DIR
+
+        // Everything is OK.
+        return SUCCESS
+    }
+
+    override fun beginProcessing() {
         // Delete silent wave files because they may be incompatible with current
         // user settings.
         val workingDirectoryFiles = getWorkingDirectory().listFiles() ?: arrayOf()
         for (file in workingDirectoryFiles) {
             if (file.name.endsWith("ms_sil.wav")) file.delete()
         }
-        return super.begin()
+
+        // Call the super method.
+        super.beginProcessing()
     }
+
+    override fun getBeginTaskMessage(ctx: Context): String {
+        return ctx.getString(
+                R.string.begin_synthesizing_source_message,
+                inputSource.description
+        )
+    }
+
+    override fun getShortDescription(ctx: Context): String =
+            ctx.getString(R.string.synthesis_notification_title)
+
+    override fun getLongDescription(ctx: Context, remainingTasks: Int): String {
+        // Example: "Synthesising wave file from abc.txt…
+        //           2 tasks remaining."
+        val textId = R.string.progress_notification_text
+        val beginTextId = R.string.begin_synthesizing_source_message
+        val srcDescription = inputSource.description
+        val beginText = ctx.getString(beginTextId, srcDescription)
+        return ctx.getString(textId, beginText, remainingTasks,
+                ctx.resources.getQuantityString(R.plurals.tasks, remainingTasks))
+    }
+
+    override fun getZeroLengthInputMessage(ctx: Context): String =
+            ctx.getString(R.string.cannot_synthesize_empty_input_message)
 
     private fun getWorkingDirectory(): File {
         var dir: File

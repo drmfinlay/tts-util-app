@@ -28,21 +28,57 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.OutputStream
+import java.util.concurrent.ExecutorService
 
 class ProcessWaveFilesTask(private val ctx: Context,
+                           private val execService: ExecutorService,
+                           private val inputSource: InputSource,
                            private val observer: TaskObserver,
-                           private val inWaveFiles: MutableList<File>,
-                           private val outputStream: OutputStream,
-                           private val finalWaveFilename: String):
+                           private val outDirectory: Directory,
+                           private val waveFilename: String,
+                           private val inWaveFiles: MutableList<File>):
         Task, JoinWaveFilesHandler {
 
     @Volatile
     private var finalize: Boolean = false
 
-    override fun begin(): Boolean {
-        // Notify the observer that post-processing has begun.
-        observer.notifyProgress(0, TASK_ID, 0)
+    @Volatile
+    private var outStream: OutputStream? = null
 
+    override val id: Int = TASK_ID_PROCESS_FILE
+
+    override fun begin(): Int {
+        // Notify the observer that post-processing has begun.
+        observer.notifyProgress(0, id)
+
+        // Run validation checks, finishing early if unsuccessful.
+        val result = performValidationChecks()
+        if (result != SUCCESS) {
+            finish(false)
+            return result
+        }
+
+        // Delegate the rest of the work to the executor service and return.
+        execService.submit { beginProcessing() }
+        return SUCCESS
+    }
+
+    private fun performValidationChecks(): Int {
+        // Use the out directory to create and open an output stream on the
+        // specified document.  Return early if this is not possible.
+        if (!outDirectory.exists(ctx)) return UNAVAILABLE_OUT_DIR
+        val outputStream = outDirectory.openDocumentOutputStream(
+                ctx, waveFilename, "audio/x-wav"
+        ) ?: return UNWRITABLE_OUT_DIR
+
+        // Set variables.
+        this.outStream = outputStream
+
+        // Everything is OK.
+        return SUCCESS
+    }
+
+    private fun beginProcessing() {
         // Find the first proper wave file and read its header.
         val minFileSize = WaveFileHeader.MIN_SIZE + 1
         val wf = inWaveFiles.find { it.length() >= minFileSize }
@@ -71,20 +107,51 @@ class ProcessWaveFilesTask(private val ctx: Context,
         for (f in toRemoveAndDelete) { inWaveFiles.remove(f);  f.delete(); }
 
         // Verify that the initialization data is correct.
-        var success: Boolean
-        if (inWaveFiles.size == 0) return finish(false)
+        if (inWaveFiles.size == 0) {
+            finish(false)
+            return
+        }
 
         // TODO Optionally handle creation of MP3 files here instead.
 
-        // Join each wave file into one large file and write it to the output
-        // stream.
+        // Join each wave file into one large one and write it to the output stream.
+        var success: Boolean
         try {
-            success = joinWaveFiles(inWaveFiles, outputStream, this)
+            success = joinWaveFiles(inWaveFiles, outStream!!, this)
         } catch (error: RuntimeException) {
             success = false
             Log.e(TAG, "Failed to join wave ${inWaveFiles.size} files.", error)
         }
-        return finish(success)
+
+        // Finish.
+        finish(success)
+    }
+
+    override fun getBeginTaskMessage(ctx: Context): String {
+        return ctx.getString(
+                R.string.begin_processing_source_message,
+                inputSource.description
+        )
+    }
+
+    override fun getShortDescription(ctx: Context): String =
+            ctx.getString(R.string.post_synthesis_notification_title)
+
+    override fun getLongDescription(ctx: Context, remainingTasks: Int): String {
+        // Example: "Processing synthesized abc.txt wave file…
+        //           2 tasks remaining."
+        val textId = R.string.progress_notification_text
+        val beginTextId = R.string.begin_processing_source_message
+        val srcDescription = inputSource.description
+        val beginText = ctx.getString(beginTextId, srcDescription)
+        return ctx.getString(textId, beginText, remainingTasks,
+                ctx.resources.getQuantityString(R.plurals.tasks, remainingTasks))
+    }
+
+    override fun getZeroLengthInputMessage(ctx: Context): String {
+        // This task does no direct text input processing and so has no zero length
+        // input error message.
+        return ""
     }
 
     private fun writeSilentWaveFile(file: File, header: WaveFileHeader,
@@ -114,7 +181,7 @@ class ProcessWaveFilesTask(private val ctx: Context,
         // Notify the progress observer of the procedure's total progress.
         // Note: progress=[-1, 100] are dispatched by finish().
         if (totalProgress in 0..99) {
-            observer.notifyProgress(totalProgress, TASK_ID, 0)
+            observer.notifyProgress(totalProgress, id)
         }
 
         // Delete finished files, except the special ones for silence, which may be
@@ -130,17 +197,17 @@ class ProcessWaveFilesTask(private val ctx: Context,
 
     private fun finish(success: Boolean): Boolean {
         // Close the output stream.
-        outputStream.close()
+        outStream?.close()
 
         // Display an appropriate message to the user.
         val messageId = if (success) R.string.write_to_file_message_success
                         else R.string.write_to_file_message_failure
-        val message = ctx.getString(messageId, finalWaveFilename)
+        val message = ctx.getString(messageId, waveFilename)
         ctx.runOnUiThread { longToast(message) }
 
         // Notify the progress observer that the task is finished.
         val progress = if (success) 100 else -1
-        observer.notifyProgress(progress, TASK_ID, 0)
+        observer.notifyProgress(progress, id)
 
         // Delete all internal wave files and return.
         for (wf in inWaveFiles) {
@@ -154,7 +221,6 @@ class ProcessWaveFilesTask(private val ctx: Context,
     }
 
     companion object {
-        private const val TASK_ID = TASK_ID_PROCESS_FILE
         private const val SILENCE_FILE_SUFFIX = "ms_sil.wav"
     }
 }

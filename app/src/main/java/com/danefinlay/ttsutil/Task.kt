@@ -20,7 +20,15 @@
 
 package com.danefinlay.ttsutil
 
+import android.content.Context
+
 interface Task {
-    fun begin(): Boolean
+    val id: Int
+
+    fun begin(): Int
+    fun getBeginTaskMessage(ctx: Context): String
+    fun getShortDescription(ctx: Context): String
+    fun getLongDescription(ctx: Context, remainingTasks: Int): String
+    fun getZeroLengthInputMessage(ctx: Context): String
     fun finalize()
 }

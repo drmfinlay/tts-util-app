@@ -143,6 +143,9 @@ abstract class ReadTextFragmentBase : MyFragment() {
         val event = activityInterface?.getLastStatusUpdate()
         if (event != null) onStatusUpdate(event)
 
+        // Set the task count field.
+        updateTaskCountField(myApplication.taskCount)
+
         // Read and set common values.
         if (savedInstanceState == null) {
             val intent = activity?.intent
@@ -228,7 +231,7 @@ abstract class ReadTextFragmentBase : MyFragment() {
         // Read text and handle the result.
         val inputSource = InputSource.CharSequence(text, textSourceDescription)
         val result = myApplication.enqueueReadInputTask(inputSource, QUEUE_ADD)
-        myApplication.handleTTSOperationResult(result)
+        myApplication.handleTaskResult(result)
     }
 
     private fun synthesizeTextToFile(waveFilename: String, directory: Directory,
@@ -247,12 +250,13 @@ abstract class ReadTextFragmentBase : MyFragment() {
         // handle the result.
         val text = inputLayoutContent ?: ""
         val inputSource = InputSource.CharSequence(text, textSourceDescription)
-        val result = myApplication.enqueueFileSynthesisTasks(inputSource, directory,
-                waveFilename)
+        val result = myApplication.enqueueFileSynthesisTasks(
+                inputSource, directory, waveFilename
+        )
         when (result) {
             UNAVAILABLE_OUT_DIR -> buildUnavailableDirAlertDialog().show()
             UNWRITABLE_OUT_DIR -> buildUnwritableOutDirAlertDialog().show()
-            else -> myApplication.handleTTSOperationResult(result)
+            else -> myApplication.handleTaskResult(result)
         }
     }
 
@@ -304,7 +308,7 @@ abstract class ReadTextFragmentBase : MyFragment() {
 
     protected fun attemptPlaybackOnStart() {
         if (myApplication.mTTS == null) {
-            myApplication.handleTTSOperationResult(TTS_NOT_READY)
+            myApplication.handleTaskResult(TTS_NOT_READY)
         } else {
             onClickPlay()
             playbackOnStart = false

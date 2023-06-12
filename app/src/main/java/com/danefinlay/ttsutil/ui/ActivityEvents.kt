@@ -69,16 +69,30 @@ sealed class ActivityEvent : Parcelable {
         }
     }
 
+    class TaskQueueChangeEvent(val remainingTasks: Int) : ActivityEvent() {
+        constructor(parcel: Parcel) : this(parcel.readInt())
+
+        override fun writeToParcel(parcel: Parcel, flags: Int) {
+            parcel.writeInt(remainingTasks)
+        }
+
+        override fun describeContents(): Int = 0
+
+        companion object CREATOR : Parcelable.Creator<TaskQueueChangeEvent> {
+            override fun createFromParcel(parcel: Parcel): TaskQueueChangeEvent =
+                    TaskQueueChangeEvent(parcel)
+            override fun newArray(size: Int): Array<TaskQueueChangeEvent?> =
+                    arrayOfNulls(size)
+        }
+    }
+
     class StatusUpdateEvent(val progress: Int,
-                            val taskId: Int,
-                            val remainingTasks: Int) : ActivityEvent() {
-        constructor(parcel: Parcel) :
-                this(parcel.readInt(), parcel.readInt(), parcel.readInt())
+                            val taskId: Int) : ActivityEvent() {
+        constructor(parcel: Parcel) : this(parcel.readInt(), parcel.readInt())
 
         override fun writeToParcel(parcel: Parcel, flags: Int) {
             parcel.writeInt(progress)
             parcel.writeInt(taskId)
-            parcel.writeInt(remainingTasks)
         }
 
         override fun describeContents(): Int = 0

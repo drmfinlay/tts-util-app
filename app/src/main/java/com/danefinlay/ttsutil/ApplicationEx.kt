@@ -33,34 +33,41 @@ import android.speech.tts.TextToSpeech.*
 import androidx.core.app.NotificationCompat
 import androidx.preference.PreferenceManager
 import org.jetbrains.anko.*
-import java.io.InputStream
+import java.io.File
 import java.util.*
 import java.util.concurrent.Executors
 
-class ApplicationEx : Application(), OnInitListener {
+class ApplicationEx : Application(), OnInitListener, TaskObserver {
 
     var mTTS: TextToSpeech? = null
         private set
 
     private var ttsInitialized: Boolean = false
     private var ttsInitErrorMessage: String? = null
-    private var lastAttemptedTaskId: Int? = null
-    private var currentTask: Task? = null
-    private val taskQueue = ArrayDeque<TaskData>()
+    private val taskQueue = ArrayDeque<Task>()
     private val userTaskExecService by lazy { Executors.newSingleThreadExecutor() }
     private val notifyingExecService by lazy { Executors.newSingleThreadExecutor() }
     private val taskObservers = mutableSetOf<TaskObserver>()
     private var notificationBuilder: NotificationCompat.Builder? = null
 
     @Volatile
+    private var currentTaskProgress: Int = 100
+
+    @Volatile
     private var notificationsEnabled: Boolean = false
 
     private val asyncTaskObserver = object : TaskObserver {
-        override fun notifyProgress(progress: Int, taskId: Int,
-                                    remainingTasks: Int) {
+        override fun notifyProgress(progress: Int, taskId: Int) {
             // Submit an executor task to call the application procedure.
             notifyingExecService.submit {
-                this@ApplicationEx.notifyProgress(progress, taskId, remainingTasks)
+                this@ApplicationEx.notifyProgress(progress, taskId)
+            }
+        }
+
+        override fun notifyTaskQueueChange(remainingTasks: Int) {
+            // Submit an executor task to call the application procedure.
+            notifyingExecService.submit {
+                this@ApplicationEx.notifyTaskQueueChange(remainingTasks)
             }
         }
 
@@ -75,29 +82,21 @@ class ApplicationEx : Application(), OnInitListener {
     val readingTaskInProgress: Boolean
         get () {
             val readingTasks = listOf(TASK_ID_READ_TEXT)
-            return taskInProgress && taskQueue.peek()?.taskId in readingTasks
+            return taskInProgress && taskQueue.peek()?.id in readingTasks
         }
 
     val fileSynthesisTaskInProgress: Boolean
         get () {
             val fileSynthesisTasks = listOf(TASK_ID_WRITE_FILE,
                     TASK_ID_PROCESS_FILE)
-            return taskInProgress && taskQueue.peek()?.taskId in fileSynthesisTasks
+            return taskInProgress && taskQueue.peek()?.id in fileSynthesisTasks
         }
 
     val taskInProgress: Boolean
-        get () = taskQueue.peek()?.progress in 0..99
+        get () = currentTaskProgress in 0..99
 
-    private val unfinishedTaskCount: Int
-        get() {
-            // Determine the total number of unfinished tasks.
-            val queueSize = taskQueue.size
-            var result = queueSize
-            val taskData = taskQueue.peek()
-            if (taskData?.progress == 100) result -= 1
-            else if (taskData?.progress == -1) result = 0
-            return result
-        }
+    val taskCount: Int
+        get() = taskQueue.size
 
     val ttsEngineName: String?
         get() {
@@ -170,9 +169,8 @@ class ApplicationEx : Application(), OnInitListener {
         if (notificationsEnabled) return
 
         // Post the current notification, if necessary.
-        if (ttsInitialized && taskQueue.size > 0) notifyingExecService.submit {
-            val taskData = taskQueue.peek()
-            if (taskData != null) postNotification(taskData, unfinishedTaskCount)
+        if (ttsInitialized && taskQueue.size > 0) {
+            notifyingExecService.submit { postTaskNotification() }
         }
 
         // Set notifications as enabled.
@@ -337,10 +335,10 @@ class ApplicationEx : Application(), OnInitListener {
         ttsInitialized = true
 
         // If there are one or more tasks in the queue, begin processing.
-        val taskData = taskQueue.peek()
-        if (taskData != null) {
-            val ttsOpRes = beginTaskOrNotify(taskData, false)
-            handleTTSOperationResult(ttsOpRes)
+        val task = taskQueue.peek()
+        if (task != null) {
+            val result = beginTaskOrNotify(task, false)
+            handleTaskResult(result)
         }
     }
 
@@ -351,15 +349,13 @@ class ApplicationEx : Application(), OnInitListener {
         // Interrupt TTS synthesis.
         val success = tts.stop() == 0
 
-        // Stop the current task, if there is one, and clear the queue.
+        // Finalize the current task, if there is one, and clear the queue.
         // If the queue was empty, notify observers that we are idle.
         val idle = taskQueue.size == 0
-        taskQueue.clear()
-        currentTask?.finalize()
-        currentTask = null
-        if (idle) {
-            asyncTaskObserver.notifyProgress(100, TASK_ID_IDLE, 0)
-        }
+        taskQueue.peek()?.finalize()
+        if (idle) asyncTaskObserver.notifyProgress(100, TASK_ID_IDLE)
+        else taskQueue.clear()
+        asyncTaskObserver.notifyTaskQueueChange(0)
         return success
     }
 
@@ -371,52 +367,31 @@ class ApplicationEx : Application(), OnInitListener {
         ctx.startActivity(intent)
     }
 
-    fun handleTTSOperationResult(result: Int) {
-        // FIXME Cleanup this repetitive function.
-        when (result) {
+    fun handleTaskResult(result: Int) {
+        // Handle task result codes by displaying a message.  Do nothing for tasks
+        // that were begun successfully.
+        val task = taskQueue.peek()
+        val message: String = when (result) {
             TTS_NOT_READY -> {
                 val defaultMessage = getString(R.string.tts_not_ready_message)
                 val errorMessage = ttsInitErrorMessage
-                val notReadyMessage = errorMessage ?: defaultMessage
-                runOnUiThread { longToast(notReadyMessage) }
+                errorMessage ?: defaultMessage
             }
             TTS_BUSY -> {
-                // Inform the user that the application is currently busy performing
-                // another operation.
-                val currentTaskTextId = when (taskQueue.peek()?.taskId) {
-                    TASK_ID_READ_TEXT ->
-                        R.string.reading_notification_title
-                    TASK_ID_WRITE_FILE ->
-                        R.string.synthesis_notification_title
-                    TASK_ID_PROCESS_FILE ->
-                        R.string.post_synthesis_notification_title
-                    else -> return
-                }
-                val message = getString(R.string.tts_busy_message,
-                        getString(currentTaskTextId))
-                runOnUiThread { longToast(message) }
+                // The application is currently busy performing another operation.
+                val taskDescription = task?.getShortDescription(this) ?: return
+                getString(R.string.tts_busy_message, taskDescription)
             }
-            UNAVAILABLE_OUT_DIR -> {
-                val message = getString(R.string.unavailable_out_dir_message)
-                runOnUiThread { longToast(message) }
-            }
-            UNAVAILABLE_INPUT_SRC -> {
-                val message = getString(R.string.unavailable_input_src_message)
-                runOnUiThread { longToast(message) }
-            }
-            UNWRITABLE_OUT_DIR -> {
-                val message = getString(R.string.unwritable_out_dir_message)
-                runOnUiThread { longToast(message) }
-            }
-            ZERO_LENGTH_INPUT -> {
-                val messageId = when (lastAttemptedTaskId) {
-                    TASK_ID_READ_TEXT -> R.string.cannot_read_empty_input_message
-                    TASK_ID_WRITE_FILE -> R.string.cannot_synthesize_empty_input_message
-                    else -> return
-                }
-                val message = getString(messageId)
-                runOnUiThread { longToast(message) }
-            }
+            UNAVAILABLE_OUT_DIR -> getString(R.string.unavailable_out_dir_message)
+            UNAVAILABLE_INPUT_SRC -> getString(R.string.unavailable_input_src_message)
+            UNWRITABLE_OUT_DIR -> getString(R.string.unwritable_out_dir_message)
+            ZERO_LENGTH_INPUT -> task?.getZeroLengthInputMessage(this) ?: return
+            else -> ""
+        }
+
+        // Display the message, if appropriate.
+        if (message.length > 0) {
+            runOnUiThread { longToast(message) }
         }
     }
 
@@ -426,7 +401,6 @@ class ApplicationEx : Application(), OnInitListener {
         mTTS = null
         ttsInitialized = false
         taskQueue.clear()
-        currentTask = null
 
         // Cancel any TTS notifications present.
         notificationTasks.forEach { notificationManager.cancel(it) }
@@ -449,13 +423,12 @@ class ApplicationEx : Application(), OnInitListener {
         taskObservers.remove(observer)
     }
 
-    private fun postNotification(taskData: TaskData, remainingTasks: Int) {
-        // Do nothing if the given task ID is, e.g., TASK_ID_IDLE.
-        val taskId = taskData.taskId
-        val progress = taskData.progress
-        if (taskId !in notificationTasks) return
+    private fun postTaskNotification() {
+        // Retrieve the current task, if any.
+        val task = taskQueue.peek() ?: return
 
         // Initialize the notification builder using the given task ID.
+        val taskId = task.id
         var builder: NotificationCompat.Builder? = notificationBuilder
         if (builder == null) {
             builder = getNotificationBuilder(this, taskId)
@@ -464,9 +437,10 @@ class ApplicationEx : Application(), OnInitListener {
 
         // Build (or re-build) the notification with the specified progress if the
         // task has not yet been completed.
+        val progress = currentTaskProgress
         if (progress in 0..99) {
-            val title = getNotificationTitle(this, taskData)
-            val text = getNotificationText(this, taskData, remainingTasks)
+            val title = task.getShortDescription(this)
+            val text = task.getLongDescription(this, taskQueue.size)
             val notification = builder
                     .setContentTitle(title)
                     .setStyle(NotificationCompat.BigTextStyle().bigText(text))
@@ -480,7 +454,7 @@ class ApplicationEx : Application(), OnInitListener {
         // Note: This is to prevent the scenario where our notification is canceled
         // once one task is finished only for another, very similar notification to
         // be posted a fraction of a second later!
-        else if (remainingTasks == 0) cancelNotification(taskId)
+        else if (taskQueue.size == 0) cancelNotification(taskId)
     }
 
     private fun cancelNotification(taskId: Int) {
@@ -488,252 +462,132 @@ class ApplicationEx : Application(), OnInitListener {
         notificationBuilder = null
     }
 
-    private fun notifyProgress(progress: Int, taskId: Int, remainingTasks: Int) {
-        // Note: The size of the taskQueue should not be assumed here.
-        // Retrieve the current task data and update its progress attribute, if
-        // necessary.
-        val taskData = taskQueue.peek()
-        if (taskData != null && taskData.taskId == taskId) {
-            taskData.progress = progress
+    override fun notifyProgress(progress: Int, taskId: Int) {
+        // Note: It is acceptable for the task queue to be empty when this method is
+        // called, e.g., when progress=100 and taskId=TASK_ID_IDLE.
+
+        // Store the current progress.
+        currentTaskProgress = progress
+
+        // Notify registered observers.
+        for (observer in taskObservers) {
+            observer.notifyProgress(progress, taskId)
         }
 
-        // Determine the total number of unfinished tasks.
-        val totalUnfinishedTasks = remainingTasks + unfinishedTaskCount
+        // If there is a finished task in the queue, remove it.
+        // Notify registered observers of the change.
+        val taskCount = taskQueue.size
+        if (taskCount > 0 && progress !in 0..99) {
+            taskQueue.pop()
+            notifyTaskQueueChange(taskCount - 1)
+        }
 
         // Post a progress notification, if necessary.
-        if (notificationsEnabled && taskData != null) {
-            postNotification(taskData, totalUnfinishedTasks)
-        }
+        if (notificationsEnabled) postTaskNotification()
 
-        // Notify other observers.
-        for (observer in taskObservers) {
-            observer.notifyProgress(progress, taskId, totalUnfinishedTasks)
-        }
-
-        // If the task has finished, finalize it and remove it from the queue.
-        // Clear the current task if this is the last one.
-        if (progress == 100 || progress == -1) {
-            currentTask?.finalize()
-            if (taskQueue.size > 0) taskQueue.pop()
-            if (taskQueue.size == 0) currentTask = null
-        }
-
-        // If the task finished successfully and there are more tasks in the queue,
-        // then start the next one, cancelling the previous task's notification if
-        // necessary.  If the task finished unsuccessfully, clear the queue instead.
-        val nextTaskData = taskQueue.peek()
-        if (progress == 100 && nextTaskData != null) {
-            if (taskId != nextTaskData.taskId) cancelNotification(taskId)
-            val result = beginTaskOrNotify(nextTaskData, true)
-            handleTTSOperationResult(result)
+        // Start the next task, if there is one.  Cancel the notification if the
+        // task ID is different.
+        val nextTask = taskQueue.peek()
+        if (progress == 100) {
+            if (nextTask != null) {
+                if (taskId != nextTask.id) cancelNotification(taskId)
+                val result = beginTaskOrNotify(nextTask, true)
+                handleTaskResult(result)
+            }
         } else if (progress == -1) {
             taskQueue.clear()
-            currentTask = null
         }
     }
 
-    private fun notifyInputSelection(start: Long, end: Long, taskId: Int) {
+    override fun notifyTaskQueueChange(remainingTasks: Int) {
+        // Notify other observers.
+        for (observer in taskObservers) {
+            observer.notifyTaskQueueChange(remainingTasks)
+        }
+    }
+
+    override fun notifyInputSelection(start: Long, end: Long, taskId: Int) {
         // Notify other observers.
         for (observer in taskObservers) {
             observer.notifyInputSelection(start, end, taskId)
         }
     }
 
-    @Synchronized
-    private fun speak(taskData: TaskData.ReadInputTaskData): Int {
-        val tts = mTTS
-
-        // Set this task as under consideration.
-        lastAttemptedTaskId = taskData.taskId
-
-        // Return early if it is not possible or not appropriate to proceed.
-        if (tts == null) return TTS_NOT_READY
-
-        // Use the input source to open an input stream and retrieve the content
-        // size in bytes.  Return early if this is not possible.
-        val inputSource = taskData.inputSource
-        var inputStream: InputStream? = null
-        var inputSize: Long? = null
-        if (inputSource.isSourceAvailable(this)) {
-            inputStream = inputSource.openInputStream(this)
-            inputSize = inputSource.getSize(this)
-        }
-        if (inputStream == null || inputSize == null) return UNAVAILABLE_INPUT_SRC
-
-        // Verify that the input stream is at least one byte long.
-        if (inputSize == 0L) return ZERO_LENGTH_INPUT
-
-        // Initialize the task, begin it asynchronously and return.
-        val task = ReadInputTask(this, tts, inputStream, inputSize,
-                taskData.queueMode, asyncTaskObserver)
-        currentTask = task
-        userTaskExecService.submit { task.begin() }
-        return SUCCESS
-    }
-
-    @Synchronized
-    private fun synthesizeToFile(taskData: TaskData.FileSynthesisTaskData): Int {
-        val tts = mTTS
-
-        // Set this task as under consideration.
-        lastAttemptedTaskId = taskData.taskId
-
-        // Return early if it is not possible or not appropriate to proceed.
-        if (tts == null) return TTS_NOT_READY
-
-        // Use the input source to open an input stream and retrieve the content
-        // size in bytes.  Return early if this is not possible.
-        val inputSource = taskData.inputSource
-        var inputStream: InputStream? = null
-        var inputSize: Long? = null
-        if (inputSource.isSourceAvailable(this)) {
-            inputStream = inputSource.openInputStream(this)
-            inputSize = inputSource.getSize(this)
-        }
-        if (inputStream == null || inputSize == null) return UNAVAILABLE_INPUT_SRC
-
-        // Verify that the input stream is at least one byte long.
-        if (inputSize == 0L) return ZERO_LENGTH_INPUT
-
-        // Verify that the out directory exists and that we have permission to
-        // create files in it.
-        val outDirectory = taskData.outDirectory
-        val waveFilename = taskData.waveFilename
-        if (!outDirectory.exists(this)) return UNAVAILABLE_OUT_DIR
-        if (!outDirectory.canWrite(this)) return UNWRITABLE_OUT_DIR
-
-        // Retrieve the mutable file list initialized earlier on.  This list will
-        // be used by the next task if this one is successful.
-        val inWaveFiles = taskData.inWaveFiles
-
-        // Initialize the task, begin it asynchronously and return.
-        val task = FileSynthesisTask(this, tts, inputStream, inputSize,
-                waveFilename, inWaveFiles, asyncTaskObserver)
-        currentTask = task
-        userTaskExecService.submit { task.begin() }
-        return SUCCESS
-    }
-
-    @Synchronized
-    private fun processWaveFiles(taskData: TaskData.ProcessWaveFilesTaskData): Int {
-        // Set this task as under consideration.
-        lastAttemptedTaskId = taskData.taskId
-
-        // Retrieve the previous task's data.
-        val prevTaskData = taskData.prevTaskData
-
-        // Use the out directory to create and open an output stream on the
-        // specified document.  Return early if this is not possible.
-        val outDirectory = prevTaskData.outDirectory
-        val waveFilename = prevTaskData.waveFilename
-        if (!outDirectory.exists(this)) return UNAVAILABLE_OUT_DIR
-        val outputStream = outDirectory.openDocumentOutputStream(this,
-                waveFilename, "audio/x-wav") ?: return UNWRITABLE_OUT_DIR
-
-        // Initialize the task, begin it asynchronously and return.
-        val task = ProcessWaveFilesTask(this, asyncTaskObserver,
-                prevTaskData.inWaveFiles, outputStream, waveFilename)
-        currentTask = task
-        userTaskExecService.submit { task.begin() }
-        return SUCCESS
-    }
-
-    private fun beginTaskOrNotify(taskData: TaskData, priorTask: Boolean): Int {
+    private fun beginTaskOrNotify(task: Task, postTaskMessage: Boolean): Int {
         // Return early if TTS is not yet initialized.
         if (!ttsInitialized) return SUCCESS
 
-        // If the specified task is at the head of the queue, begin it.
-        // Otherwise, notify the observer.
-        val observer = asyncTaskObserver
-        val result: Int
-        if (taskQueue.peek() === taskData && ttsInitialized) {
-            // Begin the task, taking note of information that might be used later.
-            val infoMessageId: Int
-            val srcDescription: CharSequence
-            when (taskData) {
-                is TaskData.ReadInputTaskData -> {
-                    result = speak(taskData)
-                    infoMessageId = R.string.begin_reading_source_message
-                    srcDescription = taskData.inputSource.description
-                }
-                is TaskData.FileSynthesisTaskData -> {
-                    result = synthesizeToFile(taskData)
-                    infoMessageId = R.string.begin_synthesizing_source_message
-                    srcDescription = taskData.inputSource.description
-                }
-                is TaskData.ProcessWaveFilesTaskData -> {
-                    result = processWaveFiles(taskData)
-                    infoMessageId = R.string.begin_processing_source_message
-                    srcDescription = taskData.prevTaskData.inputSource.description
-                }
-            }
+        // If the specified task is at the head of the queue, begin it and, if
+        // appropriate, display an info message.
+        var result: Int = SUCCESS
+        val currentTask = taskQueue.peek()
+        if (currentTask === task) {
+            // Begin the task.
+            // Note: Each task is expected to notify the observer of failure via
+            // `notifyProgress'.
+            result = task.begin()
 
             // If it is appropriate, display an info message.
-            if (result == SUCCESS && priorTask && nextTaskMessagesEnabled) {
-                val message = getString(infoMessageId, srcDescription)
+            if (result == SUCCESS && postTaskMessage && nextTaskMessagesEnabled) {
+                val message = task.getBeginTaskMessage(this)
                 runOnUiThread { toast(message) }
             }
-
-            // If the task failed to start, remove the appropriate number of tasks
-            // from the queue and notify the observer.
-            else if (result != SUCCESS) {
-                val taskCount = when (taskData) {
-                    is TaskData.ReadInputTaskData -> 1
-                    is TaskData.FileSynthesisTaskData -> 2
-                    is TaskData.ProcessWaveFilesTaskData -> 1
-                }
-                for (i in 0 until taskCount) taskQueue.pop()
-                observer.notifyProgress(-1, taskData.taskId, 0)
-            }
-        } else {
-            val item1: TaskData = taskQueue.peek()!!
-            observer.notifyProgress(item1.progress, item1.taskId, 0)
-            result = SUCCESS
         }
+
+        // Notify observers of a task queue change and return.
+        asyncTaskObserver.notifyTaskQueueChange(taskCount)
         return result
     }
 
     fun enqueueReadInputTask(inputSource: InputSource, queueMode: Int): Int {
         // Do not continue unless TTS is ready.
-        if (mTTS == null) return TTS_NOT_READY
+        val tts = mTTS ?: return TTS_NOT_READY
 
         // Handle QUEUE_FLUSH and QUEUE_DESTROY by clearing the task queue and
         // finalizing the current task.
         // Note: There should be no need to call tts.stop().
-        if (queueMode in listOf(QUEUE_FLUSH, -2)) {
+        if (queueMode in listOf(QUEUE_FLUSH, -2) && taskQueue.size > 0) {
+            val currentTask = taskQueue.pop()
             taskQueue.clear()
             currentTask?.finalize()
-            currentTask = null
         }
 
-        // Encapsulate task data and add it to the queue.
-        val taskData = TaskData.ReadInputTaskData(TASK_ID_READ_TEXT, 0,
-                inputSource, queueMode)
-        taskQueue.add(taskData)
+        // Initialize the task and add it to the queue.
+        val task = ReadInputTask(
+                this, userTaskExecService, tts, inputSource, asyncTaskObserver,
+                queueMode
+        )
+        taskQueue.add(task)
 
-        // Process the task if it is at the head of the queue.  Otherwise, notify
-        // progress observers.
-        return beginTaskOrNotify(taskData, currentTask != null)
+        // Begin this task, if appropriate.  Return the result code.
+        return beginTaskOrNotify(task, taskQueue.size > 1)
     }
 
     fun enqueueFileSynthesisTasks(inputSource: InputSource, outDirectory: Directory,
                                   waveFilename: String): Int {
         // Do not continue unless TTS is ready.
-        if (mTTS == null) return TTS_NOT_READY
+        val tts = mTTS ?: return TTS_NOT_READY
 
-        // Encapsulate the file synthesis task data and add it to the queue.
-        val taskData1 = TaskData.FileSynthesisTaskData(TASK_ID_WRITE_FILE, 0,
-                inputSource, outDirectory, waveFilename, mutableListOf())
-        taskQueue.add(taskData1)
+        // Initialise the mutable list of files to be populated by the first task
+        // and processed by the second.
+        val inWaveFiles = mutableListOf<File>()
 
-        // Encapsulate the process wave files task data and add it to the queue.
-        val taskData2 = TaskData.ProcessWaveFilesTaskData(TASK_ID_PROCESS_FILE, 0,
-                taskData1)
-        taskQueue.add(taskData2)
+        // Initialise a FileSynthesisTask and add it to the queue.
+        val task1 = FileSynthesisTask(
+                this, userTaskExecService, tts, inputSource, asyncTaskObserver,
+                outDirectory, waveFilename, inWaveFiles
+        )
+        taskQueue.add(task1)
 
-        // Process the task if it is at the head of the queue.  Otherwise, notify
-        // progress observers.
-        return beginTaskOrNotify(taskData1, currentTask != null)
+        // Initialize a ProcessWaveFilesTask and add it to the queue.
+        val task2 = ProcessWaveFilesTask(
+                this, userTaskExecService, inputSource, asyncTaskObserver,
+                outDirectory, waveFilename, inWaveFiles
+        )
+        taskQueue.add(task2)
+
+        // Begin task one, if appropriate.  Return the result code.
+        return beginTaskOrNotify(task1, taskQueue.size > 2)
     }
 
     override fun onLowMemory() {

@@ -33,7 +33,7 @@ const val DIR_SELECT_CONT_CODE = 2
 const val SAMPLE_TEXT_CODE = 3
 const val REQUEST_EXTERNAL_STORAGE = 4
 
-// TTS operation result flags.
+// Task result codes.
 const val SUCCESS = 0
 const val TTS_NOT_READY = -1
 const val UNAVAILABLE_INPUT_SRC = -2

@@ -34,44 +34,6 @@ val notificationTasks = listOf(TASK_ID_READ_TEXT, TASK_ID_WRITE_FILE,
         TASK_ID_PROCESS_FILE)
 
 
-fun getNotificationTitle(ctx: Context, taskData: TaskData): String {
-    val titleId = when (taskData) {
-        is TaskData.ReadInputTaskData ->
-            R.string.reading_notification_title
-        is TaskData.FileSynthesisTaskData ->
-            R.string.synthesis_notification_title
-        is TaskData.ProcessWaveFilesTaskData ->
-            R.string.post_synthesis_notification_title
-    }
-    return ctx.getString(titleId)
-}
-
-fun getNotificationText(ctx: Context, taskData: TaskData,
-                        remainingTasks: Int): String {
-    // Example: "Reading from abc.txt…
-    //           2 tasks remaining."
-    val textId = R.string.progress_notification_text
-    val beginTextId: Int
-    val srcDescription: CharSequence
-    when (taskData) {
-        is TaskData.ReadInputTaskData -> {
-            beginTextId = R.string.begin_reading_source_message
-            srcDescription = taskData.inputSource.description
-        }
-        is TaskData.FileSynthesisTaskData -> {
-            beginTextId = R.string.begin_synthesizing_source_message
-            srcDescription = taskData.inputSource.description
-        }
-        is TaskData.ProcessWaveFilesTaskData -> {
-            beginTextId = R.string.begin_processing_source_message
-            srcDescription = taskData.prevTaskData.inputSource.description
-        }
-    }
-    val beginText = ctx.getString(beginTextId, srcDescription)
-    return ctx.getString(textId, beginText, remainingTasks,
-            ctx.resources.getQuantityString(R.plurals.tasks, remainingTasks))
-}
-
 fun getNotificationBuilder(ctx: Context, taskId: Int): NotificationCompat.Builder {
     // Create an Intent and PendingIntent for when the user clicks on the
     // notification. This should just open/re-open MainActivity.

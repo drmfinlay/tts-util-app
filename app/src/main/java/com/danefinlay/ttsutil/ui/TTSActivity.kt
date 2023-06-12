@@ -44,7 +44,7 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
         ActivityInterface, TaskObserver {
 
     private val idleStatusEvent =
-            ActivityEvent.StatusUpdateEvent(100, TASK_ID_IDLE, 0)
+            ActivityEvent.StatusUpdateEvent(100, TASK_ID_IDLE)
 
     protected var mLastStatusUpdate = idleStatusEvent
     private var mLastChosenDirEvent: ActivityEvent.ChosenFileEvent? = null
@@ -351,11 +351,16 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
         return mLastChosenDirEvent
     }
 
-    override fun notifyProgress(progress: Int, taskId: Int, remainingTasks: Int) {
+    override fun notifyProgress(progress: Int, taskId: Int) {
         // Inform each compatible fragment of the progress via a status update
         // event.  Ensure that this runs on the main thread.
-        val event = ActivityEvent.StatusUpdateEvent(progress, taskId,
-                remainingTasks)
+        val event = ActivityEvent.StatusUpdateEvent(progress, taskId)
+        runOnUiThread { handleActivityEvent(event) }
+    }
+
+    override fun notifyTaskQueueChange(remainingTasks: Int) {
+        // Inform each compatible fragment that a new task has been enqueued.
+        val event = ActivityEvent.TaskQueueChangeEvent(remainingTasks)
         runOnUiThread { handleActivityEvent(event) }
     }
 

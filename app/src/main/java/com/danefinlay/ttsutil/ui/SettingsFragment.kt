@@ -78,7 +78,7 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
         // Refuse to reinitialise TTS if there is a running task.
         // It is okay if the running task is our sample text.
         if (myApplication.taskInProgress && !sampleInProgress) {
-            myApplication.handleTTSOperationResult(TTS_BUSY)
+            myApplication.handleTaskResult(TTS_BUSY)
             return
         }
 
@@ -98,13 +98,14 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
                 // Speak sample text and handle the result.
                 // We use QUEUE_FLUSH because it is more appropriate.
                 // Note: The input source description won't be used.
-                val inputSource = InputSource.CharSequence(event.sampleText,
-                        "sample text")
+                val inputSource = InputSource.CharSequence(
+                        event.sampleText, "sample text"
+                )
                 val result = app.enqueueReadInputTask(inputSource, QUEUE_FLUSH)
                 if (result == SUCCESS) {
                     sampleInProgress = true
                 } else if (result == TTS_NOT_READY) {
-                    app.handleTTSOperationResult(result)
+                    app.handleTaskResult(result)
                 }
             }
             is ActivityEvent.StatusUpdateEvent -> {
@@ -199,7 +200,7 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
                     else -> false  // not a TTS engine preference.
                 }
             } else {
-                application.handleTTSOperationResult(TTS_NOT_READY)
+                application.handleTaskResult(TTS_NOT_READY)
                 true
             }
         }

@@ -77,7 +77,7 @@ class TTSIntentService : IntentService("TTSIntentService") {
         // Read specified text and handle the result.
         val inputSource = InputSource.CharSequence(text ?: "", sourceDescription)
         val result = myApplication.enqueueReadInputTask(inputSource, QUEUE_ADD)
-        myApplication.handleTTSOperationResult(result)
+        myApplication.handleTaskResult(result)
     }
 
     /**

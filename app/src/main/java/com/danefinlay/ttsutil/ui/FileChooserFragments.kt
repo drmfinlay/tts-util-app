@@ -46,6 +46,9 @@ abstract class FileChooserFragment : MyFragment() {
         if (event1 != null) onStatusUpdate(event1)
         val event2 = activityInterface?.getLastFileChosenEvent()
         if (event2 != null) onFileChosen(event2)
+
+        // Set the task count field.
+        updateTaskCountField(myApplication.taskCount)
     }
 
     protected fun onFileChosen(event: ActivityEvent.ChosenFileEvent) {
@@ -180,7 +183,7 @@ class ReadFilesFragment : FileChooserFragment() {
             when (result) {
                 UNAVAILABLE_INPUT_SRC ->
                     buildUnavailableFileAlertDialog(uriList).show()
-                else -> myApplication.handleTTSOperationResult(result)
+                else -> myApplication.handleTaskResult(result)
             }
             if (result != SUCCESS) break
         }
@@ -216,7 +219,7 @@ class ReadFilesFragment : FileChooserFragment() {
                     buildUnavailableDirAlertDialog().show()
                 UNWRITABLE_OUT_DIR ->
                     buildUnwritableOutDirAlertDialog().show()
-                else -> myApplication.handleTTSOperationResult(result)
+                else -> myApplication.handleTaskResult(result)
             }
             if (result != SUCCESS) break
         }
@@ -229,7 +232,8 @@ class ReadFilesFragment : FileChooserFragment() {
         // by showing an appropriate dialog.
         val event1 = activityInterface?.getLastFileChosenEvent()
         val fileUri = event1?.firstUri
-        val inputSource = InputSource.DocumentUri(fileUri, "")
+        val filename = event1?.firstDisplayName ?: ""
+        val inputSource = InputSource.DocumentUri(fileUri, filename)
         if (!inputSource.isSourceAvailable(ctx) || fileUri == null) {
             val uriList = if (fileUri == null) null else listOf(fileUri)
             buildUnavailableFileAlertDialog(uriList).show()
@@ -245,8 +249,7 @@ class ReadFilesFragment : FileChooserFragment() {
             Directory.File(Environment.getExternalStorageDirectory())
         }
 
-        // Determine the names of the wave file and directory.
-        val filename = event1.firstDisplayName
+        // Determine the name of the directory.
         val dirDisplayName: String = event2?.firstDisplayName
                 ?: getString(R.string.default_output_dir)
 
