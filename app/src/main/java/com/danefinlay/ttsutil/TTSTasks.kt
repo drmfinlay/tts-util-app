@@ -68,6 +68,7 @@ abstract class TTSTask(val ctx: Context,
     private val speechRate: Float
     private val delimitersToSilenceMap: Map<Int, Long>
     private val endOfTextDelimiters: Set<Int>
+    private val ttsEngineName: String?
 
     private val filterHashes: Boolean
     private val filterWebLinks: Boolean
@@ -143,6 +144,12 @@ abstract class TTSTask(val ctx: Context,
         filterWebLinks = prefs.getBoolean("pref_filter_web_links", false)
         filterMailToLinks = prefs.getBoolean("pref_filter_mailto_links", false)
         filtersEnabled = filterHashes || filterWebLinks || filterMailToLinks
+
+        // Save the current text-to-speech engine package name.
+        // Note: This application locks-in the enqueue-time engine for all tasks.
+        // We can therefore assume it will not change between now and whenever the
+        // task is begun.
+        ttsEngineName = app.ttsEngineName
     }
 
     fun displayMessage(string: String, long: Boolean) {
@@ -420,19 +427,37 @@ abstract class TTSTask(val ctx: Context,
 
         val utteranceInfo = utteranceInfoList[0]
         if (utteranceId == utteranceInfo.id) {
+            var vStart: Int = start
+            var vEnd: Int = end
+            // var vFrame: Int = frame
+
+            // Workaround a bug with Google's text-to-speech engine where arguments
+            // are passed in the wrong order: frame, start, end.
+            // Although this issue always occurs, I am putting checks in place, both
+            // to account for Google fixing it in the future and to continue
+            // supporting versions of the package with the error.
+            if (ttsEngineName == "com.google.android.tts") {
+                if (end < frame && frame < start) {
+                    vStart = end
+                    vEnd = frame
+                    // vFrame = start
+                }
+            }
+
+            // Log.e(TAG, "onRangeStart(): $utteranceId, $vStart, $vEnd, $vFrame")
 
             // Calculate progress and notify the observer, if appropriate.
             // Note: This is done only for engines which call onRangeStart().
-            if (start > 0) {
-                val bytesProcessed = (inputProcessed + start).toFloat()
+            if (vStart > 0) {
+                val bytesProcessed = (inputProcessed + vStart).toFloat()
                 val progress = (bytesProcessed / inputSize * 100).toInt()
                 if (progress in 0..99) observer.notifyProgress(progress, id)
             }
 
             // Calculate the range of what is about to be spoken relative to the
             // whole input.  We will call this the current input selection.
-            val selectionStart = utteranceInfo.inputStartIndex + start
-            val selectionEnd = utteranceInfo.inputStartIndex + end
+            val selectionStart = utteranceInfo.inputStartIndex + vStart
+            val selectionEnd = utteranceInfo.inputStartIndex + vEnd
 
             // Notify the observer of the current input selection.
             observer.notifyInputSelection(selectionStart, selectionEnd, id)
