@@ -102,6 +102,9 @@ abstract class TTSTask(val ctx: Context,
     @Volatile
     private var streamHasFurtherInput: Boolean = true
 
+    @Volatile
+    private var engineCallsOnRangeStart: Boolean = false
+
     abstract fun enqueueText(text: CharSequence, utteranceId: String): Boolean
     abstract fun enqueueSilence(durationInMs: Long): Boolean
 
@@ -412,7 +415,7 @@ abstract class TTSTask(val ctx: Context,
         // Log.e(TAG, "onStart(): $utteranceId")
 
         val utteranceInfo = utteranceInfoList[0]
-        if (utteranceId == utteranceInfo.id) {
+        if (utteranceId == utteranceInfo.id && !engineCallsOnRangeStart) {
             // Call onRangeStart() with the appropriate parameters.  This is done in
             // order to accommodate engines that do not support the callback.
             // Debugging note: text.length may be shorter than bytesRead due to
@@ -424,6 +427,10 @@ abstract class TTSTask(val ctx: Context,
     override fun onRangeStart(utteranceId: String?, start: Int, end: Int,
                               frame: Int) {
         super.onRangeStart(utteranceId, start, end, frame)
+
+        // Disable manual onRangeStart() callback invocation in onStart() if *this*
+        // call came from the engine.
+        engineCallsOnRangeStart = frame > 0
 
         val utteranceInfo = utteranceInfoList[0]
         if (utteranceId == utteranceInfo.id) {
