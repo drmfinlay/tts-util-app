@@ -34,7 +34,7 @@ import org.jetbrains.anko.runOnUiThread
 // IntentService actions.
 private const val ACTION_READ_TEXT = "${APP_NAME}.action.READ_TEXT"
 private const val ACTION_EDIT_READ_TEXT = "${APP_NAME}.action.EDIT_READ_TEXT"
-const val ACTION_STOP_SPEAKING = "${APP_NAME}.action.STOP_SPEAKING"
+const val ACTION_STOP_TASK = "${APP_NAME}.action.STOP_TASK"
 const val ACTION_READ_CLIPBOARD = "${APP_NAME}.action.READ_CLIPBOARD"
 const val ACTION_EDIT_READ_CLIPBOARD = "${APP_NAME}.action.EDIT_READ_CLIPBOARD"
 
@@ -61,7 +61,7 @@ class TTSIntentService : IntentService("TTSIntentService") {
             ACTION_EDIT_READ_TEXT -> handleActionEditReadText(text)
             ACTION_READ_CLIPBOARD -> handleActionReadClipboard()
             ACTION_EDIT_READ_CLIPBOARD -> handleActionEditReadClipboard(false)
-            ACTION_STOP_SPEAKING -> handleActionStopSpeaking(intent)
+            ACTION_STOP_TASK -> handleActionStopTask()
             ACTION_READ_TEXT -> {
                 val description = getString(R.string.read_text_source_description)
                 handleActionReadText(text, description)
@@ -129,14 +129,12 @@ class TTSIntentService : IntentService("TTSIntentService") {
      * Handle action StopSpeaking in the provided background thread with the provided
      * parameters.
      */
-    private fun handleActionStopSpeaking(intent: Intent) {
-        // Stop speech synthesis.
-        myApplication.stopSpeech()
+    private fun handleActionStopTask() {
+        // Stop the current task.  This also clears any tasks in the queue.
+        myApplication.stopTask()
 
-        // Retrieve the ID of the notification to dismiss, if any.
-        val taskId = intent.getIntExtra("taskId", -1)
-        if (taskId == -1) return
-        myApplication.notificationManager.cancel(taskId)
+        // Cancel the task progress notification, if necessary.
+        myApplication.cancelNotification(PROGRESS_NOTIFICATION_ID)
     }
 
     companion object {
@@ -201,7 +199,7 @@ class TTSIntentService : IntentService("TTSIntentService") {
          */
         @JvmStatic
         fun startActionStopSpeaking(ctx: Context, taskId: Int) =
-                startAction(ctx, ACTION_STOP_SPEAKING) {
+                startAction(ctx, ACTION_STOP_TASK) {
                     putExtra("taskId", taskId)
                 }
     }

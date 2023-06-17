@@ -39,7 +39,7 @@ abstract class FileChooserFragment : MyFragment() {
         super.onViewCreated(view, savedInstanceState)
 
         // Set OnClick listener for common buttons.
-        find<ImageButton>(R.id.stop_button).onClick { myApplication.stopSpeech() }
+        find<ImageButton>(R.id.stop_button).onClick { myApplication.stopTask() }
 
         // Re-process last updates.
         val event1 = activityInterface?.getLastStatusUpdate()

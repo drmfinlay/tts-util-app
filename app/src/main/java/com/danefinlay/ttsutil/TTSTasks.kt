@@ -579,7 +579,7 @@ class ReadInputTask(ctx: Context,
         // Example: "Reading from abc.txt…
         //           2 tasks remaining."
         val textId = R.string.progress_notification_text
-        val beginTextId = R.string.begin_synthesizing_source_message
+        val beginTextId = R.string.begin_reading_source_message
         val srcDescription = inputSource.description
         val beginText = ctx.getString(beginTextId, srcDescription)
         return ctx.getString(textId, beginText, remainingTasks,

@@ -48,6 +48,9 @@ const val TASK_ID_READ_TEXT = 1
 const val TASK_ID_WRITE_FILE = 2
 const val TASK_ID_PROCESS_FILE = 3
 
+// Notification identifiers.
+const val PROGRESS_NOTIFICATION_ID = 0
+
 // Misc.
 const val CHOSEN_FILE_URI_KEY = "$APP_NAME.CHOSEN_FILE_URI_KEY"
 const val CHOSEN_FILE_NAME_KEY = "$APP_NAME.CHOSEN_FILE_NAME_KEY"

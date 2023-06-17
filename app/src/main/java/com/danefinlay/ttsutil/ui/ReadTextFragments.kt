@@ -127,7 +127,7 @@ abstract class ReadTextFragmentBase : MyFragment() {
         // Set OnClick listener for common buttons.
         find<ImageButton>(R.id.play_button).onClick { onClickPlay() }
         find<ImageButton>(R.id.save_button).onClick { onClickSave() }
-        find<ImageButton>(R.id.stop_button).onClick { myApplication.stopSpeech() }
+        find<ImageButton>(R.id.stop_button).onClick { myApplication.stopTask() }
 
         // Set the choose directory button's OnClick listener.  Choosing the output
         // directory is not possible on versions older than Android Lollipop (21).

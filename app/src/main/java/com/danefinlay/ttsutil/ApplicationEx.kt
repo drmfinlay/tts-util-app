@@ -132,9 +132,7 @@ class ApplicationEx : Application(), OnInitListener, TaskObserver {
         when ( focusChange ) {
             AudioManager.AUDIOFOCUS_LOSS,
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT,
-            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
-                stopSpeech()
-            }
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> stopTask()
         }
     }
 
@@ -180,9 +178,10 @@ class ApplicationEx : Application(), OnInitListener, TaskObserver {
     fun disableNotifications() {
         if (!notificationsEnabled) return
 
-        // Cancel any TTS notifications present, if necessary.
-        if (ttsInitialized && taskQueue.size > 0) notifyingExecService.submit {
-            notificationTasks.forEach { notificationManager.cancel(it) }
+        // Cancel the task progress notification, if necessary.
+        if (ttsInitialized && taskQueue.size > 0) {
+            val id = PROGRESS_NOTIFICATION_ID
+            notifyingExecService.submit { cancelNotification(id) }
         }
 
         // Set notifications as disabled.
@@ -343,7 +342,7 @@ class ApplicationEx : Application(), OnInitListener, TaskObserver {
     }
 
     @Synchronized
-    fun stopSpeech(): Boolean {
+    fun stopTask(): Boolean {
         val tts = mTTS ?: return true
 
         // Interrupt TTS synthesis.
@@ -396,14 +395,14 @@ class ApplicationEx : Application(), OnInitListener, TaskObserver {
     }
 
     fun freeTTS() {
-        stopSpeech()
+        stopTask()
         mTTS?.shutdown()
         mTTS = null
         ttsInitialized = false
         taskQueue.clear()
 
-        // Cancel any TTS notifications present.
-        notificationTasks.forEach { notificationManager.cancel(it) }
+        // Cancel the task progress notification, if necessary.
+        cancelNotification(PROGRESS_NOTIFICATION_ID)
 
         // Release audio focus.
         releaseAudioFocus()
@@ -427,39 +426,31 @@ class ApplicationEx : Application(), OnInitListener, TaskObserver {
         // Retrieve the current task, if any.
         val task = taskQueue.peek() ?: return
 
-        // Initialize the notification builder using the given task ID.
-        val taskId = task.id
+        // Do not continue if the task has failed.
+        val progress = currentTaskProgress
+        if (progress == -1) return
+
+        // Initialize the notification builder, if necessary.
+        // Note: All tasks share the same builder.
         var builder: NotificationCompat.Builder? = notificationBuilder
         if (builder == null) {
-            builder = getNotificationBuilder(this, taskId)
+            builder = getNotificationBuilder(this)
             notificationBuilder = builder
         }
 
-        // Build (or re-build) the notification with the specified progress if the
-        // task has not yet been completed.
-        val progress = currentTaskProgress
-        if (progress in 0..99) {
-            val title = task.getShortDescription(this)
-            val text = task.getLongDescription(this, taskQueue.size)
-            val notification = builder
-                    .setContentTitle(title)
-                    .setStyle(NotificationCompat.BigTextStyle().bigText(text))
-                    .setProgress(100, progress, false)
-                    .build()
-            notificationManager.notify(taskId, notification)
-        }
-
-        // Cancel the notification only if the task is finished and there are no
-        // remaining tasks.
-        // Note: This is to prevent the scenario where our notification is canceled
-        // once one task is finished only for another, very similar notification to
-        // be posted a fraction of a second later!
-        else if (taskQueue.size == 0) cancelNotification(taskId)
+        // Build (or re-build) the notification with the specified progress.
+        val title = task.getShortDescription(this)
+        val text = task.getLongDescription(this, taskQueue.size)
+        val notification = builder
+                .setContentTitle(title)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+                .setProgress(100, progress, false)
+                .build()
+        notificationManager.notify(PROGRESS_NOTIFICATION_ID, notification)
     }
 
-    private fun cancelNotification(taskId: Int) {
-        notificationManager.cancel(taskId)
-        notificationBuilder = null
+    fun cancelNotification(id: Int) {
+        notificationManager.cancel(id)
     }
 
     override fun notifyProgress(progress: Int, taskId: Int) {
@@ -490,11 +481,13 @@ class ApplicationEx : Application(), OnInitListener, TaskObserver {
         val nextTask = taskQueue.peek()
         if (progress == 100) {
             if (nextTask != null) {
-                if (taskId != nextTask.id) cancelNotification(taskId)
                 val result = beginTaskOrNotify(nextTask, true)
                 handleTaskResult(result)
+            } else {
+                cancelNotification(PROGRESS_NOTIFICATION_ID)
             }
         } else if (progress == -1) {
+            cancelNotification(PROGRESS_NOTIFICATION_ID)
             taskQueue.clear()
         }
     }
