@@ -39,16 +39,16 @@
             android:icon="@drawable/ic_language" />
 
         <Preference
-            android:key="pref_tts_pitch"
-            android:title="@string/pref_tts_pitch"
-            android:summary="@string/pref_tts_pitch_summary"
-            android:icon="@drawable/ic_height" />
-
-        <Preference
             android:key="pref_tts_speech_rate"
             android:title="@string/pref_tts_speech_rate"
             android:summary="@string/pref_tts_speech_rate_summary"
             android:icon="@drawable/ic_speed" />
+
+        <Preference
+            android:key="pref_tts_pitch"
+            android:title="@string/pref_tts_pitch"
+            android:summary="@string/pref_tts_pitch_summary"
+            android:icon="@drawable/ic_height" />
 
         <Preference
             android:key="pref_tts_system_settings"

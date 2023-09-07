@@ -170,8 +170,8 @@
     <string name="pref_tts_engine_category">Text-to-Speech (TTS) Settings</string>
     <string name="pref_tts_engine">TTS Engine</string>
     <string name="pref_tts_engine_summary">Select the TTS engine.</string>
-    <string name="pref_tts_voice">TTS Voice</string>
-    <string name="pref_tts_voice_summary">Select the TTS voice.</string>
+    <string name="pref_tts_voice">TTS Language/Voice</string>
+    <string name="pref_tts_voice_summary">Select the TTS language/voice.</string>
     <string name="pref_tts_pitch">Speech Pitch</string>
     <string name="pref_tts_pitch_summary">Select the pitch/tone of the synthesized voice.</string>
     <string name="pref_tts_speech_rate">Speech Rate</string>
