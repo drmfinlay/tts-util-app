@@ -99,7 +99,7 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
                 // We use QUEUE_FLUSH because it is more appropriate.
                 // Note: The input source description won't be used.
                 val inputSource = InputSource.CharSequence(
-                        event.sampleText, "sample text"
+                        event.sampleText, "SettingsFragment"
                 )
                 val result = app.enqueueReadInputTask(inputSource, QUEUE_FLUSH)
                 if (result == SUCCESS) {

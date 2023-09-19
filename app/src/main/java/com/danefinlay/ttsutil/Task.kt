@@ -30,5 +30,6 @@ interface Task {
     fun getShortDescription(ctx: Context): String
     fun getLongDescription(ctx: Context, remainingTasks: Int): String
     fun getZeroLengthInputMessage(ctx: Context): String
+    fun getInputSource(ctx: Context): InputSource
     fun finalize()
 }

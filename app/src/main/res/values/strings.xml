@@ -107,6 +107,8 @@
     <string name="write_to_file_message_failure">Failed to create wave file \"%1$s\".</string>
     <string name="no_storage_permission_title">No Write Storage Permission</string>
     <string name="no_storage_permission_message">Permission to write to storage was not granted.  The application needs write access in order to save the wave file to storage. \n\nWould you like to grant permission?</string>
+    <string name="reinit_confirmation_title">Reinitialize text-to-speech?</string>
+    <string name="reinit_confirmation_message">A task is currently in progress. Do you wish to reinitialize text-to-speech and stop it?</string>
 
     <!--File-related strings.-->
     <string name="output_wave_filename">output</string>

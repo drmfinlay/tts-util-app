@@ -33,6 +33,7 @@ import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.danefinlay.ttsutil.R
+import org.jetbrains.anko.AlertDialogBuilder
 import org.jetbrains.anko.find
 
 class MainActivity : TTSActivity() {
@@ -67,22 +68,41 @@ class MainActivity : TTSActivity() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
+        when (item.itemId) {
             R.id.menu_about -> {
                 val activity = AboutActivity::class.java
                 startActivity(Intent(this, activity))
-                true
+                return true
             }
 
             R.id.menu_tts_settings -> {
                 myApplication.openSystemTTSSettings(this)
-                true
+                return true
             }
 
             R.id.menu_reinitialise_tts -> {
-                // Reinitialise text-to-speech.
-                myApplication.reinitialiseTTS(this, null)
-                true
+                // Reinitialise text-to-speech, if idle or if sample text is being
+                //  read out.
+                val currentTask = myApplication.currentTask
+                val sampleInProgress = currentTask?.getInputSource(this)
+                        ?.description == "SettingsFragment"
+                if (!myApplication.taskInProgress || sampleInProgress) {
+                    myApplication.reinitialiseTTS(this, null)
+                    return true
+                }
+
+                // If a task is in progress, build and show an alert dialog
+                //  asking the user for confirmation.
+                AlertDialogBuilder(this).apply {
+                    title(R.string.reinit_confirmation_title)
+                    message(getString(R.string.reinit_confirmation_message))
+                    positiveButton(R.string.alert_positive_message_2) {
+                        myApplication.reinitialiseTTS(this@MainActivity,null)
+                    }
+                    negativeButton(R.string.alert_negative_message_2)
+                    show()
+                }
+                return true
             }
 
             else -> return super.onOptionsItemSelected(item)

@@ -229,6 +229,8 @@ abstract class TTSTask(val ctx: Context,
         }
     }
 
+    override fun getInputSource(ctx: Context): InputSource = this.inputSource
+
     private fun filterChar(char: Char): Boolean {
         // Check for hash, if appropriate.
         return filterHashes && char.code == 0x23

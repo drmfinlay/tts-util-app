@@ -154,6 +154,8 @@ class ProcessWaveFilesTask(private val ctx: Context,
         return ""
     }
 
+    override fun getInputSource(ctx: Context): InputSource = this.inputSource
+
     private fun writeSilentWaveFile(file: File, header: WaveFileHeader,
                                     durationInSeconds: Float) {
         // Determine the data sub-chunk size.  It should be an even integer.

@@ -98,6 +98,9 @@ class ApplicationEx : Application(), OnInitListener, TaskObserver {
     val taskCount: Int
         get() = taskQueue.size
 
+    val currentTask: Task?
+        get () = taskQueue.peek()
+
     val ttsEngineName: String?
         get() {
             val prefs = PreferenceManager.getDefaultSharedPreferences(this)
