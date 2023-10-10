@@ -58,7 +58,7 @@ sealed class ActivityEvent : Parcelable {
     }
 
     class TTSReadyEvent : ActivityEvent(), Parcelable {
-        override fun writeToParcel(dest: Parcel?, flags: Int) {}
+        override fun writeToParcel(p0: Parcel, flags: Int) {}
         override fun describeContents(): Int = 0
 
         companion object CREATOR : Parcelable.Creator<TTSReadyEvent> {
