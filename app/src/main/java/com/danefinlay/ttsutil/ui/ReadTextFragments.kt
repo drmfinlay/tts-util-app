@@ -263,7 +263,7 @@ abstract class ReadTextFragmentBase : MyFragment() {
     override fun onClickSave() {
         super.onClickSave()
 
-        // Determine the output directory.  If the user has not chosen one, the
+        // Determine the output directory. If the user has not chosen one, the
         // "external" storage is used.
         val event = activityInterface?.getLastDirChosenEvent()
         val directory: Directory = if (event != null) {
@@ -274,16 +274,21 @@ abstract class ReadTextFragmentBase : MyFragment() {
         }
 
         // Determine the names of the wave file and directory.
-        // TODO Allow the user to change the filename.
-        val waveFilename = getString(R.string.output_wave_filename) + ".wav"
+        // Get the current date and time in the format 'ddMMyyyy_HHmmss'.
+        val currentDateTime = SimpleDateFormat("ddMMyyyy_HHmmss", Locale.getDefault()).format(Date())
+
+        // Append the current date and time to the filename.
+        val waveFilename = "textToSpeech_$currentDateTime.wav"
+
         val dirDisplayName: String = event?.firstDisplayName
-                ?: getString(R.string.default_output_dir)
+            ?: getString(R.string.default_output_dir)
 
         // Build and display an appropriate alert dialog.
         AlertDialogBuilder(ctx).apply {
             title(R.string.write_to_file_alert_title)
-            message(getString(R.string.write_to_file_alert_message_3,
-                    waveFilename, dirDisplayName))
+            message(getString(
+                R.string.write_to_file_alert_message_3,
+                waveFilename, dirDisplayName))
             positiveButton(R.string.alert_positive_message_2) {
                 // Ask the user for write permission if necessary.
                 withStoragePermission { granted ->
