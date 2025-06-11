@@ -32,6 +32,7 @@ const val DIR_SELECT_CODE = 1
 const val DIR_SELECT_CONT_CODE = 2
 const val SAMPLE_TEXT_CODE = 3
 const val REQUEST_EXTERNAL_STORAGE = 4
+const val REQUEST_NOTIFICATIONS = 5
 
 // Task result codes.
 const val SUCCESS = 0

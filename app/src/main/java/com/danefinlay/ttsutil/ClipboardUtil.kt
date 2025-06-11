@@ -23,8 +23,6 @@ package com.danefinlay.ttsutil
 import android.content.ClipboardManager
 import android.content.Context
 import android.os.Build
-import org.jetbrains.anko.doAsync
-import org.jetbrains.anko.runOnUiThread
 
 /**
  * Get the clipboard text, if any.
@@ -59,8 +57,7 @@ fun Context.getClipboardText(): String? {
     return text
 }
 
-inline fun Context.useClipboardText(block: Boolean,
-                                    crossinline function: (String?) -> Unit) {
+inline fun Context.useClipboardText(crossinline function: (String?) -> Unit) {
     // Get the clipboard text.
     val text = getClipboardText()
 
@@ -74,11 +71,6 @@ inline fun Context.useClipboardText(block: Boolean,
     // Android 10 restricts access to the clipboard for privacy reasons.  These
     // restrictions appear to be undocumented.  Access from the foreground activity
     // is permitted, but it seems to require a short delay.
-    if (block) {
-        Thread.sleep(100)
-        function(getClipboardText())
-    } else doAsync {
-        Thread.sleep(100)
-        runOnUiThread { function(getClipboardText()) }
-    }
+    Thread.sleep(100)
+    function(getClipboardText())
 }

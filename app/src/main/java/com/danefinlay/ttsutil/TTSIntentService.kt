@@ -26,10 +26,6 @@ import android.content.Intent
 import android.os.Build
 import android.speech.tts.TextToSpeech.QUEUE_ADD
 import com.danefinlay.ttsutil.ui.EditReadActivity
-import org.jetbrains.anko.ctx
-import org.jetbrains.anko.longToast
-import org.jetbrains.anko.notificationManager
-import org.jetbrains.anko.runOnUiThread
 
 // IntentService actions.
 private const val ACTION_READ_TEXT = "${APP_NAME}.action.READ_TEXT"
@@ -85,7 +81,7 @@ class TTSIntentService : IntentService("TTSIntentService") {
      * provided parameters.
      */
     private fun handleActionEditReadText(text: String) {
-        val intent = Intent(ctx, EditReadActivity::class.java).apply {
+        val intent = Intent(this, EditReadActivity::class.java).apply {
             addFlags(START_ACTIVITY_FLAGS)
             action = Intent.ACTION_SEND
             putExtra(Intent.EXTRA_TEXT, text)
@@ -102,7 +98,7 @@ class TTSIntentService : IntentService("TTSIntentService") {
         // user interaction).
         if (Build.VERSION.SDK_INT >= 29) {
             runOnUiThread {
-                longToast(R.string.sdk_29_read_clipboard_message)
+                toast(R.string.sdk_29_read_clipboard_message, 1)
             }
             handleActionEditReadClipboard(true)
             return
@@ -110,14 +106,14 @@ class TTSIntentService : IntentService("TTSIntentService") {
 
         // Read clipboard text.
         val description = getString(R.string.read_clipboard_source_description)
-        handleActionReadText(ctx.getClipboardText(), description)
+        handleActionReadText(getClipboardText(), description)
     }
 
     /**
      * Handle action EditReadClipboard in the provided background thread.
      */
     private fun handleActionEditReadClipboard(playbackOnStart: Boolean) {
-        val intent = Intent(ctx, EditReadActivity::class.java).apply {
+        val intent = Intent(this, EditReadActivity::class.java).apply {
             addFlags(START_ACTIVITY_FLAGS)
             action = ACTION_EDIT_READ_CLIPBOARD
             putExtra("playbackOnStart", playbackOnStart)
@@ -138,8 +134,8 @@ class TTSIntentService : IntentService("TTSIntentService") {
     }
 
     companion object {
-        private inline fun startAction(ctx: Context, actionString: String,
-                                       block: Intent.() -> Unit) {
+        inline fun startAction(ctx: Context, actionString: String,
+                               block: Intent.() -> Unit) {
             val intent = Intent(ctx, TTSIntentService::class.java)
             intent.action = actionString
             intent.block()

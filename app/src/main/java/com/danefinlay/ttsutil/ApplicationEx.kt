@@ -20,9 +20,12 @@
 
 package com.danefinlay.ttsutil
 
+import android.Manifest
 import android.app.Application
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
+import android.content.pm.PackageManager
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
@@ -32,7 +35,6 @@ import android.speech.tts.TextToSpeech
 import android.speech.tts.TextToSpeech.*
 import androidx.core.app.NotificationCompat
 import androidx.preference.PreferenceManager
-import org.jetbrains.anko.*
 import java.io.File
 import java.util.*
 import java.util.concurrent.Executors
@@ -101,16 +103,35 @@ class ApplicationEx : Application(), OnInitListener, TaskObserver {
     val currentTask: Task?
         get () = taskQueue.peek()
 
-    val ttsEngineName: String?
+    var ttsEngineName: String?
         get() {
             val prefs = PreferenceManager.getDefaultSharedPreferences(this)
             return prefs.getString("pref_tts_engine", mTTS?.defaultEngine)
+        }
+        set(value) {
+            val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+            val editor: SharedPreferences.Editor = prefs.edit()
+            editor.putString("pref_tts_engine", value)
+            editor.apply()
+        }
+
+    var backgroundNotificationsEnabled: Boolean
+        get() {
+            val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+            return prefs.getBoolean("pref_misc_background_notifications", true)
+        }
+        set(value) {
+            val ctx = applicationContext ?: return
+            val prefs = PreferenceManager.getDefaultSharedPreferences(ctx)
+            val editor: SharedPreferences.Editor = prefs.edit()
+            editor.putBoolean("pref_misc_background_notifications", value)
+            editor.apply()
         }
 
     private val nextTaskMessagesEnabled: Boolean
         get() {
             val prefs = PreferenceManager.getDefaultSharedPreferences(this)
-            return prefs.getBoolean("pref_messages_next_task", true)
+            return prefs.getBoolean("pref_misc_next_task_messages", true)
         }
 
     private val audioFocusGain = AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
@@ -168,6 +189,18 @@ class ApplicationEx : Application(), OnInitListener, TaskObserver {
 
     fun enableNotifications() {
         if (notificationsEnabled) return
+
+        // Return early if we don't have the necessary notifications permission.
+        // Android will let us invoke the notification APIs and will do nothing in
+        // this case, but let's not spend CPU time unnecessarily.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val permission = Manifest.permission.POST_NOTIFICATIONS
+            val havePermission = checkSelfPermission(permission)
+            if (havePermission != PackageManager.PERMISSION_GRANTED) return
+        }
+
+        // Return early if notifications have been disabled in the settings.
+        if (!backgroundNotificationsEnabled) return
 
         // Post the current notification, if necessary.
         if (ttsInitialized && taskQueue.size > 0) {
@@ -267,7 +300,7 @@ class ApplicationEx : Application(), OnInitListener, TaskObserver {
             message = getString(R.string.using_general_tts_language_msg,
                     locale.displayName)
         }
-        if (message != null)  runOnUiThread { longToast(message) }
+        if (message != null)  runOnUiThread { toast(message, 1) }
 
         // Save the message if failure is indicated.
         if (!success) ttsInitErrorMessage = message
@@ -291,16 +324,23 @@ class ApplicationEx : Application(), OnInitListener, TaskObserver {
                 // General TTS initialisation failure.
                 R.string.tts_initialization_failure_msg
             }
-            runOnUiThread { longToast(messageId) }
-            // Save the error message ID for later use, free TTS and return.
+            runOnUiThread { toast(messageId, 1) }
+            // Save the error message ID for later use, free TTS, clear the engine
+            // preference and return.
+            // Note: Since the engine preference value may only be changed by the
+            // user if this function returns successfully, we clear the engine
+            // preference here.  This avoids the user being stuck with an unusable
+            // engine instead of the usually-configurable system default.
             ttsInitErrorMessage = getString(messageId)
             freeTTS()
+            ttsEngineName = null
             return
         }
 
         // Handle setting the appropriate language.
         if (!setTTSLanguage(tts)) {
             freeTTS()
+            ttsEngineName = null
             return
         }
 
@@ -393,7 +433,7 @@ class ApplicationEx : Application(), OnInitListener, TaskObserver {
 
         // Display the message, if appropriate.
         if (message.length > 0) {
-            runOnUiThread { longToast(message) }
+            runOnUiThread { toast(message, 1) }
         }
     }
 
@@ -542,8 +582,8 @@ class ApplicationEx : Application(), OnInitListener, TaskObserver {
         // Handle QUEUE_FLUSH and QUEUE_DESTROY by clearing the task queue and
         // finalizing the current task.
         // Note: There should be no need to call tts.stop().
-        if (queueMode in listOf(QUEUE_FLUSH, -2) && taskQueue.size > 0) {
-            val currentTask = taskQueue.pop()
+        if (queueMode in listOf(QUEUE_FLUSH, -2)) {
+            val currentTask = taskQueue.peek()
             taskQueue.clear()
             currentTask?.finalize()
         }
@@ -586,10 +626,15 @@ class ApplicationEx : Application(), OnInitListener, TaskObserver {
         return beginTaskOrNotify(task1, taskQueue.size > 2)
     }
 
-    override fun onLowMemory() {
-        super.onLowMemory()
-
-        // Stop and free the current text-to-speech engine.
-        freeTTS()
-    }
+//    override fun onTrimMemory(level: Int) {
+//        super.onTrimMemory(level)
+//
+//        if (level >= TRIM_MEMORY_BACKGROUND) {
+//            // Trim resources that can be quickly re-built.
+//            // ...
+//        } else if (level >= TRIM_MEMORY_UI_HIDDEN) {
+//            // Trim UI resources.
+//            // ...
+//        }
+//    }
 }

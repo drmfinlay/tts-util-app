@@ -22,6 +22,7 @@ package com.danefinlay.ttsutil.ui
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.DialogInterface
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Build
@@ -39,8 +40,8 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import com.danefinlay.ttsutil.*
-import org.jetbrains.anko.*
 
 abstract class ReadTextFragmentBase : MyFragment() {
 
@@ -135,7 +136,7 @@ abstract class ReadTextFragmentBase : MyFragment() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 activityInterface?.showDirChooser(DIR_SELECT_CODE)
             } else {
-                ctx.longToast(R.string.sdk_18_choose_dir_message)
+                ctx.toast(R.string.sdk_18_choose_dir_message, 1)
             }
         }
 
@@ -280,17 +281,21 @@ abstract class ReadTextFragmentBase : MyFragment() {
                 ?: getString(R.string.default_output_dir)
 
         // Build and display an appropriate alert dialog.
-        AlertDialogBuilder(ctx).apply {
-            title(R.string.write_to_file_alert_title)
-            message(getString(R.string.write_to_file_alert_message_3,
+        AlertDialog.Builder(ctx).apply {
+            setTitle(R.string.write_to_file_alert_title)
+            setMessage(getString(R.string.write_to_file_alert_message_3,
                     waveFilename, dirDisplayName))
-            positiveButton(R.string.alert_positive_message_2) {
+            setPositiveButton(R.string.alert_positive_message_2) {
+                _: DialogInterface, _: Int ->
+
                 // Ask the user for write permission if necessary.
                 withStoragePermission { granted ->
                     synthesizeTextToFile(waveFilename, directory, granted)
                 }
             }
-            negativeButton(R.string.alert_negative_message_2)
+            setNegativeButton(R.string.alert_negative_message_2) {
+                _: DialogInterface, _: Int ->
+            }
 
             // Show the dialog.
             show()
@@ -332,7 +337,7 @@ class ReadTextFragment : ReadTextFragmentBase() {
             val prefs = PreferenceManager.getDefaultSharedPreferences(ctx)
             val text = prefs.getString(memoryKey, "")
             if (text.isNullOrEmpty()) {
-                fragment.context?.toast(R.string.mem_slot_empty_msg)
+                fragment.toast(R.string.mem_slot_empty_msg)
             } else {
                 fragment.inputLayoutContent = text
             }
@@ -348,7 +353,7 @@ class ReadTextFragment : ReadTextFragmentBase() {
             val editor: SharedPreferences.Editor = prefs.edit()
             editor.putString(memoryKey, content)
             editor.apply()
-            fragment.context?.toast(messageId)
+            fragment.toast(messageId)
             return true
         }
     }
@@ -465,7 +470,7 @@ class ReadClipboardFragment : ReadTextFragmentBase() {
         // Set the (initial) content of the input layout.
         // Note: The safety check on *view* is necessary because of how the
         // useClipboardText() function works.
-        ctx.useClipboardText(true) { text: String? ->
+        ctx.useClipboardText { text: String? ->
             if (view != null) onClipboardTextReceived(text)
         }
 
@@ -497,6 +502,6 @@ class ReadClipboardFragment : ReadTextFragmentBase() {
         inputLayoutContent = text
 
         // Display a message if the clipboard was empty.
-        if (text.length == 0) activity?.toast(R.string.clipboard_is_empty_msg)
+        if (text.length == 0) toast(R.string.clipboard_is_empty_msg)
     }
 }

@@ -25,6 +25,14 @@ import android.os.Parcel
 import android.os.Parcelable
 import java.util.*
 
+/**
+ * The classes defined in this file are events used by the application's UI code,
+ * including by fragments.
+ *
+ * They implement the Parcelable interface because they are retained as members in
+ * a few places and need to be restored on application resume, rotate, etc.
+ */
+
 sealed class ActivityEvent : Parcelable {
     class ChosenFileEvent(val uriList: List<Uri>,
                           val displayNameList: List<String>,
@@ -58,7 +66,7 @@ sealed class ActivityEvent : Parcelable {
     }
 
     class TTSReadyEvent : ActivityEvent(), Parcelable {
-        override fun writeToParcel(dest: Parcel?, flags: Int) {}
+        override fun writeToParcel(dest: Parcel, flags: Int) {}
         override fun describeContents(): Int = 0
 
         companion object CREATOR : Parcelable.Creator<TTSReadyEvent> {

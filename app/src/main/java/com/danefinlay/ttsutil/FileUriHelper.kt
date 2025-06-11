@@ -27,7 +27,6 @@ import android.os.Build
 import android.provider.MediaStore
 import androidx.annotation.RequiresApi
 import androidx.documentfile.provider.DocumentFile
-import org.jetbrains.anko.storageManager
 import java.io.InputStream
 import java.io.OutputStream
 

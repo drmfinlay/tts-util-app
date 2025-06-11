@@ -22,8 +22,6 @@ package com.danefinlay.ttsutil
 
 import android.content.Context
 import android.util.Log
-import org.jetbrains.anko.longToast
-import org.jetbrains.anko.runOnUiThread
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -205,7 +203,7 @@ class ProcessWaveFilesTask(private val ctx: Context,
         val messageId = if (success) R.string.write_to_file_message_success
                         else R.string.write_to_file_message_failure
         val message = ctx.getString(messageId, waveFilename)
-        ctx.runOnUiThread { longToast(message) }
+        ctx.runOnUiThread { toast(message, 1) }
 
         // Notify the progress observer that the task is finished.
         val progress = if (success) 100 else -1

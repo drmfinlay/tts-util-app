@@ -24,7 +24,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ui.AboutActivity">
+    android:fitsSystemWindows="true"
+    tools:context=".ui.AboutActivity" >
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
@@ -103,22 +104,12 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/about_ack_anko"
-            android:text="@string/about_ack_anko"
-            android:textAppearance="@style/TextAppearance.AppCompat.Body2"
-            android:layout_marginTop="8dp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/about_ack_kotlin"/>
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
             android:id="@+id/about_ack_free_otp"
             android:text="@string/about_ack_free_otp"
             android:textAppearance="@style/TextAppearance.AppCompat.Body2"
             android:layout_marginTop="8dp"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/about_ack_anko"/>
+            app:layout_constraintTop_toBottomOf="@id/about_ack_kotlin"/>
 
         <TextView
             android:layout_width="match_parent"

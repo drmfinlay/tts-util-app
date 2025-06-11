@@ -34,9 +34,6 @@ import androidx.preference.PreferenceFragmentCompat
 import androidx.appcompat.view.ContextThemeWrapper
 import androidx.preference.PreferenceManager
 import com.danefinlay.ttsutil.*
-import org.jetbrains.anko.longToast
-import org.jetbrains.anko.runOnUiThread
-import org.jetbrains.anko.toast
 
 /**
  * A [Fragment] subclass for app and TTS settings.
@@ -377,7 +374,7 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
                                   tts: TextToSpeech): Boolean {
         // Return early if this is not Android Lollipop (21) or above.
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
-            context?.longToast(R.string.sdk_18_choose_tts_voice_message)
+            context?.toast(R.string.sdk_18_choose_tts_voice_message, 1)
             return true
         }
 
@@ -385,7 +382,7 @@ class SettingsFragment : PreferenceFragmentCompat(), FragmentInterface {
         // Return early if the engine returned no voices.
         val voices = tts.voicesEx
         if (voices.isEmpty()) {
-            context?.toast(R.string.no_tts_voices_msg)
+            toast(R.string.no_tts_voices_msg)
             return true
         }
 

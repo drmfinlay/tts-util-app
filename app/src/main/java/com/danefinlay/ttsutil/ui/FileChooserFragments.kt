@@ -20,6 +20,7 @@
 
 package com.danefinlay.ttsutil.ui
 
+import android.content.DialogInterface
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -30,8 +31,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import com.danefinlay.ttsutil.*
-import org.jetbrains.anko.*
 
 abstract class FileChooserFragment : MyFragment() {
 
@@ -75,30 +76,34 @@ abstract class FileChooserFragment : MyFragment() {
     }
 
     protected fun buildUnavailableFileAlertDialog(uriList: List<Uri>?):
-            AlertDialogBuilder {
+            AlertDialog.Builder {
         // Use a different title and message based on whether or not a file has been
         // chosen already.
-        val title: Int; val message: Int; val positive: Int; val negative: Int
+        val title: Int; val message: Int
+        val positiveButtonText: Int; val negativeButtonText: Int
         if (uriList == null || uriList.size == 0) {
             title = R.string.no_file_chosen_dialog_title
             message = R.string.no_file_chosen_dialog_message
-            positive = R.string.alert_positive_message_2
-            negative = R.string.alert_negative_message_2
+            positiveButtonText = R.string.alert_positive_message_2
+            negativeButtonText = R.string.alert_negative_message_2
         } else {
             title = R.string.unavailable_file_dialog_title
-            if (uriList.size == 1) message = R.string.unavailable_file_dialog_message_1
-            else message = R.string.unavailable_file_dialog_message_2
-            positive = R.string.alert_positive_message_1
-            negative = R.string.alert_negative_message_1
+            message = if (uriList.size == 1) R.string.unavailable_file_dialog_message_1
+                      else R.string.unavailable_file_dialog_message_2
+            positiveButtonText = R.string.alert_positive_message_1
+            negativeButtonText = R.string.alert_negative_message_1
         }
-        return AlertDialogBuilder(ctx).apply {
-            title(title)
-            message(message)
-            positiveButton(positive) {
-                activityInterface?.showFileChooser()
+        return AlertDialog.Builder(ctx)
+            .setTitle(title)
+            .setMessage(message)
+            .setPositiveButton(positiveButtonText) {
+                _: DialogInterface, _: Int ->
+                    activityInterface?.showFileChooser()
+
             }
-            negativeButton(negative)
-        }
+            .setNegativeButton(negativeButtonText) {
+                _: DialogInterface, _: Int ->
+            }
     }
 }
 
@@ -128,7 +133,7 @@ class ReadFilesFragment : FileChooserFragment() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 activityInterface?.showDirChooser(DIR_SELECT_CODE)
             } else {
-                ctx.longToast(R.string.sdk_18_choose_dir_message)
+                ctx.toast(R.string.sdk_18_choose_dir_message, 1)
             }
         }
     }
@@ -254,29 +259,33 @@ class ReadFilesFragment : FileChooserFragment() {
                 ?: getString(R.string.default_output_dir)
 
         // Build and display an appropriate alert dialog.
-        AlertDialogBuilder(ctx).apply {
-            title(R.string.write_to_file_alert_title)
-            if (event1.displayNameList.size == 1) {
-                val waveFilename = "$filename.wav"
-                message(getString(R.string.write_to_file_alert_message_1,
-                        filename, waveFilename, dirDisplayName))
-            } else {
-                val fileCount = event1.displayNameList.size - 1
-                val fileWord = resources.getQuantityString(R.plurals.files,
-                        fileCount)
-                message(getString(R.string.write_to_file_alert_message_2,
-                        filename, fileCount, fileWord, dirDisplayName))
-            }
-            positiveButton(R.string.alert_positive_message_2) {
+        val builder = AlertDialog.Builder(ctx)
+        val dialogMessage: CharSequence
+        if (event1.displayNameList.size == 1) {
+            val waveFilename = "$filename.wav"
+            dialogMessage = getString(R.string.write_to_file_alert_message_1,
+                                      filename, waveFilename, dirDisplayName)
+        } else {
+            val fileCount = event1.displayNameList.size - 1
+            val fileWord = resources.getQuantityString(R.plurals.files, fileCount)
+            dialogMessage = getString(R.string.write_to_file_alert_message_2,
+                                      filename, fileCount, fileWord, dirDisplayName)
+        }
+        builder.setTitle(R.string.write_to_file_alert_title)
+            .setMessage(dialogMessage)
+            .setPositiveButton(R.string.alert_positive_message_2) {
+                _: DialogInterface, _: Int ->
                 // Ask the user for write permission if necessary.
                 withStoragePermission { granted ->
                     synthesizeTextToFile(event1, directory, granted)
                 }
             }
-            negativeButton(R.string.alert_negative_message_2)
+            .setNegativeButton(R.string.alert_negative_message_2) {
+                _: DialogInterface, _: Int ->
+            }
 
             // Show the dialog.
-            show()
-        }
+            .show()
+
     }
 }

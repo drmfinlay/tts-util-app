@@ -21,6 +21,7 @@
 package com.danefinlay.ttsutil.ui
 
 import android.content.ActivityNotFoundException
+import android.content.DialogInterface
 import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
@@ -29,11 +30,9 @@ import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.speech.tts.TextToSpeech.LANG_MISSING_DATA
 import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import com.danefinlay.ttsutil.*
-import org.jetbrains.anko.AlertDialogBuilder
-import org.jetbrains.anko.longToast
-import org.jetbrains.anko.toast
 import java.util.*
 
 /**
@@ -208,9 +207,9 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
     }
 
     private fun showNoTTSDataDialog(tts: TextToSpeech, language: Locale?) {
-        AlertDialogBuilder(this).apply {
+        AlertDialog.Builder(this).apply {
             // Set the title.
-            title(R.string.no_tts_data_alert_title)
+            setTitle(R.string.no_tts_data_alert_title)
 
             // Get the engine info.
             // Note: An engine should be available at this point.
@@ -221,13 +220,16 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
             val messageText = getString(R.string.no_tts_data_alert_message,
                     language?.displayName, engine.label
             )
-            message(messageText)
+            setMessage(messageText)
 
             // Set buttons and show the dialog.
-            positiveButton(R.string.alert_positive_message_2) {
+            setPositiveButton(R.string.alert_positive_message_2) {
+                _: DialogInterface, _: Int ->
                 startInstallTTSDataActivity()
             }
-            negativeButton(R.string.alert_negative_message_2)
+            setNegativeButton(R.string.alert_negative_message_2) {
+                _: DialogInterface, _: Int ->
+            }
             show()
         }
     }
@@ -271,7 +273,7 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
             startActivityForResult(chooserIntent, requestCode)
         } catch (ex: ActivityNotFoundException) {
             // Potentially direct the user to the Market with a Dialog.
-            longToast(getString(R.string.no_file_manager_msg))
+            toast(R.string.no_file_manager_msg, 1)
         }
     }
 
@@ -365,9 +367,10 @@ abstract class TTSActivity: MyAppCompatActivity(), TextToSpeech.OnInitListener,
     }
 
     override fun notifyInputSelection(start: Long, end: Long, taskId: Int) {
-        // Log.e(TAG, "notifyInputSelection(): $start, $end, $taskId")
+        // Note: This method does get calls for file synthesis tasks.
 
         // TODO
+        // Log.e(TAG, "notifyInputSelection(): $start, $end, $taskId")
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int,

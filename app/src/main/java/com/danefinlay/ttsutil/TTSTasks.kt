@@ -33,7 +33,6 @@ import android.speech.tts.TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID
 import android.speech.tts.UtteranceProgressListener
 import androidx.annotation.CallSuper
 import androidx.preference.PreferenceManager
-import org.jetbrains.anko.*
 import java.io.*
 import java.lang.StringBuilder
 import java.net.MalformedURLException
@@ -156,17 +155,11 @@ abstract class TTSTask(val ctx: Context,
     }
 
     fun displayMessage(string: String, long: Boolean) {
-        app.runOnUiThread {
-            if (long) longToast(string)
-            else toast(string)
-        }
+        app.runOnUiThread { toast(string, if (long) 1 else 0) }
     }
 
     fun displayMessage(id: Int, long: Boolean) {
-        app.runOnUiThread {
-            if (long) longToast(id)
-            else toast(id)
-        }
+        app.runOnUiThread { toast(id, if (long) 1 else 0) }
     }
 
     @CallSuper
@@ -429,6 +422,8 @@ abstract class TTSTask(val ctx: Context,
     override fun onRangeStart(utteranceId: String?, start: Int, end: Int,
                               frame: Int) {
         super.onRangeStart(utteranceId, start, end, frame)
+
+        // Note: This method does get calls for file synthesis tasks.
 
         // Disable manual onRangeStart() callback invocation in onStart() if *this*
         // call came from the engine.

@@ -22,7 +22,10 @@ package com.danefinlay.ttsutil.ui
 
 import androidx.core.text.HtmlCompat
 import android.text.method.LinkMovementMethod
+import android.view.View
 import android.widget.TextView
+import androidx.annotation.IdRes
+import androidx.appcompat.app.AppCompatActivity
 
 /**
  * Extension function for setting html link text.
@@ -30,4 +33,13 @@ import android.widget.TextView
 fun TextView.setLinkText(linkText: String) {
     movementMethod = LinkMovementMethod.getInstance()
     text = HtmlCompat.fromHtml(linkText, HtmlCompat.FROM_HTML_MODE_COMPACT)
+}
+
+/**
+ * Activity extension function for finding a view by ID.
+ *
+ * This is basically an alias of findViewById().
+ */
+fun <T : View?> AppCompatActivity.find(@IdRes id: Int): T {
+    return findViewById(id)
 }

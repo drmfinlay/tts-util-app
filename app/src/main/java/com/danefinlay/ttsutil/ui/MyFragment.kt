@@ -22,20 +22,20 @@ package com.danefinlay.ttsutil.ui
 
 import android.Manifest
 import android.content.Context
+import android.content.DialogInterface
 import android.content.pm.PackageManager
 import android.os.Build
 import android.view.View
 import androidx.annotation.CallSuper
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import com.danefinlay.ttsutil.R
 import com.danefinlay.ttsutil.*
-import org.jetbrains.anko.AlertDialogBuilder
-import org.jetbrains.anko.longToast
 
 abstract class MyFragment : Fragment(), FragmentInterface {
 
     // This useful little function was extracted from Anko (Support.kt).
-    inline fun <reified T : View> find(id: Int): T = view?.findViewById(id) as T
+    inline fun <reified T : View> find(id: Int): T = view?.findViewById(id)!!
 
     protected val ctx: Context
         get() = this.requireContext()
@@ -47,6 +47,7 @@ abstract class MyFragment : Fragment(), FragmentInterface {
         get() = context as? ActivityInterface
 
     private var tempStoragePermissionBlock: (granted: Boolean) -> Unit = {}
+    private var tempNotificationsPermissionBlock: (granted: Boolean) -> Unit = {}
 
     abstract fun updateStatusField(text: String)
     abstract fun updateTaskCountField(count: Int)
@@ -83,11 +84,41 @@ abstract class MyFragment : Fragment(), FragmentInterface {
         updateTaskCountField(event.remainingTasks)
     }
 
+    private fun onTTSReady(event: ActivityEvent.TTSReadyEvent) {
+        // Ask for notification permission, first with our own dialog.
+        // Note: This will only ask if we need permission.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        if (!myApplication.backgroundNotificationsEnabled) return
+
+        val permission = Manifest.permission.POST_NOTIFICATIONS
+        val havePermission = ctx.checkSelfPermission(permission)
+        if (havePermission != PackageManager.PERMISSION_GRANTED) {
+            AlertDialog.Builder(ctx).apply {
+                setTitle(R.string.no_notifications_permission_title)
+                setMessage(R.string.no_notifications_permission_message)
+                setPositiveButton(R.string.grant_permission_positive_message) {
+                        _: DialogInterface, _: Int ->
+                    // Ask for notifications permission.
+                    withNotificationsPermission { granted ->
+                        // Nothing to do...
+                    }
+                }
+                setNegativeButton(R.string.alert_negative_message_1) {
+                        _: DialogInterface, _: Int ->
+                    // Set the user preference so we don't ask again.
+                    myApplication.backgroundNotificationsEnabled = false
+                }
+                show()
+            }
+        }
+    }
+
     override fun handleActivityEvent(event: ActivityEvent) {
         // Handle events common to all fragments.
         when (event) {
             is ActivityEvent.StatusUpdateEvent -> onStatusUpdate(event)
             is ActivityEvent.TaskQueueChangeEvent -> onTaskQueueChange(event)
+            is ActivityEvent.TTSReadyEvent -> onTTSReady(event)
             else -> {}
         }
     }
@@ -95,17 +126,17 @@ abstract class MyFragment : Fragment(), FragmentInterface {
     fun withStoragePermission(block: (granted: Boolean) -> Unit) {
         // Check if we have write permission.
         if (Build.VERSION.SDK_INT >= 23 && Build.VERSION.SDK_INT < 29) {
-            val permission = ctx.checkSelfPermission(
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE)
-            if (permission != PackageManager.PERMISSION_GRANTED) {
+            val permission = Manifest.permission.WRITE_EXTERNAL_STORAGE
+            val havePermission = ctx.checkSelfPermission(permission)
+            if (havePermission != PackageManager.PERMISSION_GRANTED) {
+                // TODO Use the new contract API instead.
                 // We don't have permission, so prompt the user.
                 requestPermissions(PERMISSIONS_STORAGE, REQUEST_EXTERNAL_STORAGE)
 
                 // Store the function so we can execute it later if the user
                 // grants us storage permission.
                 tempStoragePermissionBlock = block
-            }
-            else {
+            } else {
                 // We have permission, so execute the function.
                 block(true)
             }
@@ -116,25 +147,57 @@ abstract class MyFragment : Fragment(), FragmentInterface {
         }
     }
 
+    fun withNotificationsPermission(block: (granted: Boolean) -> Unit) {
+        //Check if we have notifications permission.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val permission = Manifest.permission.POST_NOTIFICATIONS
+            val havePermission = ctx.checkSelfPermission(permission)
+            if (havePermission != PackageManager.PERMISSION_GRANTED) {
+                // TODO Use the new contract API instead.
+                // We don't have permission, so prompt the user.
+                requestPermissions(PERMISSIONS_NOTIFICATIONS, REQUEST_NOTIFICATIONS)
+
+                // Store the function so we can execute it later if the user
+                // grants us notifications permission.
+                tempNotificationsPermissionBlock = block
+            } else {
+                // We have permission, so execute the function.
+                block(true)
+            }
+        } else {
+            // No need to check permission before Android Tiramisu, so execute the
+            // function.
+            block(true)
+        }
+    }
+
+    // TODO Replace the below with the new contract way of doing things.
+
     override fun onRequestPermissionsResult(requestCode: Int,
                                             permissions: Array<out String>,
                                             grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
-        if (permissions.contentEquals(PERMISSIONS_STORAGE)) {
-            // Check that all permissions were granted.
-            var allGranted = true
-            for (result in grantResults) {
-                if (result != PackageManager.PERMISSION_GRANTED) {
-                    // Permission wasn't granted.
-                    allGranted = false
-                    break
-                }
+        // Check that all permissions were granted.
+        var allGranted = true
+        for (result in grantResults) {
+            if (result != PackageManager.PERMISSION_GRANTED) {
+                // Permission wasn't granted.
+                allGranted = false
+                break
             }
+        }
 
-            // Execute the storage permission block and replace it.
-            tempStoragePermissionBlock(allGranted)
-            tempStoragePermissionBlock = {}
+        // Execute and clear the appropriate permissions block.
+        when(requestCode) {
+            REQUEST_EXTERNAL_STORAGE -> {
+                tempStoragePermissionBlock(allGranted)
+                tempStoragePermissionBlock = {}
+            }
+            REQUEST_NOTIFICATIONS -> {
+                tempNotificationsPermissionBlock(allGranted)
+                tempNotificationsPermissionBlock = {}
+            }
         }
     }
 
@@ -151,15 +214,18 @@ abstract class MyFragment : Fragment(), FragmentInterface {
     }
 
     protected fun buildNoPermissionAlertDialog(block: (granted: Boolean) -> Unit):
-            AlertDialogBuilder {
-        return AlertDialogBuilder(ctx).apply {
-            title(R.string.no_storage_permission_title)
-            message(R.string.no_storage_permission_message)
-            positiveButton(R.string.grant_permission_positive_message) {
-                // Try asking for storage permission again.
-                withStoragePermission { granted -> block(granted) }
+            AlertDialog.Builder {
+        return AlertDialog.Builder(ctx).apply {
+            setTitle(R.string.no_storage_permission_title)
+            setMessage(R.string.no_storage_permission_message)
+            setPositiveButton(R.string.grant_permission_positive_message) {
+                    _: DialogInterface, _: Int ->
+                    // Try asking for storage permission again.
+                    withStoragePermission { granted -> block(granted) }
             }
-            negativeButton(R.string.alert_negative_message_1)
+            setNegativeButton(R.string.alert_negative_message_1) {
+                    _: DialogInterface, _: Int ->
+            }
         }
     }
 
@@ -169,33 +235,39 @@ abstract class MyFragment : Fragment(), FragmentInterface {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             activityInterface?.showDirChooser(DIR_SELECT_CONT_CODE)
         } else {
-            ctx.longToast(R.string.sdk_18_choose_dir_message)
+            ctx.toast(R.string.sdk_18_choose_dir_message, 1)
         }
     }
 
-    protected fun buildUnavailableDirAlertDialog(): AlertDialogBuilder {
+    protected fun buildUnavailableDirAlertDialog(): AlertDialog.Builder {
         val title = R.string.unavailable_dir_dialog_title
         val message = R.string.unavailable_dir_dialog_message
-        return AlertDialogBuilder(ctx).apply {
-            title(title)
-            message(message)
-            positiveButton(R.string.alert_positive_message_1) {
+        return AlertDialog.Builder(ctx).apply {
+            setTitle(title)
+            setMessage(message)
+            setPositiveButton(R.string.alert_positive_message_1) {
+                _: DialogInterface, _: Int ->
                 showDirChooserCompat()
             }
-            negativeButton(R.string.alert_negative_message_1)
+            setNegativeButton(R.string.alert_negative_message_1) {
+                _: DialogInterface, _: Int ->
+            }
         }
     }
 
-    protected fun buildUnwritableOutDirAlertDialog(): AlertDialogBuilder {
+    protected fun buildUnwritableOutDirAlertDialog(): AlertDialog.Builder {
         val title = R.string.unwritable_out_dir_dialog_title
         val message = R.string.unwritable_out_dir_dialog_message
-        return AlertDialogBuilder(ctx).apply {
-            title(title)
-            message(message)
-            positiveButton(R.string.alert_positive_message_2) {
+        return AlertDialog.Builder(ctx).apply {
+            setTitle(title)
+            setMessage(message)
+            setPositiveButton(R.string.alert_positive_message_2) {
+                _: DialogInterface, _: Int ->
                 showDirChooserCompat()
             }
-            negativeButton(R.string.alert_negative_message_2)
+            setNegativeButton(R.string.alert_negative_message_2) {
+                _: DialogInterface, _: Int ->
+            }
         }
     }
 
@@ -213,5 +285,10 @@ abstract class MyFragment : Fragment(), FragmentInterface {
                 )
             }
         }
+
+        // Notification Permissions
+        private val PERMISSIONS_NOTIFICATIONS: Array<String>
+            = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+            arrayOf(Manifest.permission.POST_NOTIFICATIONS) else arrayOf()
     }
 }

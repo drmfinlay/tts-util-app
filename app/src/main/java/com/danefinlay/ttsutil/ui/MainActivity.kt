@@ -20,6 +20,7 @@
 
 package com.danefinlay.ttsutil.ui
 
+import android.content.DialogInterface
 import android.content.Intent
 import android.os.Bundle
 import com.google.android.material.navigation.NavigationView
@@ -27,14 +28,13 @@ import androidx.drawerlayout.widget.DrawerLayout
 import androidx.appcompat.widget.Toolbar
 import android.view.Menu
 import android.view.MenuItem
+import androidx.appcompat.app.AlertDialog
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.danefinlay.ttsutil.R
-import org.jetbrains.anko.AlertDialogBuilder
-import org.jetbrains.anko.find
 
 class MainActivity : TTSActivity() {
 
@@ -93,13 +93,16 @@ class MainActivity : TTSActivity() {
 
                 // If a task is in progress, build and show an alert dialog
                 //  asking the user for confirmation.
-                AlertDialogBuilder(this).apply {
-                    title(R.string.reinit_confirmation_title)
-                    message(getString(R.string.reinit_confirmation_message))
-                    positiveButton(R.string.alert_positive_message_2) {
+                AlertDialog.Builder(this).apply {
+                    setTitle(R.string.reinit_confirmation_title)
+                    setMessage(getString(R.string.reinit_confirmation_message))
+                    setPositiveButton(R.string.alert_positive_message_2) {
+                        _: DialogInterface, _: Int ->
                         myApplication.reinitialiseTTS(this@MainActivity,null)
                     }
-                    negativeButton(R.string.alert_negative_message_2)
+                    setNegativeButton(R.string.alert_negative_message_2) {
+                        _: DialogInterface, _: Int ->
+                    }
                     show()
                 }
                 return true

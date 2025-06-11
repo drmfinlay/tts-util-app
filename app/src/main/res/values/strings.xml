@@ -70,8 +70,6 @@
     <string name="about_acknowledgements_msg">Parts of the following projects were used in the development of this application:</string>
     <string name="about_ack_material_design_icons">&#8226; %1$s (%2$s) — icons used in this application</string>
     <string name="link_material_design_icons" translatable="false">&lt;a href=&quot;https://material.io/resources/icons/&quot;&gt;Google\'s Material Design Icons&lt;/a&gt;</string>
-    <string name="about_ack_anko">&#8226; %1$s (%2$s) — Pleasant Android application development</string>
-    <string name="link_anko" translatable="false">&lt;a href=&quot;https://github.com/Kotlin/anko&quot;&gt;Anko&lt;/a&gt;</string>
     <string name="about_ack_kotlin">&#8226; %1$s (%2$s) — programming language used</string>
     <string name="link_kotlin" translatable="false">&lt;a href=&quot;https://kotlinlang.org/&quot;&gt;Kotlin&lt;/a&gt;</string>
     <string name="about_ack_free_otp">&#8226; %1$s (%2$s) — portions used to create this About section</string>
@@ -107,6 +105,8 @@
     <string name="write_to_file_message_failure">Failed to create wave file \"%1$s\".</string>
     <string name="no_storage_permission_title">No Write Storage Permission</string>
     <string name="no_storage_permission_message">Permission to write to storage was not granted.  The application needs write access in order to save the wave file to storage. \n\nWould you like to grant permission?</string>
+    <string name="no_notifications_permission_title">No Notifications Permission</string>
+    <string name="no_notifications_permission_message">Permission to post notifications has not been granted.  This application uses notifications to allow control of ongoing text-to-speech synthesis while it is in the background.  \n\nWould you like to grant permission?</string>
     <string name="reinit_confirmation_title">Reinitialize text-to-speech?</string>
     <string name="reinit_confirmation_message">A task is currently in progress. Do you wish to reinitialize text-to-speech and stop it?</string>
 
@@ -210,6 +210,8 @@
 
     <string name="pref_misc_category">Miscellaneous</string>
     <string name="pref_misc_category_summary">Miscellaneous application settings.</string>
+    <string name="pref_misc_background_notifications">Background Notifications</string>
+    <string name="pref_misc_background_notifications_summary">Display synthesis progress notifications when this application is in the background.</string>
     <string name="pref_misc_next_task_messages">Next Task Messages</string>
     <string name="pref_misc_next_task_messages_summary">Display a message when a queued task begins.</string>
 

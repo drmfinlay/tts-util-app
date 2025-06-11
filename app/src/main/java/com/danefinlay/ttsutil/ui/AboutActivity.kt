@@ -26,7 +26,6 @@ import android.view.MenuItem
 import android.widget.TextView
 import com.danefinlay.ttsutil.APP_NAME
 import com.danefinlay.ttsutil.R
-import org.jetbrains.anko.find
 
 class AboutActivity : MyAppCompatActivity() {
 
@@ -62,8 +61,6 @@ class AboutActivity : MyAppCompatActivity() {
                 R.string.link_material_design_icons, apache2)
         setAckText(R.id.about_ack_kotlin, R.string.about_ack_kotlin,
                 R.string.link_kotlin, apache2)
-        setAckText(R.id.about_ack_anko, R.string.about_ack_anko,
-                R.string.link_anko, apache2)
         setAckText(R.id.about_ack_free_otp, R.string.about_ack_free_otp,
                 R.string.link_freeotp, apache2)
 

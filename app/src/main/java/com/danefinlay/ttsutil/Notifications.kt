@@ -28,7 +28,6 @@ import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.danefinlay.ttsutil.ui.MainActivity
-import org.jetbrains.anko.notificationManager
 
 
 fun getNotificationBuilder(ctx: Context): NotificationCompat.Builder {

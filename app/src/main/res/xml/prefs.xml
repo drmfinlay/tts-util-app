@@ -147,6 +147,12 @@
         android:summary="@string/pref_misc_category_summary" >
 
         <CheckBoxPreference
+            android:key="pref_misc_background_notifications"
+            android:title="@string/pref_misc_background_notifications"
+            android:summary="@string/pref_misc_background_notifications_summary"
+            android:defaultValue="true" />
+
+        <CheckBoxPreference
             android:key="pref_misc_next_task_messages"
             android:title="@string/pref_misc_next_task_messages"
             android:summary="@string/pref_misc_next_task_messages_summary"
