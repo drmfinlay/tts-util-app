@@ -1,0 +1,8 @@
+* Update the application for Android 15.
+* Make the application's input fields independently scrollable, if they're long enough.
+* Make the reinitialize text-to-speech button bring up a confirmation dialog, if a task is in progress.
+* Fix a UI error affecting the some parts of the application.
+* Fix an error that can occur if an unusable engine is chosen in the settings.
+* Make some aesthetic changes to the application's settings menu.
+* Change the minimum supported OS version to Android 5.0 (Lollipop).
+* Other bug fixes and improvements.
