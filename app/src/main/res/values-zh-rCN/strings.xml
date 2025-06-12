@@ -67,6 +67,10 @@
     <string name="write_to_file_message_failure">未能创建音频文件“%1$s”。</string>
     <string name="no_storage_permission_title">没有写存储权限</string>
     <string name="no_storage_permission_message">未授予写入存储的权限。应用程序需要写入权限才能将音频文件保存到存储中。您要授予权限吗？</string>
+    <string name="no_notifications_permission_title">无通知权限</string>
+    <string name="no_notifications_permission_message">尚未授予发布通知的权限。 此应用程序使用通知来允许在后台控制正在进行的文本到语音合成。 是否要授予权限？</string>
+    <string name="reinit_confirmation_title">您真的要重新初始化文本到语音转换吗？</string>
+    <string name="reinit_confirmation_message">任务当前正在进行中。您真的要重新初始化文本到语音转换并停止它吗？</string>
     <string name="output_wave_filename">输出</string>
     <string name="chosen_file_label">从中读取文本的文件：</string>
     <string name="no_file_chosen_dec">*没有选中任何文件*</string>
@@ -107,7 +111,7 @@
     <string name="synthesis_error_msg_voice_data">文本转语音失败，因为没有安装语音数据。</string>
     <string name="tts_initialization_failure_msg">文本到语音引擎初始化失败。</string>
     <string name="using_general_tts_language_msg">选择的语言不可用，请使用%1$s。</string>
-    <string name="no_tts_language_available_msg">所选语言和系统扬声器语言都不可用。</string>
+    <string name="no_tts_language_available_msg">文本转语音引擎没有合适的语言或语音可用。</string>
     <string name="filtered_characters_message">%1$d输入%2$s已被过滤掉。</string>
     <string name="use_default_tts_preference">使用默认</string>
     <string name="pref_tts_engine_category">TTS设置</string>
@@ -147,6 +151,8 @@
     <string name="pref_filter_mailto_links_summary">从输入文本过滤mailto链接。</string>
     <string name="pref_misc_category">杂项</string>
     <string name="pref_misc_category_summary">各种各样的应用程序设置。</string>
+    <string name="pref_misc_background_notifications">后台通知</string>
+    <string name="pref_misc_background_notifications_summary">当此应用程序在后台运行时，显示合成进度通知。</string>
     <string name="pref_misc_next_task_messages">下一个任务信息</string>
     <string name="pref_misc_next_task_messages_summary">当队列任务开始时显示一条消息。</string>
     <string name="sample_tts_sentence">这是一个从文本到语音的例句。</string>
