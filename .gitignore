@@ -34,6 +34,9 @@ proguard/
 *~
 *\#
 
+# Vim files
+*.swp
+
 # Android Studio Navigation editor temp files
 .navigation/
 .idea/
