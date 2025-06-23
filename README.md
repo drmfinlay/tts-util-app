@@ -40,7 +40,7 @@ Currently, this app is available in English and Chinese (Simplified).  The Chine
 
 Any help in translating this app's resource strings and/or its documentation into other languages would be appreciated.
 
-It should be noted that translation of *TTS Util* resource strings into a given language is not required to read/synthesise text in that language using text-to-speech.  This type of language "support" is handled by the text-to-speech *engine*, not *TTS Util*.
+It should be noted that translation of *TTS Util* resource strings into a given language is not required to read/synthesise text in that language using text-to-speech.  This type of language support is handled by the text-to-speech *engine*, not *TTS Util*.
 
 Licence
 -------
