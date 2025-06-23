@@ -25,7 +25,7 @@ Features
 
 Requirements
 ------------
-- A device running Android version 4.0.3 or higher.
+- A device running Android version 5.0 or higher.
 - A separate Android text-to-speech engine app.
 
 Building
