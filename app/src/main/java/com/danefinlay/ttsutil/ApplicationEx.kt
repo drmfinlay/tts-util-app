@@ -33,6 +33,7 @@ import android.media.AudioManager.OnAudioFocusChangeListener
 import android.os.Build
 import android.speech.tts.TextToSpeech
 import android.speech.tts.TextToSpeech.*
+import android.speech.tts.Voice
 import androidx.core.app.NotificationCompat
 import androidx.preference.PreferenceManager
 import java.io.File
@@ -113,6 +114,17 @@ class ApplicationEx : Application(), OnInitListener, TaskObserver {
             val editor: SharedPreferences.Editor = prefs.edit()
             editor.putString("pref_tts_engine", value)
             editor.apply()
+        }
+
+    val preferredTTSVoice: Voice?
+        get() {
+            val tts = mTTS ?: return null
+
+            val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+            val voiceName = prefs.getString("pref_tts_voice", null)
+                ?: return null
+            val voices = tts.voicesEx.toList().filterNotNull()
+            return voices.find { it.name == voiceName }
         }
 
     var backgroundNotificationsEnabled: Boolean
@@ -348,16 +360,9 @@ class ApplicationEx : Application(), OnInitListener, TaskObserver {
         // this is SDK 21 or above.
         val prefs = PreferenceManager.getDefaultSharedPreferences(this)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            val voiceName = prefs.getString("pref_tts_voice", null)
-            if (voiceName != null) {
-                val voices = tts.voicesEx.toList().filterNotNull()
-                if (voices.isNotEmpty()) {
-                    val voiceNames = voices.map { it.name }
-                    val voiceIndex = voiceNames.indexOf(voiceName)
-                    tts.voiceEx = if (voiceIndex == -1) {
-                        tts.voiceEx ?: tts.defaultVoiceEx
-                    } else voices[voiceIndex]
-                }
+            val voice = preferredTTSVoice
+            if (voice != null) {
+                tts.voiceEx = voice
             }
         }
 

@@ -74,6 +74,8 @@ abstract class TTSTask(val ctx: Context,
     private val filterMailToLinks: Boolean
     private val filtersEnabled: Boolean
 
+    private val isSampleTextTask: Boolean
+
     // Note: Instance variables may be accessed by many (at least three) threads.
     // Hence, we use Java's "volatile" mechanism.
 
@@ -146,6 +148,9 @@ abstract class TTSTask(val ctx: Context,
         filterWebLinks = prefs.getBoolean("pref_filter_web_links", false)
         filterMailToLinks = prefs.getBoolean("pref_filter_mailto_links", false)
         filtersEnabled = filterHashes || filterWebLinks || filterMailToLinks
+
+        // Set other variables.
+        isSampleTextTask = inputSource.description == "SettingsFragment"
 
         // Save the current text-to-speech engine package name.
         // Note: This application locks-in the enqueue-time engine for all tasks.
@@ -372,6 +377,16 @@ abstract class TTSTask(val ctx: Context,
     }
 
     private fun enqueueFromInfo(utteranceInfo: UtteranceInfo) {
+        // If TTS Util is set to use the engine's default voice, ensure the most
+        // up-to-date default voice is used.
+        // Do not do this if this task is a sample text synthesis task.
+        // Note: The voice has to be set here, prior to enqueuing.
+        val preferredVoice = app.preferredTTSVoice
+        if (preferredVoice == null && !isSampleTextTask) {
+            tts.voiceEx = tts.defaultVoiceEx
+        }
+
+        // Enqueue text and silence appropriately.
         val text = utteranceInfo.text
         val silenceDuration = utteranceInfo.silenceDuration
         if (enqueueText(text, utteranceInfo.id)) {
