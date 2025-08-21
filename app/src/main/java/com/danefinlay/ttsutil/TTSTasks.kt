@@ -150,7 +150,9 @@ abstract class TTSTask(val ctx: Context,
         filtersEnabled = filterHashes || filterWebLinks || filterMailToLinks
 
         // Set other variables.
-        isSampleTextTask = inputSource.description == "SettingsFragment"
+        val sampleTextSrcDescription: CharSequence =
+            ctx.getString(R.string.sample_text_source_description)
+        isSampleTextTask = inputSource.description == sampleTextSrcDescription
 
         // Save the current text-to-speech engine package name.
         // Note: This application locks-in the enqueue-time engine for all tasks.

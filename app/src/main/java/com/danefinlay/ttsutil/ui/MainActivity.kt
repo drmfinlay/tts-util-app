@@ -83,9 +83,9 @@ class MainActivity : TTSActivity() {
             R.id.menu_reinitialise_tts -> {
                 // Reinitialise text-to-speech, if idle or if sample text is being
                 //  read out.
-                val currentTask = myApplication.currentTask
-                val sampleInProgress = currentTask?.getInputSource(this)
-                        ?.description == "SettingsFragment"
+                val sampleInProgress: Boolean =
+                    myApplication.currentTask?.getInputSource(this)?.description ==
+                            getString(R.string.sample_text_source_description)
                 if (!myApplication.taskInProgress || sampleInProgress) {
                     myApplication.reinitialiseTTS(this, null)
                     return true

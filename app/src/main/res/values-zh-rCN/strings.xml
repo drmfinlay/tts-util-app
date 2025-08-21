@@ -88,6 +88,7 @@
     <string name="edit_read_clipboard_shortcut">从剪贴板编辑和读取</string>
     <string name="read_text_source_description">文字内容</string>
     <string name="read_clipboard_source_description">剪贴板内容</string>
+    <string name="sample_text_source_description">示例文本</string>
     <string name="reading_notification_title">进行中的演讲</string>
     <string name="synthesis_notification_title">正在进行文件合成</string>
     <string name="post_synthesis_notification_title">处理合成音频文件</string>
